@@ -1,0 +1,135 @@
+version: '3.8'
+
+services:
+  # 1. Relational Database with PostGIS Geospatial Support
+  db:
+    image: postgis/postgis:16-3.4
+    container_name: election_watch_db
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgrespassword}
+      POSTGRES_DB: ${POSTGRES_DB:-election_watch}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d election_watch"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - election_internal
+
+  # 2. Redis Cache & Job Distributed Lock Engine
+  redis:
+    image: redis:7.2-alpine
+    container_name: election_watch_redis
+    restart: always
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD:-devredispass}"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-devredispass}", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - election_internal
+
+  # 3. Production FastAPI API Gateway (Cloud Run Compatible)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: election_watch_backend
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgrespassword}@db:5432/${POSTGRES_DB:-election_watch}
+      SYNC_DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgrespassword}@db:5432/${POSTGRES_DB:-election_watch}
+      REDIS_URL: redis://:${REDIS_PASSWORD:-devredispass}@redis:6379/0
+      DATA_SOURCE_MODE: ${DATA_SOURCE_MODE:-DEVELOPMENT}
+      IS_DEMONSTRATION: ${IS_DEMONSTRATION:-true}
+      SECRET_KEY: ${SECRET_KEY:-change-in-production-secure-32char-token}
+      INEC_OFFICIAL_PORTAL_URL: https://inecelectionresults.ng
+      INEC_API_KEY: ${INEC_API_KEY:-}
+      STORAGE_LOCAL_PATH: /app/data/uploads
+      PORT: 8000
+    ports:
+      - "8000:8000"
+    volumes:
+      - uploads_data:/app/data/uploads
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/api/v1/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - election_internal
+      - election_public
+
+  # 4. Dedicated Background Worker for OCR & Ingestion (Separated from API request lifecycle)
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.worker
+    container_name: election_watch_worker
+    restart: always
+    depends_on:
+      backend:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgrespassword}@db:5432/${POSTGRES_DB:-election_watch}
+      SYNC_DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgrespassword}@db:5432/${POSTGRES_DB:-election_watch}
+      REDIS_URL: redis://:${REDIS_PASSWORD:-devredispass}@redis:6379/0
+      DATA_SOURCE_MODE: ${DATA_SOURCE_MODE:-DEVELOPMENT}
+      STORAGE_LOCAL_PATH: /app/data/uploads
+      OCR_ENGINE: tesseract
+      OCR_CONFIDENCE_THRESHOLD: 85.0
+    volumes:
+      - uploads_data:/app/data/uploads
+    networks:
+      - election_internal
+
+  # 5. Production React / Node Web Application & Static Assets
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: election_watch_frontend
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - election_public
+
+networks:
+  election_internal:
+    internal: true
+  election_public:
+    driver: bridge
+
+volumes:
+  pgdata:
+  redisdata:
+  uploads_data:

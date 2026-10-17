@@ -1,0 +1,75 @@
+{
+  "timestamp": "2026-10-16T14:06:47Z",
+  "targetUrl": "http://localhost:3000",
+  "scenarios": [
+    {
+      "scenarioName": "Normal Election Day Traffic",
+      "concurrency": 20,
+      "totalRequests": 200,
+      "totalTimeSeconds": 0.53,
+      "requestsPerSecond": 375.9,
+      "successCount": 200,
+      "failureCount": 0,
+      "errorRatePercentage": 0.0,
+      "latencyMs": {
+        "min": 3.58,
+        "mean": 49.59,
+        "p50": 49.35,
+        "p95": 78.66,
+        "p99": 87.24,
+        "max": 89.26
+      },
+      "statusCodes": {
+        "200": 200
+      }
+    },
+    {
+      "scenarioName": "Elevated Collation Peak",
+      "concurrency": 50,
+      "totalRequests": 500,
+      "totalTimeSeconds": 1.13,
+      "requestsPerSecond": 441.67,
+      "successCount": 500,
+      "failureCount": 0,
+      "errorRatePercentage": 0.0,
+      "latencyMs": {
+        "min": 4.39,
+        "mean": 103.84,
+        "p50": 108.49,
+        "p95": 148.24,
+        "p99": 157.72,
+        "max": 184.99
+      },
+      "statusCodes": {
+        "200": 500
+      }
+    },
+    {
+      "scenarioName": "Peak Surge Climax",
+      "concurrency": 100,
+      "totalRequests": 1000,
+      "totalTimeSeconds": 1.91,
+      "requestsPerSecond": 523.07,
+      "successCount": 1000,
+      "failureCount": 0,
+      "errorRatePercentage": 0.0,
+      "latencyMs": {
+        "min": 3.5,
+        "mean": 87.47,
+        "p50": 94.47,
+        "p95": 164.09,
+        "p99": 208.95,
+        "max": 308.33
+      },
+      "statusCodes": {
+        "200": 1000
+      }
+    }
+  ],
+  "overallAssessment": {
+    "p50Acceptable": true,
+    "p95Acceptable": true,
+    "zeroCriticalErrors": true,
+    "measuredMaxThroughputRps": 523.07
+  }
+}
