@@ -5,7 +5,7 @@ WORKDIR /app
 
 # Install build dependencies
 COPY package*.json ./
-RUN npm ci
+RUN npm install
 
 # Copy full application source and build client bundle
 COPY . .
