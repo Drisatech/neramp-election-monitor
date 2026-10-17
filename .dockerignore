@@ -1,0 +1,10 @@
+node_modules
+dist
+.git
+.gitignore
+.aistudio
+.env
+.env.local
+backend/__pycache__
+backend/tests/__pycache__
+*.pyc
