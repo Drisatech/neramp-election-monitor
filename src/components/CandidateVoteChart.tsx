@@ -2,6 +2,7 @@ import React from 'react';
 import ReactECharts from 'echarts-for-react';
 import { CandidateRanking } from '../types';
 import { getPartyInfo } from '../constants/parties';
+import { useThemeAccessibility } from '../context/ThemeAccessibilityContext';
 
 interface Props {
   candidateRankings: CandidateRanking[];
@@ -9,6 +10,9 @@ interface Props {
 }
 
 export const CandidateVoteChart: React.FC<Props> = ({ candidateRankings, totalValidVotes }) => {
+  const { theme } = useThemeAccessibility();
+  const isDark = theme === 'dark';
+
   if (!candidateRankings || candidateRankings.length === 0) {
     return (
       <div className="h-64 flex items-center justify-center text-slate-400 text-sm">
@@ -24,13 +28,16 @@ export const CandidateVoteChart: React.FC<Props> = ({ candidateRankings, totalVa
     tooltip: {
       trigger: 'axis',
       axisPointer: { type: 'shadow' },
+      backgroundColor: isDark ? '#1e293b' : '#ffffff',
+      borderColor: isDark ? '#475569' : '#e2e8f0',
+      textStyle: { color: isDark ? '#f8fafc' : '#0f172a' },
       formatter: (params: any) => {
         const item = params[0];
         const party = sorted[item.dataIndex];
         const info = getPartyInfo(party.partyCode);
         const logoUrl = party.logoUrl || info?.logoUrl || '';
         return `
-          <div style="font-size:12px; font-family: sans-serif; display:flex; align-items:center; gap:10px;">
+          <div style="font-size:12px; font-family: sans-serif; display:flex; align-items:center; gap:10px; color:${isDark ? '#f8fafc' : '#0f172a'};">
             ${logoUrl ? `<img src="${logoUrl}" alt="${party.partyCode}" style="width:32px;height:32px;object-fit:contain;border-radius:4px;border:1px solid #e2e8f0;background:#fff;padding:2px;" />` : ''}
             <div>
               <strong>${party.partyName}</strong> (${party.partyCode})<br/>
@@ -51,10 +58,11 @@ export const CandidateVoteChart: React.FC<Props> = ({ candidateRankings, totalVa
     xAxis: {
       type: 'value',
       name: 'Votes',
-      splitLine: { lineStyle: { color: '#e2e8f0', type: 'dashed' } },
+      nameTextStyle: { color: isDark ? '#cbd5e1' : '#64748b' },
+      splitLine: { lineStyle: { color: isDark ? '#334155' : '#e2e8f0', type: 'dashed' } },
       axisLabel: {
         formatter: (val: number) => val.toLocaleString(),
-        color: '#64748b',
+        color: isDark ? '#cbd5e1' : '#64748b',
         fontSize: 11,
       },
     },
@@ -63,11 +71,11 @@ export const CandidateVoteChart: React.FC<Props> = ({ candidateRankings, totalVa
       data: sorted.map((c) => `${c.partyCode} — ${c.partyName}`),
       inverse: true,
       axisLabel: {
-        color: '#1e293b',
+        color: isDark ? '#f1f5f9' : '#1e293b',
         fontSize: 11,
         fontWeight: '600',
       },
-      axisLine: { lineStyle: { color: '#cbd5e1' } },
+      axisLine: { lineStyle: { color: isDark ? '#475569' : '#cbd5e1' } },
     },
     series: [
       {
@@ -83,7 +91,7 @@ export const CandidateVoteChart: React.FC<Props> = ({ candidateRankings, totalVa
           position: 'right',
           formatter: (params: any) => `${params.value.toLocaleString()} (${sorted[params.dataIndex].percentage}%)`,
           fontSize: 10,
-          color: '#475569',
+          color: isDark ? '#e2e8f0' : '#475569',
           fontWeight: '600',
         },
       },

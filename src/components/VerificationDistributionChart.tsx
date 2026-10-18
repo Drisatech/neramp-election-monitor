@@ -1,5 +1,6 @@
 import React from 'react';
 import ReactECharts from 'echarts-for-react';
+import { useThemeAccessibility } from '../context/ThemeAccessibilityContext';
 
 interface Props {
   verified: number;
@@ -14,23 +15,29 @@ export const VerificationDistributionChart: React.FC<Props> = ({
   discrepancies,
   notUploaded,
 }) => {
+  const { theme } = useThemeAccessibility();
+  const isDark = theme === 'dark';
+
   const data = [
     { value: verified, name: 'Verified Transcriptions', itemStyle: { color: '#16a34a' } },
-    { value: pendingVerification, name: 'Awaiting Verification', itemStyle: { color: '#0284c7' } },
-    { value: discrepancies, name: 'Discrepancies Flagged', itemStyle: { color: '#dc2626' } },
-    { value: notUploaded, name: 'Sheet Not Yet Uploaded', itemStyle: { color: '#94a3b8' } },
+    { value: pendingVerification, name: 'Awaiting Verification', itemStyle: { color: '#38bdf8' } },
+    { value: discrepancies, name: 'Discrepancies Flagged', itemStyle: { color: '#f43f5e' } },
+    { value: notUploaded, name: 'Sheet Not Yet Uploaded', itemStyle: { color: isDark ? '#64748b' : '#94a3b8' } },
   ];
 
   const option = {
     tooltip: {
       trigger: 'item',
+      backgroundColor: isDark ? '#1e293b' : '#ffffff',
+      borderColor: isDark ? '#475569' : '#e2e8f0',
+      textStyle: { color: isDark ? '#f8fafc' : '#0f172a' },
       formatter: '{b}: <strong>{c}</strong> ({d}%)',
     },
     legend: {
       orient: 'vertical',
       right: '2%',
       top: 'center',
-      textStyle: { fontSize: 11, color: '#334155' },
+      textStyle: { fontSize: 11, color: isDark ? '#e2e8f0' : '#334155' },
     },
     series: [
       {

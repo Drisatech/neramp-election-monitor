@@ -1,5 +1,6 @@
 import React from 'react';
 import ReactECharts from 'echarts-for-react';
+import { useThemeAccessibility } from '../context/ThemeAccessibilityContext';
 
 interface Props {
   uploadedCount: number;
@@ -8,6 +9,9 @@ interface Props {
 }
 
 export const UploadProgressChart: React.FC<Props> = ({ uploadedCount, totalPus, timeline }) => {
+  const { theme } = useThemeAccessibility();
+  const isDark = theme === 'dark';
+
   const defaultTimeline = (timeline && timeline.length > 0) ? timeline : [
     { hour: '14:00 WAT', uploaded: 0, rate: 0.0 },
     { hour: '15:00 WAT', uploaded: 0, rate: 0.0 },
@@ -21,11 +25,14 @@ export const UploadProgressChart: React.FC<Props> = ({ uploadedCount, totalPus, 
     tooltip: {
       trigger: 'axis',
       axisPointer: { type: 'cross' },
+      backgroundColor: isDark ? '#1e293b' : '#ffffff',
+      borderColor: isDark ? '#475569' : '#e2e8f0',
+      textStyle: { color: isDark ? '#f8fafc' : '#0f172a' },
       formatter: (params: any) => {
         const item = params[0];
         const pct = totalPus > 0 ? ((item.value / totalPus) * 100).toFixed(1) : '0.0';
         return `
-          <div style="font-size:12px;">
+          <div style="font-size:12px; color:${isDark ? '#f8fafc' : '#0f172a'};">
             <strong>${item.name}</strong><br/>
             Sheets Uploaded: <strong>${item.value}</strong><br/>
             Cumulative Progress: <strong>${pct}%</strong>
@@ -43,14 +50,15 @@ export const UploadProgressChart: React.FC<Props> = ({ uploadedCount, totalPus, 
     xAxis: {
       type: 'category',
       data: defaultTimeline.map((t) => t.hour),
-      axisLine: { lineStyle: { color: '#cbd5e1' } },
-      axisLabel: { color: '#64748b', fontSize: 11 },
+      axisLine: { lineStyle: { color: isDark ? '#475569' : '#cbd5e1' } },
+      axisLabel: { color: isDark ? '#cbd5e1' : '#64748b', fontSize: 11 },
     },
     yAxis: {
       type: 'value',
       name: 'Sheets',
-      splitLine: { lineStyle: { color: '#f1f5f9' } },
-      axisLabel: { color: '#64748b', fontSize: 11 },
+      nameTextStyle: { color: isDark ? '#cbd5e1' : '#64748b' },
+      splitLine: { lineStyle: { color: isDark ? '#334155' : '#f1f5f9' } },
+      axisLabel: { color: isDark ? '#cbd5e1' : '#64748b', fontSize: 11 },
     },
     series: [
       {
@@ -58,8 +66,8 @@ export const UploadProgressChart: React.FC<Props> = ({ uploadedCount, totalPus, 
         type: 'line',
         smooth: true,
         data: defaultTimeline.map((t) => t.uploaded),
-        itemStyle: { color: '#047857' },
-        lineStyle: { width: 3, color: '#047857' },
+        itemStyle: { color: isDark ? '#34d399' : '#047857' },
+        lineStyle: { width: 3, color: isDark ? '#34d399' : '#047857' },
         areaStyle: {
           color: {
             type: 'linear',

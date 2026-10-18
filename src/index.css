@@ -1,1 +1,334 @@
 @import "tailwindcss";
+
+/* ============================================================================
+   1. DARK MODE THEME OVERRIDES (100% High-Visibility Content Guarantee)
+   ============================================================================ */
+html.dark,
+html.dark body {
+  background-color: #0b1120 !important;
+  color: #f8fafc !important;
+}
+
+/* Primary & Secondary Surfaces in Dark Mode */
+html.dark .bg-slate-50 {
+  background-color: #0f172a !important;
+}
+
+html.dark .bg-slate-50\/70,
+html.dark .bg-slate-50\/60,
+html.dark .bg-slate-50\/50 {
+  background-color: rgba(15, 23, 42, 0.85) !important;
+}
+
+html.dark .bg-white {
+  background-color: #1e293b !important;
+}
+
+html.dark .bg-white\/95,
+html.dark .bg-white\/90,
+html.dark .bg-white\/80 {
+  background-color: rgba(30, 41, 59, 0.95) !important;
+}
+
+html.dark .bg-slate-100,
+html.dark .bg-slate-100\/90,
+html.dark .bg-slate-100\/80 {
+  background-color: #263349 !important;
+}
+
+html.dark .bg-slate-200 {
+  background-color: #334155 !important;
+}
+
+/* Hover Surface States in Dark Mode */
+html.dark .hover\:bg-slate-50:hover,
+html.dark .hover\:bg-slate-50\/80:hover {
+  background-color: #263349 !important;
+}
+
+html.dark .hover\:bg-slate-100:hover,
+html.dark .hover\:bg-slate-100\/80:hover,
+html.dark .hover\:bg-slate-200:hover {
+  background-color: #334155 !important;
+}
+
+/* Crisp Text Contrast Hierarchy in Dark Mode */
+html.dark .text-slate-900 {
+  color: #f8fafc !important;
+}
+
+html.dark .text-slate-800 {
+  color: #f1f5f9 !important;
+}
+
+html.dark .text-slate-700 {
+  color: #e2e8f0 !important;
+}
+
+html.dark .text-slate-600 {
+  color: #cbd5e1 !important;
+}
+
+html.dark .text-slate-500 {
+  color: #94a3b8 !important;
+}
+
+html.dark .text-slate-400 {
+  color: #94a3b8 !important;
+}
+
+html.dark .hover\:text-slate-900:hover,
+html.dark .hover\:text-slate-800:hover {
+  color: #ffffff !important;
+}
+
+/* Borders & Table Dividers in Dark Mode */
+html.dark .border-slate-100,
+html.dark .border-slate-200,
+html.dark .border-slate-300 {
+  border-color: #334155 !important;
+}
+
+html.dark .divide-slate-100 > :not([hidden]) ~ :not([hidden]),
+html.dark .divide-slate-200 > :not([hidden]) ~ :not([hidden]) {
+  border-color: #334155 !important;
+}
+
+/* Semantic Status Badges & Accents in Dark Mode (Emerald / Amber / Rose / Blue / Indigo) */
+html.dark .bg-emerald-50,
+html.dark .bg-emerald-50\/30,
+html.dark .bg-emerald-50\/40,
+html.dark .bg-emerald-100 {
+  background-color: rgba(6, 78, 59, 0.5) !important;
+}
+
+html.dark .border-emerald-100,
+html.dark .border-emerald-200,
+html.dark .border-emerald-300 {
+  border-color: rgba(16, 185, 129, 0.45) !important;
+}
+
+html.dark .text-emerald-950,
+html.dark .text-emerald-900,
+html.dark .text-emerald-800,
+html.dark .text-emerald-700 {
+  color: #6ee7b7 !important;
+}
+
+html.dark .bg-amber-50,
+html.dark .bg-amber-50\/20,
+html.dark .bg-amber-50\/40,
+html.dark .bg-amber-100 {
+  background-color: rgba(120, 53, 15, 0.5) !important;
+}
+
+html.dark .border-amber-100,
+html.dark .border-amber-200,
+html.dark .border-amber-300 {
+  border-color: rgba(245, 158, 11, 0.45) !important;
+}
+
+html.dark .text-amber-950,
+html.dark .text-amber-900,
+html.dark .text-amber-800,
+html.dark .text-amber-700 {
+  color: #fcd34d !important;
+}
+
+html.dark .bg-rose-50,
+html.dark .bg-rose-50\/20,
+html.dark .bg-rose-50\/40,
+html.dark .bg-rose-100,
+html.dark .bg-red-50,
+html.dark .bg-red-100 {
+  background-color: rgba(136, 19, 55, 0.5) !important;
+}
+
+html.dark .border-rose-100,
+html.dark .border-rose-200,
+html.dark .border-rose-300,
+html.dark .border-red-200 {
+  border-color: rgba(244, 63, 94, 0.45) !important;
+}
+
+html.dark .text-rose-950,
+html.dark .text-rose-900,
+html.dark .text-rose-800,
+html.dark .text-rose-700,
+html.dark .text-red-800,
+html.dark .text-red-700 {
+  color: #fda4af !important;
+}
+
+html.dark .bg-blue-50,
+html.dark .bg-blue-100,
+html.dark .bg-sky-50,
+html.dark .bg-sky-100 {
+  background-color: rgba(12, 74, 110, 0.5) !important;
+}
+
+html.dark .border-blue-100,
+html.dark .border-blue-200,
+html.dark .border-sky-200 {
+  border-color: rgba(56, 189, 248, 0.45) !important;
+}
+
+html.dark .text-blue-900,
+html.dark .text-blue-800,
+html.dark .text-blue-700,
+html.dark .text-sky-800,
+html.dark .text-sky-700 {
+  color: #7dd3fc !important;
+}
+
+html.dark .bg-indigo-50,
+html.dark .bg-indigo-100,
+html.dark .bg-purple-50,
+html.dark .bg-purple-100 {
+  background-color: rgba(49, 46, 129, 0.5) !important;
+}
+
+html.dark .border-indigo-200,
+html.dark .border-purple-200 {
+  border-color: rgba(167, 139, 250, 0.45) !important;
+}
+
+html.dark .text-indigo-900,
+html.dark .text-indigo-800,
+html.dark .text-indigo-700,
+html.dark .text-purple-900,
+html.dark .text-purple-800,
+html.dark .text-purple-700 {
+  color: #c4b5fd !important;
+}
+
+/* Form Inputs, Selects & Textareas in Dark Mode */
+html.dark input:not([type="checkbox"]):not([type="radio"]),
+html.dark select,
+html.dark textarea {
+  background-color: #0f172a !important;
+  color: #f8fafc !important;
+  border-color: #475569 !important;
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+  color: #94a3b8 !important;
+}
+
+html.dark option {
+  background-color: #0f172a;
+  color: #f8fafc;
+}
+
+/* ============================================================================
+   2. PWD ACCESSIBILITY FEATURES
+   ============================================================================ */
+
+/* 2A. Font Scaling for Low Vision */
+html.a11y-font-large {
+  font-size: 112.5% !important;
+}
+
+html.a11y-font-xlarge {
+  font-size: 125% !important;
+}
+
+/* 2B. Dyslexia-Friendly Typography & Spacing */
+html.a11y-dyslexia-font,
+html.a11y-dyslexia-font body,
+html.a11y-dyslexia-font button,
+html.a11y-dyslexia-font input,
+html.a11y-dyslexia-font select,
+html.a11y-dyslexia-font textarea {
+  font-family: 'Comic Sans MS', 'Trebuchet MS', 'Verdana', 'Arial', sans-serif !important;
+  letter-spacing: 0.035em !important;
+  word-spacing: 0.1em !important;
+  line-height: 1.65 !important;
+}
+
+/* 2C. High Contrast Mode (WCAG AAA) */
+html.a11y-high-contrast:not(.dark) {
+  filter: contrast(1.18);
+}
+
+html.a11y-high-contrast.dark {
+  filter: contrast(1.22);
+}
+
+html.a11y-high-contrast * {
+  border-width: revert;
+}
+
+html.a11y-high-contrast .text-slate-500,
+html.a11y-high-contrast .text-slate-400 {
+  color: #1e293b !important;
+  font-weight: 600 !important;
+}
+
+html.a11y-high-contrast.dark .text-slate-500,
+html.a11y-high-contrast.dark .text-slate-400,
+html.a11y-high-contrast.dark .text-slate-300 {
+  color: #ffffff !important;
+  font-weight: 600 !important;
+}
+
+/* 2D. Keyboard Focus Highlight Rings */
+html.a11y-focus-highlight a:focus,
+html.a11y-focus-highlight button:focus,
+html.a11y-focus-highlight input:focus,
+html.a11y-focus-highlight select:focus,
+html.a11y-focus-highlight textarea:focus,
+html.a11y-focus-highlight [tabindex]:focus {
+  outline: 3px solid #f59e0b !important;
+  outline-offset: 2px !important;
+  box-shadow: 0 0 0 5px rgba(245, 158, 11, 0.35) !important;
+}
+
+/* 2E. Underline All Links & Interactive Navigation */
+html.a11y-underline-links a,
+html.a11y-underline-links nav button {
+  text-decoration: underline !important;
+  text-underline-offset: 3px !important;
+  text-decoration-thickness: 2px !important;
+}
+
+/* 2F. Reduce Motion & Stop Flashing */
+html.a11y-reduce-motion *,
+html.a11y-reduce-motion *::before,
+html.a11y-reduce-motion *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+  scroll-behavior: auto !important;
+}
+
+/* 2G. Enhanced Target & Cursor Assist for Motor Disabilities */
+html.a11y-large-cursor,
+html.a11y-large-cursor * {
+  cursor: pointer;
+}
+
+html.a11y-large-cursor button,
+html.a11y-large-cursor a,
+html.a11y-large-cursor select,
+html.a11y-large-cursor input {
+  min-height: 38px;
+}
+
+/* 2H. Color Vision Deficiency (Colorblind) Filters */
+html[data-colorblind="protanopia"] body {
+  filter: url(#a11y-protanopia-filter);
+}
+
+html[data-colorblind="deuteranopia"] body {
+  filter: url(#a11y-deuteranopia-filter);
+}
+
+html[data-colorblind="tritanopia"] body {
+  filter: url(#a11y-tritanopia-filter);
+}
+
+html[data-colorblind="monochrome"] body {
+  filter: grayscale(100%) contrast(1.15);
+}

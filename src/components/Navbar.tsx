@@ -15,9 +15,13 @@ import {
   CheckCircle2,
   BarChart3,
   Activity,
+  Sun,
+  Moon,
+  Accessibility,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useElection } from '../context/ElectionContext';
+import { useThemeAccessibility } from '../context/ThemeAccessibilityContext';
 import { UserRole } from '../types';
 import { NerampLogo } from './NerampLogo';
 
@@ -25,6 +29,7 @@ export const Navbar: React.FC = () => {
   const location = useLocation();
   const { role, switchRole, user, isAuthenticated, logout } = useAuth();
   const { elections, selectedElectionId, setSelectedElectionId } = useElection();
+  const { theme, toggleTheme, activePwdFeaturesCount } = useThemeAccessibility();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [roleMenuOpen, setRoleMenuOpen] = useState(false);
 
@@ -110,6 +115,13 @@ export const Navbar: React.FC = () => {
 
   return (
     <header className="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-xs">
+      {/* Keyboard Skip Link for PWD Accessibility */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:px-4 focus:py-2 focus:bg-amber-400 focus:text-slate-950 focus:font-bold focus:rounded-md focus:shadow-lg"
+      >
+        Skip to Main Content
+      </a>
       {/* Top Header Bar */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 border-b border-slate-100">
@@ -144,6 +156,45 @@ export const Navbar: React.FC = () => {
                   </option>
                 ))}
               </select>
+            </div>
+
+            {/* Theme Background Switch (Bright / Dark) & PWD Accessibility Controls */}
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={toggleTheme}
+                aria-label={theme === 'dark' ? 'Switch to Bright Mode' : 'Switch to Dark Mode'}
+                title={theme === 'dark' ? 'Switch to Bright Mode' : 'Switch to Dark Mode'}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-800 text-xs font-semibold transition-colors cursor-pointer"
+              >
+                {theme === 'dark' ? (
+                  <>
+                    <Sun className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Bright</span>
+                  </>
+                ) : (
+                  <>
+                    <Moon className="w-3.5 h-3.5 text-slate-700" />
+                    <span>Dark</span>
+                  </>
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => window.dispatchEvent(new CustomEvent('open-pwd-accessibility'))}
+                aria-label="Open PWD Accessibility Settings"
+                title="PWD Accessibility Options (Alt + A)"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-900 text-xs font-bold transition-colors cursor-pointer"
+              >
+                <Accessibility className="w-3.5 h-3.5 text-emerald-700" />
+                <span>PWD Access</span>
+                {activePwdFeaturesCount > 0 && (
+                  <span className="px-1.5 py-0.2 text-[10px] font-mono font-black rounded-full bg-amber-400 text-slate-950">
+                    {activePwdFeaturesCount}
+                  </span>
+                )}
+              </button>
             </div>
 
             {/* Management User Profile or Hidden for Public */}
@@ -216,8 +267,28 @@ export const Navbar: React.FC = () => {
             ) : null}
           </div>
 
-          {/* Mobile menu button */}
-          <div className="flex lg:hidden items-center gap-2">
+          {/* Mobile menu & quick theme/PWD buttons */}
+          <div className="flex lg:hidden items-center gap-1.5">
+            <button
+              type="button"
+              onClick={toggleTheme}
+              aria-label={theme === 'dark' ? 'Switch to Bright Mode' : 'Switch to Dark Mode'}
+              className="p-2 rounded-md border border-slate-200 bg-slate-50 text-slate-700 hover:text-slate-900 cursor-pointer"
+            >
+              {theme === 'dark' ? (
+                <Sun className="w-4 h-4 text-amber-400" />
+              ) : (
+                <Moon className="w-4 h-4 text-slate-700" />
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={() => window.dispatchEvent(new CustomEvent('open-pwd-accessibility'))}
+              aria-label="Open PWD Accessibility Settings"
+              className="p-2 rounded-md border border-emerald-200 bg-emerald-50 text-emerald-800 cursor-pointer"
+            >
+              <Accessibility className="w-4 h-4" />
+            </button>
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="p-2 text-slate-600 hover:text-slate-900 rounded-md focus:outline-hidden"

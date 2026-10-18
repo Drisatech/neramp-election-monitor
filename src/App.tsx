@@ -3,7 +3,9 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './context/AuthContext';
 import { ElectionProvider } from './context/ElectionContext';
+import { ThemeAccessibilityProvider } from './context/ThemeAccessibilityContext';
 import { Navbar } from './components/Navbar';
+import { AccessibilityMenu } from './components/AccessibilityMenu';
 import { ProtectedRoute } from './components/ProtectedRoute';
 
 // Pages
@@ -28,15 +30,19 @@ const queryClient = new QueryClient();
 export function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <ElectionProvider>
-          <BrowserRouter>
-            <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-900">
-              {/* Main App Navigation */}
-              <Navbar />
+      <ThemeAccessibilityProvider>
+        <AuthProvider>
+          <ElectionProvider>
+            <BrowserRouter>
+              <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-900 transition-colors">
+                {/* Main App Navigation */}
+                <Navbar />
 
-              {/* Page Content Body */}
-              <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+                {/* PWD Accessibility & Theme Drawer + Floating Quick Trigger */}
+                <AccessibilityMenu />
+
+                {/* Page Content Body */}
+                <main id="main-content" className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
                 <Routes>
                   {/* Public Open Routes */}
                   <Route path="/" element={<PublicDashboardPage />} />
@@ -227,10 +233,11 @@ export function App() {
                   </div>
                 </div>
               </footer>
-            </div>
-          </BrowserRouter>
-        </ElectionProvider>
-      </AuthProvider>
+              </div>
+            </BrowserRouter>
+          </ElectionProvider>
+        </AuthProvider>
+      </ThemeAccessibilityProvider>
     </QueryClientProvider>
   );
 }
