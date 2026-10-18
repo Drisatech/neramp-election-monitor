@@ -90,7 +90,7 @@ export const ReadinessTestingPage: React.FC = () => {
             <div className="flex items-center gap-2">
               <span className="px-2.5 py-0.5 rounded text-[11px] font-mono font-bold bg-emerald-500 text-slate-950 flex items-center gap-1">
                 <ShieldCheck className="w-3.5 h-3.5" />
-                AUDIT VERIFIED: READY FOR 2027 ELECTIONS
+                AUDIT VERIFIED: SYSTEM ELECTION READY
               </span>
               <span className="text-xs font-mono text-emerald-400">
                 Automated Tests: {data?.unitTestsPassed}/{data?.unitTestsTotal} Passed (100%)

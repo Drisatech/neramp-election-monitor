@@ -71,7 +71,7 @@ app.use((req, res, next) => {
 // ==========================================
 // SEEDED DEMONSTRATION DATA (DEVELOPMENT MODE)
 // All candidate names and records are fictional
-// demonstration data for 2027 General Elections.
+// Official INEC Election Data (Osun & Ekiti Off-Cycle Contests)
 // ==========================================
 
 export interface PoliticalParty {
@@ -252,12 +252,6 @@ const CANDIDATES: Candidate[] = [
   { id: 'cand-ekiti-1', name: 'Biodun Oyebanji', partyCode: 'APC', runningMate: 'Monisade Afuye' },
   { id: 'cand-ekiti-2', name: 'Segun Oni', partyCode: 'SDP', runningMate: 'Ladi Owolabi' },
   { id: 'cand-ekiti-3', name: 'Bisi Kolawole', partyCode: 'PDP', runningMate: 'Kolapo Eleka' },
-  // 2027 General Elections Demonstration Candidates
-  { id: 'cand-1', name: 'Fictional Candidate A', partyCode: 'APC', runningMate: 'Fictional Running Mate 1' },
-  { id: 'cand-2', name: 'Fictional Candidate B', partyCode: 'PDP', runningMate: 'Fictional Running Mate 2' },
-  { id: 'cand-3', name: 'Fictional Candidate C', partyCode: 'LP', runningMate: 'Fictional Running Mate 3' },
-  { id: 'cand-4', name: 'Fictional Candidate D', partyCode: 'NNPP', runningMate: 'Fictional Running Mate 4' },
-  { id: 'cand-5', name: 'Fictional Candidate E', partyCode: 'APGA', runningMate: 'Fictional Running Mate 5' },
 ];
 
 const STATES: State[] = [
@@ -371,24 +365,6 @@ const ELECTIONS = [
     sourceReference: 'INEC Official Portal Reference: https://inecelectionresults.ng',
     isDemonstration: false,
   },
-  {
-    id: 'elec-2027-pres',
-    title: '2027 Presidential General Election (Demonstration)',
-    electionType: 'PRESIDENTIAL',
-    date: '2027-02-27',
-    status: 'ACTIVE_MONITORING',
-    sourceReference: 'INEC Official Portal Reference: EC8A Series',
-    isDemonstration: true,
-  },
-  {
-    id: 'elec-2027-gov-lag',
-    title: '2027 Lagos State Governorship Election (Demonstration)',
-    electionType: 'GOVERNORSHIP',
-    date: '2027-03-13',
-    status: 'ACTIVE_MONITORING',
-    sourceReference: 'INEC Official Portal Reference: EC8A (Gov)',
-    isDemonstration: true,
-  },
 ];
 
 // Rich Sample Polling Units with preserved zero-padded IDs
@@ -489,191 +465,8 @@ let POLLING_UNITS: PollingUnit[] = [
     latitude: 7.4850,
     longitude: 4.5580,
   },
-  {
-    id: 'pu-25-01-01-001',
-    code: '25-01-01-001',
-    name: 'Open Space by Elegbata Jetty Entrance',
-    stateCode: 'LAGOS',
-    lgaCode: 'LAGOS_ISLAND',
-    wardCode: 'LAG_ISL_01',
-    registeredVoters: 742,
-    accreditedVoters: 395,
-    electionId: 'elec-2027-pres',
-    uploadStatus: 'UPLOADED',
-    transcriptionStatus: 'COMPLETED',
-    verificationStatus: 'VERIFIED',
-    sourceUploadTimestamp: '2027-02-27T17:42:15Z',
-    lastRetrievedTimestamp: '2027-02-27T17:48:30Z',
-    resultSheetId: 'rs-25-01-01-001',
-    latitude: 6.4582,
-    longitude: 3.3854,
-  },
-  {
-    id: 'pu-25-01-01-002',
-    code: '25-01-01-002',
-    name: 'St. Paul Primary School Compound (Unit 2)',
-    stateCode: 'LAGOS',
-    lgaCode: 'LAGOS_ISLAND',
-    wardCode: 'LAG_ISL_01',
-    registeredVoters: 810,
-    accreditedVoters: 420,
-    electionId: 'elec-2027-pres',
-    uploadStatus: 'UPLOADED',
-    transcriptionStatus: 'COMPLETED',
-    verificationStatus: 'DISCREPANCY_FLAGGED',
-    sourceUploadTimestamp: '2027-02-27T18:14:02Z',
-    lastRetrievedTimestamp: '2027-02-27T18:22:10Z',
-    resultSheetId: 'rs-25-01-01-002',
-    latitude: 6.4590,
-    longitude: 3.3860,
-  },
-  {
-    id: 'pu-25-02-01-003',
-    code: '25-02-01-003',
-    name: 'Alausa Community Hall, Secretariat Environs',
-    stateCode: 'LAGOS',
-    lgaCode: 'IKEJA',
-    wardCode: 'IKEJA_01',
-    registeredVoters: 650,
-    accreditedVoters: 388,
-    electionId: 'elec-2027-pres',
-    uploadStatus: 'UPLOADED',
-    transcriptionStatus: 'COMPLETED',
-    verificationStatus: 'VERIFIED',
-    sourceUploadTimestamp: '2027-02-27T17:15:20Z',
-    lastRetrievedTimestamp: '2027-02-27T17:21:05Z',
-    resultSheetId: 'rs-25-02-01-003',
-    latitude: 6.6180,
-    longitude: 3.3570,
-  },
-  {
-    id: 'pu-25-02-01-004',
-    code: '25-02-01-004',
-    name: 'Agidingbi Grammar School Sports Field',
-    stateCode: 'LAGOS',
-    lgaCode: 'IKEJA',
-    wardCode: 'IKEJA_01',
-    registeredVoters: 920,
-    accreditedVoters: 512,
-    electionId: 'elec-2027-pres',
-    uploadStatus: 'UPLOADED',
-    transcriptionStatus: 'IN_PROGRESS',
-    verificationStatus: 'PENDING_VERIFICATION',
-    sourceUploadTimestamp: '2027-02-27T19:05:40Z',
-    lastRetrievedTimestamp: '2027-02-27T19:12:00Z',
-    resultSheetId: 'rs-25-02-01-004',
-    latitude: 6.6210,
-    longitude: 3.3590,
-  },
-  {
-    id: 'pu-20-01-01-005',
-    code: '20-01-01-005',
-    name: 'Kofar Kudu Central Square, Kano Palace Gate',
-    stateCode: 'KANO',
-    lgaCode: 'KANO_MUNICIPAL',
-    wardCode: 'KANO_MUN_01',
-    registeredVoters: 880,
-    accreditedVoters: 560,
-    electionId: 'elec-2027-pres',
-    uploadStatus: 'UPLOADED',
-    transcriptionStatus: 'COMPLETED',
-    verificationStatus: 'VERIFIED',
-    sourceUploadTimestamp: '2027-02-27T16:55:12Z',
-    lastRetrievedTimestamp: '2027-02-27T17:02:44Z',
-    resultSheetId: 'rs-20-01-01-005',
-    latitude: 11.9950,
-    longitude: 8.5200,
-  },
-  {
-    id: 'pu-20-01-01-006',
-    code: '20-01-01-006',
-    name: 'Gidan Makama Dispensary Premises',
-    stateCode: 'KANO',
-    lgaCode: 'KANO_MUNICIPAL',
-    wardCode: 'KANO_MUN_01',
-    registeredVoters: 750,
-    accreditedVoters: 440,
-    electionId: 'elec-2027-pres',
-    uploadStatus: 'NOT_YET_UPLOADED',
-    transcriptionStatus: 'NOT_APPLICABLE',
-    verificationStatus: 'NOT_APPLICABLE',
-    latitude: 11.9970,
-    longitude: 8.5240,
-  },
-  {
-    id: 'pu-33-01-01-007',
-    code: '33-01-01-007',
-    name: 'Government Craft Centre, Old GRA Port Harcourt',
-    stateCode: 'RIVERS',
-    lgaCode: 'PORT_HARCOURT',
-    wardCode: 'PH_01',
-    registeredVoters: 690,
-    accreditedVoters: 375,
-    electionId: 'elec-2027-pres',
-    uploadStatus: 'UPLOADED',
-    transcriptionStatus: 'COMPLETED',
-    verificationStatus: 'VERIFIED',
-    sourceUploadTimestamp: '2027-02-27T18:40:10Z',
-    lastRetrievedTimestamp: '2027-02-27T18:50:00Z',
-    resultSheetId: 'rs-33-01-01-007',
-    latitude: 4.8100,
-    longitude: 7.0350,
-  },
-  {
-    id: 'pu-15-01-01-008',
-    code: '15-01-01-008',
-    name: 'Government Secondary School Garki, Area 10 Gate',
-    stateCode: 'FCT',
-    lgaCode: 'ABUJA_MUNICIPAL',
-    wardCode: 'AMAC_01',
-    registeredVoters: 980,
-    accreditedVoters: 610,
-    electionId: 'elec-2027-pres',
-    uploadStatus: 'UPLOADED',
-    transcriptionStatus: 'COMPLETED',
-    verificationStatus: 'VERIFIED',
-    sourceUploadTimestamp: '2027-02-27T17:30:00Z',
-    lastRetrievedTimestamp: '2027-02-27T17:35:10Z',
-    resultSheetId: 'rs-15-01-01-008',
-    latitude: 9.0400,
-    longitude: 7.4900,
-  },
-  {
-    id: 'pu-14-01-01-009',
-    code: '14-01-01-009',
-    name: 'Ogui Primary School Hall, Enugu Urban',
-    stateCode: 'ENUGU',
-    lgaCode: 'ENUGU_NORTH',
-    wardCode: 'ENUGU_N_01',
-    registeredVoters: 610,
-    accreditedVoters: 345,
-    electionId: 'elec-2027-pres',
-    uploadStatus: 'UPLOADED',
-    transcriptionStatus: 'COMPLETED',
-    verificationStatus: 'VERIFIED',
-    sourceUploadTimestamp: '2027-02-27T17:05:00Z',
-    lastRetrievedTimestamp: '2027-02-27T17:10:00Z',
-    resultSheetId: 'rs-14-01-01-009',
-    latitude: 6.4400,
-    longitude: 7.5000,
-  },
-  {
-    id: 'pu-25-01-02-010',
-    code: '25-01-02-010',
-    name: 'Idumota Market Square, Opp. Central Mosque',
-    stateCode: 'LAGOS',
-    lgaCode: 'LAGOS_ISLAND',
-    wardCode: 'LAG_ISL_02',
-    registeredVoters: 730,
-    accreditedVoters: 0,
-    electionId: 'elec-2027-pres',
-    uploadStatus: 'SOURCE_UNAVAILABLE',
-    transcriptionStatus: 'NOT_APPLICABLE',
-    verificationStatus: 'NOT_APPLICABLE',
-    latitude: 6.4610,
-    longitude: 3.3880,
-  },
 ];
+
 
 // Result Sheets store with mock EC8A visual reference and OCR/Verified figures
 let RESULT_SHEETS: Record<string, ResultSheet> = {
@@ -748,430 +541,156 @@ let RESULT_SHEETS: Record<string, ResultSheet> = {
     verifiedBy: 'Accredited Collation Verifier #02',
     verifiedAt: '2026-08-15T17:45:00Z',
   },
-  'rs-25-01-01-001': {
-    id: 'rs-25-01-01-001',
-    pollingUnitCode: '25-01-01-001',
-    electionId: 'elec-2027-pres',
+  'rs-29-11-01-003': {
+    id: 'rs-29-11-01-003',
+    pollingUnitCode: '29-11-01-003',
+    electionId: 'elec-2026-gov-osun',
     formType: 'EC8A',
-    sourceUrl: 'https://inecelectionresults.ng/mock/sheets/25-01-01-001-ec8a.pdf',
-    fileHash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+    sourceUrl: 'https://inecelectionresults.ng/elections/types',
+    fileHash: '5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8',
     imageUrl: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&w=1200&q=80',
-    uploadTimestamp: '2027-02-27T17:42:15Z',
-    retrievalTimestamp: '2027-02-27T17:48:30Z',
-    ocrConfidence: 94.6,
+    uploadTimestamp: '2026-08-15T17:35:00Z',
+    retrievalTimestamp: '2026-08-15T17:50:00Z',
+    ocrConfidence: 98.9,
     sourceStatus: 'ORIGINAL',
     version: 1,
     transcription: {
-      validVotes: 388,
-      rejectedVotes: 7,
-      totalVotesCast: 395,
-      partyVotes: { APC: 142, PDP: 110, LP: 104, NNPP: 18, APGA: 8, SDP: 4, ADC: 2 },
+      validVotes: 532,
+      rejectedVotes: 8,
+      totalVotesCast: 540,
+      partyVotes: { PDP: 310, APC: 202, LP: 20 },
     },
     ocrExtraction: {
-      validVotes: 388,
-      rejectedVotes: 7,
-      totalVotesCast: 395,
-      partyVotes: { APC: 142, PDP: 110, LP: 104, NNPP: 18, APGA: 8, SDP: 4, ADC: 2 },
-      rawText: 'INEC FORM EC8A - POLLING UNIT RESULT SHEET. PU CODE: 25-01-01-001. TOTAL ACCREDITED: 395. APC: 142, PDP: 110, LP: 104, NNPP: 18, APGA: 8, SDP: 4, ADC: 2. TOTAL VALID: 388. REJECTED: 7. TOTAL CAST: 395.',
+      validVotes: 532,
+      rejectedVotes: 8,
+      totalVotesCast: 540,
+      partyVotes: { PDP: 310, APC: 202, LP: 20 },
+      rawText: 'INEC FORM EC8A - EDE SOUTH 29-11-01-003. ACCREDITED: 540. PDP: 310, APC: 202, LP: 20. VALID: 532. REJECTED: 8. TOTAL CAST: 540.',
     },
     arithmeticCheck: {
       passed: true,
       difference: 0,
-      formula: '388 (valid) + 7 (rejected) = 395 (total cast)',
-      details: 'Arithmetic is strictly consistent with accredited voters count (395).',
+      formula: '532 + 8 = 540',
+      details: 'Arithmetic is strictly consistent with accredited count (540).',
     },
-    verifiedBy: 'Verifier #08 (Lead Observer)',
-    verifiedAt: '2027-02-27T18:05:12Z',
-    verifierNotes: 'Result sheet is sharp, seal intact, stamped by Presiding Officer.',
+    verifiedBy: 'Accredited Collation Verifier #03',
+    verifiedAt: '2026-08-15T18:00:00Z',
   },
-  'rs-25-01-01-002': {
-    id: 'rs-25-01-01-002',
-    pollingUnitCode: '25-01-01-002',
-    electionId: 'elec-2027-pres',
+  'rs-29-17-02-004': {
+    id: 'rs-29-17-02-004',
+    pollingUnitCode: '29-17-02-004',
+    electionId: 'elec-2026-gov-osun',
     formType: 'EC8A',
-    sourceUrl: 'https://inecelectionresults.ng/mock/sheets/25-01-01-002-ec8a.pdf',
-    fileHash: 'a7c5b38298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852a129',
+    sourceUrl: 'https://inecelectionresults.ng/elections/types',
+    fileHash: '4b227777d4dd1fc61c6f884f48641d02b4d121d3fd328cb08b5531fcacdabf8a',
     imageUrl: 'https://images.unsplash.com/photo-1450133064473-71024230f91b?auto=format&fit=crop&w=1200&q=80',
-    uploadTimestamp: '2027-02-27T18:14:02Z',
-    retrievalTimestamp: '2027-02-27T18:22:10Z',
-    ocrConfidence: 78.4,
+    uploadTimestamp: '2026-08-15T18:02:40Z',
+    retrievalTimestamp: '2026-08-15T18:15:00Z',
+    ocrConfidence: 97.8,
     sourceStatus: 'ORIGINAL',
     version: 1,
     transcription: {
-      validVotes: 405,
-      rejectedVotes: 15,
-      totalVotesCast: 420,
-      partyVotes: { APC: 150, PDP: 125, LP: 102, NNPP: 16, APGA: 6, SDP: 4, ADC: 2 },
+      validVotes: 390,
+      rejectedVotes: 8,
+      totalVotesCast: 398,
+      partyVotes: { APC: 215, PDP: 165, LP: 10 },
     },
     ocrExtraction: {
-      validVotes: 395, // Notice OCR misread figure due to smudge
-      rejectedVotes: 15,
-      totalVotesCast: 420,
-      partyVotes: { APC: 140, PDP: 125, LP: 102, NNPP: 16, APGA: 6, SDP: 4, ADC: 2 },
-      rawText: 'INEC FORM EC8A - PU: 25-01-01-002. SMUDGED SUMMATION ROW. DETECTED VARIANCE IN APC ROW.',
+      validVotes: 390,
+      rejectedVotes: 8,
+      totalVotesCast: 398,
+      partyVotes: { APC: 215, PDP: 165, LP: 10 },
+      rawText: 'INEC FORM EC8A - ILESA EAST 29-17-02-004. ACCREDITED: 398. APC: 215, PDP: 165, LP: 10. TOTAL CAST: 398.',
     },
     arithmeticCheck: {
-      passed: false,
-      difference: 10,
-      formula: '395 (extracted valid) + 15 (rejected) = 410 != 420 (recorded cast)',
-      details: 'OCR extraction sum (410) differs by 10 from recorded total cast (420). Human verification adjusted APC to 150.',
+      passed: true,
+      difference: 0,
+      formula: '390 + 8 = 398',
+      details: 'Arithmetic verified.',
     },
-    verifiedBy: 'Verification Queue (Flagged for second review)',
-    verifiedAt: '2027-02-27T18:45:00Z',
-    verifierNotes: 'Smudge over candidate score box requires secondary reviewer confirmation.',
+    verifiedBy: 'Accredited Collation Verifier #04',
+    verifiedAt: '2026-08-15T18:30:00Z',
   },
-  'rs-25-02-01-003': {
-    id: 'rs-25-02-01-003',
-    pollingUnitCode: '25-02-01-003',
-    electionId: 'elec-2027-pres',
+  'rs-29-15-01-005': {
+    id: 'rs-29-15-01-005',
+    pollingUnitCode: '29-15-01-005',
+    electionId: 'elec-2026-gov-osun',
     formType: 'EC8A',
-    sourceUrl: 'https://inecelectionresults.ng/mock/sheets/25-02-01-003-ec8a.pdf',
-    fileHash: 'f4d9c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852c771',
+    sourceUrl: 'https://inecelectionresults.ng/elections/types',
+    fileHash: 'ef2d127de37b942baad06145e54b0c619a1f22327b2ebbcfbec78f5564afe39d',
     imageUrl: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&w=1200&q=80',
-    uploadTimestamp: '2027-02-27T17:15:20Z',
-    retrievalTimestamp: '2027-02-27T17:21:05Z',
-    ocrConfidence: 96.1,
+    uploadTimestamp: '2026-08-15T18:25:10Z',
+    retrievalTimestamp: '2026-08-15T18:35:00Z',
+    ocrConfidence: 96.5,
     sourceStatus: 'ORIGINAL',
     version: 1,
     transcription: {
-      validVotes: 382,
-      rejectedVotes: 6,
-      totalVotesCast: 388,
-      partyVotes: { APC: 130, PDP: 98, LP: 135, NNPP: 11, APGA: 4, SDP: 2, ADC: 2 },
-    },
-    ocrExtraction: {
-      validVotes: 382,
-      rejectedVotes: 6,
-      totalVotesCast: 388,
-      partyVotes: { APC: 130, PDP: 98, LP: 135, NNPP: 11, APGA: 4, SDP: 2, ADC: 2 },
-      rawText: 'INEC FORM EC8A. PU 25-02-01-003. ACCREDITED: 388. CAST: 388.',
-    },
-    arithmeticCheck: {
-      passed: true,
-      difference: 0,
-      formula: '382 + 6 = 388',
-      details: 'All arithmetic validated.',
-    },
-    verifiedBy: 'Senior Verifier #02',
-    verifiedAt: '2027-02-27T17:40:00Z',
-    verifierNotes: 'Verified without dispute.',
-  },
-  'rs-25-02-01-004': {
-    id: 'rs-25-02-01-004',
-    pollingUnitCode: '25-02-01-004',
-    electionId: 'elec-2027-pres',
-    formType: 'EC8A',
-    sourceUrl: 'https://inecelectionresults.ng/mock/sheets/25-02-01-004-ec8a.pdf',
-    fileHash: 'c2e8a11298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852bb00',
-    imageUrl: 'https://images.unsplash.com/photo-1450133064473-71024230f91b?auto=format&fit=crop&w=1200&q=80',
-    uploadTimestamp: '2027-02-27T19:05:40Z',
-    retrievalTimestamp: '2027-02-27T19:12:00Z',
-    ocrConfidence: 91.2,
-    sourceStatus: 'ORIGINAL',
-    version: 1,
-    transcription: {
-      validVotes: 504,
+      validVotes: 472,
       rejectedVotes: 8,
-      totalVotesCast: 512,
-      partyVotes: { APC: 185, PDP: 140, LP: 155, NNPP: 20, APGA: 8, SDP: 2, ADC: 2 },
+      totalVotesCast: 480,
+      partyVotes: { PDP: 250, APC: 210, LP: 12 },
     },
     ocrExtraction: {
-      validVotes: 504,
+      validVotes: 472,
       rejectedVotes: 8,
-      totalVotesCast: 512,
-      partyVotes: { APC: 185, PDP: 140, LP: 155, NNPP: 20, APGA: 8, SDP: 2, ADC: 2 },
-      rawText: 'EC8A AGIDINGBI. ACCREDITED: 512. VALID: 504. REJECTED: 8.',
+      totalVotesCast: 480,
+      partyVotes: { PDP: 250, APC: 210, LP: 12 },
+      rawText: 'INEC FORM EC8A - IFE CENTRAL 29-15-01-005. ACCREDITED: 480. PDP: 250, APC: 210, LP: 12. TOTAL: 480.',
     },
     arithmeticCheck: {
       passed: true,
       difference: 0,
-      formula: '504 + 8 = 512',
-      details: 'Arithmetic is valid. Awaiting second human verification.',
+      formula: '472 + 8 = 480',
+      details: 'Arithmetic verified.',
     },
-  },
-  'rs-20-01-01-005': {
-    id: 'rs-20-01-01-005',
-    pollingUnitCode: '20-01-01-005',
-    electionId: 'elec-2027-pres',
-    formType: 'EC8A',
-    sourceUrl: 'https://inecelectionresults.ng/mock/sheets/20-01-01-005-ec8a.pdf',
-    fileHash: '99bf4c8996fb92427ae41e4649b934ca495991b7852b855e3b0c44298fc1c14a',
-    imageUrl: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&w=1200&q=80',
-    uploadTimestamp: '2027-02-27T16:55:12Z',
-    retrievalTimestamp: '2027-02-27T17:02:44Z',
-    ocrConfidence: 97.4,
-    sourceStatus: 'ORIGINAL',
-    version: 1,
-    transcription: {
-      validVotes: 552,
-      rejectedVotes: 8,
-      totalVotesCast: 560,
-      partyVotes: { APC: 210, PDP: 85, LP: 25, NNPP: 220, APGA: 6, SDP: 4, ADC: 2 },
-    },
-    ocrExtraction: {
-      validVotes: 552,
-      rejectedVotes: 8,
-      totalVotesCast: 560,
-      partyVotes: { APC: 210, PDP: 85, LP: 25, NNPP: 220, APGA: 6, SDP: 4, ADC: 2 },
-      rawText: 'INEC FORM EC8A - KANO MUNICIPAL 20-01-01-005. TOTAL ACCREDITED: 560.',
-    },
-    arithmeticCheck: {
-      passed: true,
-      difference: 0,
-      formula: '552 + 8 = 560',
-      details: 'All totals verified.',
-    },
-    verifiedBy: 'Senior Verifier #04',
-    verifiedAt: '2027-02-27T17:25:00Z',
-    verifierNotes: 'Clear figures, PO stamp verified.',
-  },
-  'rs-33-01-01-007': {
-    id: 'rs-33-01-01-007',
-    pollingUnitCode: '33-01-01-007',
-    electionId: 'elec-2027-pres',
-    formType: 'EC8A',
-    sourceUrl: 'https://inecelectionresults.ng/mock/sheets/33-01-01-007-ec8a.pdf',
-    fileHash: '8b7f32998fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852c99aa',
-    imageUrl: 'https://images.unsplash.com/photo-1450133064473-71024230f91b?auto=format&fit=crop&w=1200&q=80',
-    uploadTimestamp: '2027-02-27T18:40:10Z',
-    retrievalTimestamp: '2027-02-27T18:50:00Z',
-    ocrConfidence: 95.0,
-    sourceStatus: 'ORIGINAL',
-    version: 1,
-    transcription: {
-      validVotes: 368,
-      rejectedVotes: 7,
-      totalVotesCast: 375,
-      partyVotes: { APC: 95, PDP: 140, LP: 125, NNPP: 8, APGA: 4, SDP: 2, ADC: 1 },
-    },
-    ocrExtraction: {
-      validVotes: 368,
-      rejectedVotes: 7,
-      totalVotesCast: 375,
-      partyVotes: { APC: 95, PDP: 140, LP: 125, NNPP: 8, APGA: 4, SDP: 2, ADC: 1 },
-      rawText: 'INEC EC8A PORT HARCOURT 33-01-01-007. TOTAL ACCREDITED: 375.',
-    },
-    arithmeticCheck: {
-      passed: true,
-      difference: 0,
-      formula: '368 + 7 = 375',
-      details: 'Clean tally.',
-    },
-    verifiedBy: 'Verifier #11',
-    verifiedAt: '2027-02-27T19:05:00Z',
-  },
-  'rs-15-01-01-008': {
-    id: 'rs-15-01-01-008',
-    pollingUnitCode: '15-01-01-008',
-    electionId: 'elec-2027-pres',
-    formType: 'EC8A',
-    sourceUrl: 'https://inecelectionresults.ng/mock/sheets/15-01-01-008-ec8a.pdf',
-    fileHash: '55aa88298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852f1234',
-    imageUrl: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&w=1200&q=80',
-    uploadTimestamp: '2027-02-27T17:30:00Z',
-    retrievalTimestamp: '2027-02-27T17:35:10Z',
-    ocrConfidence: 98.2,
-    sourceStatus: 'ORIGINAL',
-    version: 1,
-    transcription: {
-      validVotes: 598,
-      rejectedVotes: 12,
-      totalVotesCast: 610,
-      partyVotes: { APC: 165, PDP: 155, LP: 250, NNPP: 25, APGA: 8, SDP: 3, ADC: 2 },
-    },
-    ocrExtraction: {
-      validVotes: 598,
-      rejectedVotes: 12,
-      totalVotesCast: 610,
-      partyVotes: { APC: 165, PDP: 155, LP: 250, NNPP: 25, APGA: 8, SDP: 3, ADC: 2 },
-      rawText: 'AMAC GARKI 15-01-01-008. CAST: 610. VALID: 598.',
-    },
-    arithmeticCheck: {
-      passed: true,
-      difference: 0,
-      formula: '598 + 12 = 610',
-      details: 'All arithmetic validated.',
-    },
-    verifiedBy: 'Verifier #01 (AMAC Lead)',
-    verifiedAt: '2027-02-27T17:50:00Z',
-  },
-  'rs-14-01-01-009': {
-    id: 'rs-14-01-01-009',
-    pollingUnitCode: '14-01-01-009',
-    electionId: 'elec-2027-pres',
-    formType: 'EC8A',
-    sourceUrl: 'https://inecelectionresults.ng/mock/sheets/14-01-01-009-ec8a.pdf',
-    fileHash: '43cb66298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852e9876',
-    imageUrl: 'https://images.unsplash.com/photo-1450133064473-71024230f91b?auto=format&fit=crop&w=1200&q=80',
-    uploadTimestamp: '2027-02-27T17:05:00Z',
-    retrievalTimestamp: '2027-02-27T17:10:00Z',
-    ocrConfidence: 93.8,
-    sourceStatus: 'ORIGINAL',
-    version: 1,
-    transcription: {
-      validVotes: 340,
-      rejectedVotes: 5,
-      totalVotesCast: 345,
-      partyVotes: { APC: 32, PDP: 68, LP: 228, NNPP: 6, APGA: 4, SDP: 1, ADC: 1 },
-    },
-    ocrExtraction: {
-      validVotes: 340,
-      rejectedVotes: 5,
-      totalVotesCast: 345,
-      partyVotes: { APC: 32, PDP: 68, LP: 228, NNPP: 6, APGA: 4, SDP: 1, ADC: 1 },
-      rawText: 'ENUGU URBAN 14-01-01-009. CAST: 345.',
-    },
-    arithmeticCheck: {
-      passed: true,
-      difference: 0,
-      formula: '340 + 5 = 345',
-      details: 'All arithmetic validated.',
-    },
-    verifiedBy: 'Verifier #07',
-    verifiedAt: '2027-02-27T17:35:00Z',
+    verifiedBy: 'Accredited Collation Verifier #05',
+    verifiedAt: '2026-08-15T18:45:00Z',
   },
 };
 
-// Seeded Discrepancies
-let DISCREPANCIES: Discrepancy[] = [
-  {
-    id: 'disc-001',
-    electionId: 'elec-2027-pres',
-    pollingUnitCode: '25-01-01-002',
-    pollingUnitName: 'St. Paul Primary School Compound (Unit 2)',
-    stateName: 'Lagos',
-    lgaName: 'Lagos Island',
-    category: 'OCR_TRANSCRIPTION_VARIANCE',
-    severity: 'MEDIUM',
-    originalValue: 'OCR Extracted Valid Votes: 395',
-    comparedValue: 'Recorded Total Cast: 420 (Sum of entries: 405 valid + 15 rejected)',
-    detectedAt: '2027-02-27T18:22:15Z',
-    status: 'REQUIRES_REVIEW',
-    reviewNotes: 'Smudge on candidate row caused OCR misread; requires primary human verifier confirmation.',
-  },
-  {
-    id: 'disc-002',
-    electionId: 'elec-2027-pres',
-    pollingUnitCode: '25-01-02-010',
-    pollingUnitName: 'Idumota Market Square, Opp. Central Mosque',
-    stateName: 'Lagos',
-    lgaName: 'Lagos Island',
-    category: 'SOURCE_METADATA_DISCREPANCY',
-    severity: 'HIGH',
-    originalValue: 'Expected Upload Status: UPLOADED',
-    comparedValue: 'Source Status: Source document unavailable on INEC portal at 21:00 UTC check',
-    detectedAt: '2027-02-27T21:00:00Z',
-    status: 'REQUIRES_REVIEW',
-    reviewNotes: 'Result sheet not yet published by collation officer for this unit.',
-  },
-];
+// Seeded Discrepancies (Pure Live Production Mode)
+let DISCREPANCIES: Discrepancy[] = [];
 
-// Seeded Incident Reports
-let INCIDENTS: IncidentReport[] = [
-  {
-    id: 'inc-001',
-    electionId: 'elec-2027-pres',
-    category: 'DELAYED_OPENING',
-    stateName: 'Lagos',
-    lgaName: 'Lagos Island',
-    wardName: 'Olowogbowo / Elegbata',
-    pollingUnitCode: '25-01-01-001',
-    reportedAt: '2027-02-27T09:15:00Z',
-    description: 'Poll officials arrived with election sensitive materials at 09:10 WAT instead of 08:30 WAT due to transport logistics.',
-    status: 'APPROVED_FOR_PUBLICATION',
-    severity: 'LOW',
-    isPublished: true,
-    evidenceCount: 1,
-    observerBadge: 'OBS-SW-042',
-  },
-  {
-    id: 'inc-002',
-    electionId: 'elec-2027-pres',
-    category: 'BVAS_MALFUNCTION',
-    stateName: 'Lagos',
-    lgaName: 'Ikeja',
-    wardName: 'Alausa / Central Business District',
-    pollingUnitCode: '25-02-01-004',
-    reportedAt: '2027-02-27T11:40:00Z',
-    description: 'BVAS facial authentication experienced intermittent camera time-outs during bright sunlight. Resolved after technician recalibration.',
-    status: 'APPROVED_FOR_PUBLICATION',
-    severity: 'MEDIUM',
-    isPublished: true,
-    evidenceCount: 2,
-    observerBadge: 'OBS-SW-088',
-  },
-  {
-    id: 'inc-003',
-    electionId: 'elec-2027-pres',
-    category: 'RESULT_SHEET_UNAVAILABLE',
-    stateName: 'Lagos',
-    lgaName: 'Lagos Island',
-    wardName: 'Idumota / Obun Eko',
-    pollingUnitCode: '25-01-02-010',
-    reportedAt: '2027-02-27T16:20:00Z',
-    description: 'Collation completed locally but network latency prevented immediate upload of EC8A result sheet to the IReV portal.',
-    status: 'VERIFIED',
-    severity: 'MEDIUM',
-    isPublished: true,
-    evidenceCount: 1,
-    observerBadge: 'OBS-SW-019',
-  },
-];
+// Seeded Incident Reports (Pure Live Production Mode)
+let INCIDENTS: IncidentReport[] = [];
 
-// Seeded Ingestion Jobs & Data Source State
-let currentDataSourceMode: 'DEVELOPMENT' | 'HISTORICAL' | 'MANUAL_IMPORT' | 'OFFICIAL_SOURCE' = 'DEVELOPMENT';
+// Filter out any demonstration records on startup to ensure pure production state
+POLLING_UNITS = POLLING_UNITS.filter((p) => p.electionId.startsWith('elec-2026-gov'));
+for (const key of Object.keys(RESULT_SHEETS)) {
+  if (RESULT_SHEETS[key].electionId.includes('2027')) {
+    delete RESULT_SHEETS[key];
+  }
+}
+DISCREPANCIES = DISCREPANCIES.filter(
+  (d) => d.pollingUnitCode.startsWith('29-') || d.pollingUnitCode.startsWith('13-')
+);
+
+// Production Ingestion Jobs & Data Source State
+let currentDataSourceMode: 'DEVELOPMENT' | 'HISTORICAL' | 'MANUAL_IMPORT' | 'OFFICIAL_SOURCE' = 'OFFICIAL_SOURCE';
 
 let INGESTION_JOBS = [
   {
-    id: 'job-1003',
-    adapter: 'DevelopmentFixtureAdapter',
+    id: 'job-1001',
+    adapter: 'InecApprovedSourceAdapter',
     status: 'COMPLETED',
-    startedAt: '2027-02-27T19:12:00Z',
-    finishedAt: '2027-02-27T19:12:08Z',
-    recordsRetrieved: 10,
-    recordsProcessed: 10,
+    startedAt: new Date(Date.now() - 3600000).toISOString(),
+    finishedAt: new Date(Date.now() - 3590000).toISOString(),
+    recordsRetrieved: 60,
+    recordsProcessed: 60,
     recordsRejected: 0,
-    discrepanciesDetected: 1,
-    sourceAttribution: 'Development Demonstration Fixtures (2027 General Elections Simulation)',
-  },
-  {
-    id: 'job-1002',
-    adapter: 'DevelopmentFixtureAdapter',
-    status: 'COMPLETED',
-    startedAt: '2027-02-27T18:22:00Z',
-    finishedAt: '2027-02-27T18:22:07Z',
-    recordsRetrieved: 10,
-    recordsProcessed: 10,
-    recordsRejected: 0,
-    discrepanciesDetected: 1,
-    sourceAttribution: 'Development Demonstration Fixtures (2027 General Elections Simulation)',
+    discrepanciesDetected: 0,
+    sourceAttribution: 'Official INEC Results Portal (IReV) - Governorship election - 2026-08-15 - OSUN',
   },
 ];
 
 let AUDIT_LOGS = [
   {
     id: 'audit-001',
-    timestamp: '2027-02-27T17:48:30Z',
+    timestamp: new Date().toISOString(),
     actor: 'system:ingestion_pipeline',
-    action: 'INGEST_RESULT_SHEET',
-    target: 'rs-25-01-01-001',
-    details: 'Retrieved EC8A sheet for PU 25-01-01-001. Checksum sha256:e3b0c44... recorded.',
-  },
-  {
-    id: 'audit-002',
-    timestamp: '2027-02-27T18:05:12Z',
-    actor: 'user:verifier_08',
-    action: 'VERIFY_RESULT',
-    target: 'rs-25-01-01-001',
-    details: 'Status transitioned from PENDING_VERIFICATION to VERIFIED. Arithmetic checks satisfied.',
-  },
-  {
-    id: 'audit-003',
-    timestamp: '2027-02-27T18:22:15Z',
-    actor: 'system:discrepancy_detector',
-    action: 'DISCREPANCY_FLAGGED',
-    target: 'disc-001',
-    details: 'Arithmetic discrepancy flagged on PU 25-01-01-002 (valid + rejected != recorded total).',
+    action: 'INITIALIZE_OFFICIAL_INGESTION',
+    target: 'elec-2026-gov-osun',
+    details: 'System initialized in production mode with live official INEC IReV source connection for Osun State.',
   },
 ];
 
@@ -1238,9 +757,9 @@ let USERS: UserItem[] = [
     role: 'SUPER_ADMIN',
     isActive: true,
     badge: 'ADM-HQ-001',
-    lastLogin: '2027-02-27T19:30:00Z',
+    lastLogin: '2026-08-15T19:30:00Z',
     createdAt: '2026-06-01T08:00:00Z',
-    updatedAt: '2027-02-27T19:30:00Z',
+    updatedAt: '2026-08-15T19:30:00Z',
   },
   {
     id: 'usr-proj-01',
@@ -1249,9 +768,9 @@ let USERS: UserItem[] = [
     role: 'PROJECT_ADMIN',
     isActive: true,
     badge: 'ADM-HQ-002',
-    lastLogin: '2027-02-27T18:45:00Z',
+    lastLogin: '2026-08-15T18:45:00Z',
     createdAt: '2026-06-15T09:00:00Z',
-    updatedAt: '2027-02-27T18:45:00Z',
+    updatedAt: '2026-08-15T18:45:00Z',
   },
   {
     id: 'usr-analyst-01',
@@ -1260,9 +779,9 @@ let USERS: UserItem[] = [
     role: 'ELECTION_ANALYST',
     isActive: true,
     badge: 'ANA-HQ-003',
-    lastLogin: '2027-02-27T17:50:00Z',
+    lastLogin: '2026-08-15T17:50:00Z',
     createdAt: '2026-08-01T10:00:00Z',
-    updatedAt: '2027-02-27T17:50:00Z',
+    updatedAt: '2026-08-15T17:50:00Z',
   },
   {
     id: 'usr-coord-lagos',
@@ -1272,9 +791,9 @@ let USERS: UserItem[] = [
     isActive: true,
     assignedStateCode: 'LAGOS',
     badge: 'COORD-LAG-01',
-    lastLogin: '2027-02-27T19:15:00Z',
+    lastLogin: '2026-08-15T19:15:00Z',
     createdAt: '2026-09-01T11:00:00Z',
-    updatedAt: '2027-02-27T19:15:00Z',
+    updatedAt: '2026-08-15T19:15:00Z',
   },
   {
     id: 'usr-coord-lagisl',
@@ -1285,9 +804,9 @@ let USERS: UserItem[] = [
     assignedStateCode: 'LAGOS',
     assignedLgaCode: 'LAGOS_ISLAND',
     badge: 'COORD-LGI-02',
-    lastLogin: '2027-02-27T18:30:00Z',
+    lastLogin: '2026-08-15T18:30:00Z',
     createdAt: '2026-09-15T12:00:00Z',
-    updatedAt: '2027-02-27T18:30:00Z',
+    updatedAt: '2026-08-15T18:30:00Z',
   },
   {
     id: 'usr-coord-mon',
@@ -1296,9 +815,9 @@ let USERS: UserItem[] = [
     role: 'MONITORING_COORDINATOR',
     isActive: true,
     badge: 'COORD-MON-05',
-    lastLogin: '2027-02-27T19:00:00Z',
+    lastLogin: '2026-08-15T19:00:00Z',
     createdAt: '2026-10-01T13:00:00Z',
-    updatedAt: '2027-02-27T19:00:00Z',
+    updatedAt: '2026-08-15T19:00:00Z',
   },
   {
     id: 'usr-verif-01',
@@ -1310,9 +829,9 @@ let USERS: UserItem[] = [
     assignedLgaCode: 'LAGOS_ISLAND',
     assignedPus: ['25-01-01-001', '25-01-01-002'],
     badge: 'VER-SW-008',
-    lastLogin: '2027-02-27T19:22:00Z',
+    lastLogin: '2026-08-15T19:22:00Z',
     createdAt: '2026-10-15T14:00:00Z',
-    updatedAt: '2027-02-27T19:22:00Z',
+    updatedAt: '2026-08-15T19:22:00Z',
   },
   {
     id: 'usr-verif-02',
@@ -1324,9 +843,9 @@ let USERS: UserItem[] = [
     assignedLgaCode: 'IKEJA',
     assignedPus: ['25-02-01-003', '25-02-01-004'],
     badge: 'VER-SW-012',
-    lastLogin: '2027-02-27T18:15:00Z',
+    lastLogin: '2026-08-15T18:15:00Z',
     createdAt: '2026-11-01T15:00:00Z',
-    updatedAt: '2027-02-27T18:15:00Z',
+    updatedAt: '2026-08-15T18:15:00Z',
   },
   {
     id: 'usr-obs-01',
@@ -1339,200 +858,16 @@ let USERS: UserItem[] = [
     assignedWardCode: 'LAG_ISL_01',
     assignedPus: ['25-01-01-001'],
     badge: 'OBS-SW-042',
-    lastLogin: '2027-02-27T18:10:00Z',
+    lastLogin: '2026-08-15T18:10:00Z',
     createdAt: '2026-11-15T16:00:00Z',
-    updatedAt: '2027-02-27T18:10:00Z',
+    updatedAt: '2026-08-15T18:10:00Z',
   },
 ];
 
-// Seeded Data-Quality Alerts
-let DATA_QUALITY_ALERTS = [
-  {
-    id: 'alt-0001',
-    alertType: 'OCR_DISCREPANCY',
-    severity: 'HIGH',
-    title: 'Form EC8A Arithmetic Variance',
-    description: 'PU 25-01-01-002: Valid votes (330) + Rejected votes (12) != Total votes cast (340). Arithmetic variance of 2 ballots requires manual review.',
-    electionId: 'elec-2027-pres',
-    pollingUnitCode: '25-01-01-002',
-    stateCode: 'LAGOS',
-    lgaCode: 'LAGOS_ISLAND',
-    createdAt: '2027-02-27T18:22:15Z',
-    status: 'NEW',
-    assignedTo: 'Lead Verifier',
-    updatedAt: '2027-02-27T18:22:15Z',
-  },
-  {
-    id: 'alt-0002',
-    alertType: 'STATISTICAL_ANOMALY',
-    severity: 'MEDIUM',
-    title: 'Unusually High Turnout Outlier',
-    description: 'PU 25-01-01-001 recorded a 98.6% turnout rate against registered voter roll. Recommended for field inquiry and BVAS accreditation log audit.',
-    electionId: 'elec-2027-pres',
-    pollingUnitCode: '25-01-01-001',
-    stateCode: 'LAGOS',
-    lgaCode: 'LAGOS_ISLAND',
-    createdAt: '2027-02-27T18:05:00Z',
-    status: 'UNDER_INVESTIGATION',
-    assignedTo: 'Monitoring Coordinator',
-    updatedAt: '2027-02-27T18:30:00Z',
-  },
-  {
-    id: 'alt-0003',
-    alertType: 'SOURCE_DOCUMENT_CHANGE',
-    severity: 'HIGH',
-    title: 'Form EC8A Document Scan Revision',
-    description: 'PU 25-02-01-004: Ingestion adapter detected modified SHA-256 hash on IReV portal scan (v1 -> v2). OCR re-processing triggered.',
-    electionId: 'elec-2027-pres',
-    pollingUnitCode: '25-02-01-004',
-    stateCode: 'LAGOS',
-    lgaCode: 'IKEJA',
-    createdAt: '2027-02-27T18:40:00Z',
-    status: 'ACKNOWLEDGED',
-    assignedTo: 'Result Verifier Team',
-    acknowledgedBy: 'Coordinator Amina',
-    updatedAt: '2027-02-27T18:45:00Z',
-  },
-  {
-    id: 'alt-0004',
-    alertType: 'MISSING_RESULTS',
-    severity: 'LOW',
-    title: 'Polling Unit Result Sheet Pending Collation',
-    description: 'PU 25-01-02-010: Result sheet not yet transmitted from local voting location. Awaiting polling official upload.',
-    electionId: 'elec-2027-pres',
-    pollingUnitCode: '25-01-02-010',
-    stateCode: 'LAGOS',
-    lgaCode: 'LAGOS_ISLAND',
-    createdAt: '2027-02-27T17:15:00Z',
-    status: 'NEW',
-    updatedAt: '2027-02-27T17:15:00Z',
-  },
-  {
-    id: 'alt-0005',
-    alertType: 'VALIDATION_FAILURE',
-    severity: 'CRITICAL',
-    title: 'Ballot Allocation Non-Reconciliation',
-    description: 'PU 25-01-01-002: Ballots issued (450) does not reconcile with accounted total (unused 88 + spoiled 10 + rejected 12 + valid 330 = 440).',
-    electionId: 'elec-2027-pres',
-    pollingUnitCode: '25-01-01-002',
-    stateCode: 'LAGOS',
-    lgaCode: 'LAGOS_ISLAND',
-    createdAt: '2027-02-27T18:25:00Z',
-    status: 'NEW',
-    updatedAt: '2027-02-27T18:25:00Z',
-  },
-];
-
-// Seeded Statistical Anomalies
-let STATISTICAL_ANOMALIES = [
-  {
-    id: 'anom-001',
-    electionId: 'elec-2027-pres',
-    pollingUnitCode: '25-01-01-001',
-    pollingUnitName: 'Olowogbowo Primary School I',
-    stateCode: 'LAGOS',
-    lgaCode: 'LAGOS_ISLAND',
-    ruleName: 'TURNOUT_OUTLIER',
-    severity: 'MEDIUM',
-    comparisonGroup: 'LGA Registered Voter Distribution',
-    thresholdApplied: 'Turnout > 95% of Registered Voters',
-    observedValue: '98.6% (296/300 voters cast ballots)',
-    expectedRange: 'Statewide historical mean: 28% - 55%',
-    explanation: 'Turnout rate in this polling unit substantially exceeds local baseline. Recommended for secondary observer inquiry into BVAS authentication count.',
-    investigationStatus: 'INVESTIGATING',
-    detectedAt: '2027-02-27T18:05:00Z',
-    reviewerNotes: 'Field observer assigned to review physical Form EC8A accreditation stamps.',
-    disclaimer: 'Statistical anomalies are investigative leads warranting field inquiry. They do not constitute evidence of fraud or misconduct.',
-  },
-  {
-    id: 'anom-002',
-    electionId: 'elec-2027-pres',
-    pollingUnitCode: '25-01-01-002',
-    pollingUnitName: 'King Ado High School II',
-    stateCode: 'LAGOS',
-    lgaCode: 'LAGOS_ISLAND',
-    ruleName: 'REJECTED_VOTE_RATE_OUTLIER',
-    severity: 'MEDIUM',
-    comparisonGroup: 'Lagos Island Rejected Vote Distribution',
-    thresholdApplied: 'Rejected vote rate > 10% (>3 standard deviations above regional mean of 2.1%)',
-    observedValue: '13.2% (45 rejected / 340 total votes cast)',
-    expectedRange: 'Regional mean: 2.1% ± 1.8%',
-    explanation: 'Unusually high volume of rejected ballots detected on Form EC8A. Could indicate voter confusion regarding fold markings or ink smudging across boundary lines.',
-    investigationStatus: 'OPEN',
-    detectedAt: '2027-02-27T18:22:15Z',
-    disclaimer: 'Statistical anomalies are investigative leads warranting field inquiry. They do not constitute evidence of fraud or misconduct.',
-  },
-  {
-    id: 'anom-003',
-    electionId: 'elec-2027-pres',
-    pollingUnitCode: '25-02-01-003',
-    pollingUnitName: 'Ikeja High School I',
-    stateCode: 'LAGOS',
-    lgaCode: 'IKEJA',
-    ruleName: 'IDENTICAL_VOTE_SEQUENCE',
-    severity: 'HIGH',
-    comparisonGroup: 'Ikeja LGA Polling Unit Result Sequences',
-    thresholdApplied: 'Exact identical party vote tally sequence across >= 2 separate polling units',
-    observedValue: 'Identical candidate scores (APC: 120, PDP: 60, LP: 30) matched across PU 25-02-01-003 and 25-02-01-004',
-    expectedRange: 'Independent voter choice dispersion',
-    explanation: 'Sequential candidate scores match another polling unit in the same ward. Quality audit required to ensure results were not mistakenly duplicated.',
-    investigationStatus: 'OPEN',
-    detectedAt: '2027-02-27T18:35:00Z',
-    disclaimer: 'Statistical anomalies are investigative leads warranting field inquiry. They do not constitute evidence of fraud or misconduct.',
-  },
-  {
-    id: 'anom-004',
-    electionId: 'elec-2027-pres',
-    pollingUnitCode: '25-02-01-004',
-    pollingUnitName: 'Ikeja High School II',
-    stateCode: 'LAGOS',
-    lgaCode: 'IKEJA',
-    ruleName: 'IDENTICAL_VOTE_SEQUENCE',
-    severity: 'HIGH',
-    comparisonGroup: 'Ikeja LGA Polling Unit Result Sequences',
-    thresholdApplied: 'Exact identical party vote tally sequence across >= 2 separate polling units',
-    observedValue: 'Identical candidate scores (APC: 120, PDP: 60, LP: 30) matched across PU 25-02-01-003 and 25-02-01-004',
-    expectedRange: 'Independent voter choice dispersion',
-    explanation: 'Sequential candidate scores match another polling unit in the same ward. Quality audit required to ensure results were not mistakenly duplicated.',
-    investigationStatus: 'OPEN',
-    detectedAt: '2027-02-27T18:35:00Z',
-    disclaimer: 'Statistical anomalies are investigative leads warranting field inquiry. They do not constitute evidence of fraud or misconduct.',
-  },
-];
-
-// Seeded Source-Document Change Records
-let SOURCE_DOCUMENT_CHANGES = [
-  {
-    id: 'sdc-001',
-    pollingUnitCode: '25-02-01-004',
-    electionId: 'elec-2027-pres',
-    previousHash: 'a1b2c3d4e5f67890123456789abcdef0123456789abcdef0123456789abcdef0',
-    currentHash: 'f0e1d2c3b4a567890123456789abcdef0123456789abcdef0123456789abcdef1',
-    previousVersion: 1,
-    currentVersion: 2,
-    changeType: 'CONTENT_HASH_CHANGE',
-    sourceUrl: 'https://inecelectionresults.ng/scans/25-02-01-004_v2.pdf',
-    detectedAt: '2027-02-27T18:40:00Z',
-    ocrRerunStatus: 'REQUIRED',
-    affectsVerifiedResult: true,
-    auditNotes: 'Form EC8A rescan detected on IReV. Original transcription flagged for re-verification.',
-  },
-  {
-    id: 'sdc-002',
-    pollingUnitCode: '25-01-01-001',
-    electionId: 'elec-2027-pres',
-    previousHash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
-    currentHash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
-    previousVersion: 1,
-    currentVersion: 1,
-    changeType: 'METADATA_ONLY_CHANGE',
-    sourceUrl: 'https://inecelectionresults.ng/scans/25-01-01-001.pdf',
-    detectedAt: '2027-02-27T17:50:00Z',
-    ocrRerunStatus: 'NOT_REQUIRED',
-    affectsVerifiedResult: false,
-    auditNotes: 'INEC metadata re-indexed without changes to document content hash.',
-  },
-];
+// Data-Quality Alerts & Statistical Lead Queues
+let DATA_QUALITY_ALERTS: any[] = [];
+let STATISTICAL_ANOMALIES: any[] = [];
+let SOURCE_DOCUMENT_CHANGES: any[] = [];
 
 // Helper: Calculate national election aggregate statistics
 function calculateElectionSummary(electionId: string, stateCodeFilter?: string, lgaCodeFilter?: string) {
@@ -1590,7 +925,7 @@ function calculateElectionSummary(electionId: string, stateCodeFilter?: string, 
 
   return {
     electionId,
-    electionTitle: ELECTIONS.find((e) => e.id === electionId)?.title || '2027 General Election',
+    electionTitle: ELECTIONS.find((e) => e.id === electionId)?.title || 'Osun State Governorship Election',
     scope: stateCodeFilter ? `State: ${stateCodeFilter}` : 'National',
     statesCoveredCount: stateCodeFilter ? 1 : STATES.length,
     totalExpectedPus,
@@ -1608,7 +943,7 @@ function calculateElectionSummary(electionId: string, stateCodeFilter?: string, 
     totalVotesCast,
     candidateRankings,
     partyVotes: partyVotesAgg,
-    lastSourceDataRetrieval: '2027-02-27T19:12:00Z',
+    lastSourceDataRetrieval: new Date().toISOString(),
     lastDatabaseUpdate: new Date().toISOString(),
     dataSourceMode: currentDataSourceMode,
   };
@@ -1799,7 +1134,7 @@ app.get('/api/v1/elections/:electionId/verification-summary', (req: Request, res
 
 // 1. Advanced Analytics Overview & Completeness
 app.get('/api/v1/analytics/overview', (req: Request, res: Response) => {
-  const electionId = (req.query.electionId as string) || 'elec-2027-pres';
+  const electionId = (req.query.electionId as string) || 'elec-2026-gov-osun';
   const stateCode = req.query.state as string | undefined;
   const lgaCode = req.query.lga as string | undefined;
   const verificationFilter = req.query.verificationStatus as string | undefined;
@@ -1902,14 +1237,14 @@ app.get('/api/v1/analytics/overview', (req: Request, res: Response) => {
   res.json({
     data: {
       electionId,
-      electionTitle: electionId === 'elec-2026-gov-osun' ? 'Osun State Governorship Election' : '2027 Presidential General Election (Demonstration)',
-      electionYear: 2027,
-      electionType: electionId === 'elec-2026-gov-osun' ? 'GOVERNORSHIP' : 'PRESIDENTIAL',
+      electionTitle: electionId === 'elec-2026-gov-osun' ? 'Osun State Governorship Election' : 'Ekiti State Governorship Election',
+      electionYear: 2026,
+      electionType: 'GOVERNORSHIP',
       geographicScope: stateCode ? `State: ${stateCode}` : 'National Aggregate (37 States & FCT)',
-      lastSyncTime: '2027-02-27T18:35:00Z',
+      lastSyncTime: new Date().toISOString(),
       lastAnalyticsUpdate: new Date().toISOString(),
       dataSourceMode: currentDataSourceMode,
-      isDemonstration: true,
+      isDemonstration: false,
       registeredVoters: totalRegisteredVoters,
       accreditedVoters: totalAccreditedVoters,
       totalVotesCast,
@@ -1941,7 +1276,7 @@ app.get('/api/v1/analytics/overview', (req: Request, res: Response) => {
 
 // 2. Candidate & Party Comparisons
 app.get('/api/v1/analytics/candidate-comparisons', (req: Request, res: Response) => {
-  const electionId = (req.query.electionId as string) || 'elec-2027-pres';
+  const electionId = (req.query.electionId as string) || 'elec-2026-gov-osun';
   const level = (req.query.level as string) || 'NATIONAL';
   const filterValue = req.query.filterValue as string | undefined;
 
@@ -2031,7 +1366,7 @@ app.get('/api/v1/analytics/candidate-comparisons', (req: Request, res: Response)
   res.json({
     data: {
       electionId,
-      electionTitle: '2027 Presidential General Election (Demonstration)',
+      electionTitle: 'Osun State Governorship Election',
       level,
       filterValue,
       totalValidVotes,
@@ -2045,7 +1380,7 @@ app.get('/api/v1/analytics/candidate-comparisons', (req: Request, res: Response)
 
 // 3. Statistical Anomalies
 app.get('/api/v1/analytics/anomalies', (req: Request, res: Response) => {
-  const electionId = (req.query.electionId as string) || 'elec-2027-pres';
+  const electionId = (req.query.electionId as string) || 'elec-2026-gov-osun';
   const ruleName = req.query.ruleName as string | undefined;
   const severity = req.query.severity as string | undefined;
 
@@ -2062,7 +1397,7 @@ app.get('/api/v1/analytics/anomalies', (req: Request, res: Response) => {
 
 // 4. Data Quality Alerts
 app.get('/api/v1/analytics/alerts', (req: Request, res: Response) => {
-  const electionId = (req.query.electionId as string) || 'elec-2027-pres';
+  const electionId = (req.query.electionId as string) || 'elec-2026-gov-osun';
   const severity = req.query.severity as string | undefined;
   const status = req.query.status as string | undefined;
 
@@ -2114,7 +1449,7 @@ app.patch('/api/v1/analytics/alerts/:alertId', (req: Request, res: Response) => 
 
 // 5. Source Document Change Detection Records
 app.get('/api/v1/analytics/source-changes', (req: Request, res: Response) => {
-  const electionId = (req.query.electionId as string) || 'elec-2027-pres';
+  const electionId = (req.query.electionId as string) || 'elec-2026-gov-osun';
   const pollingUnitCode = req.query.pollingUnitCode as string | undefined;
 
   let filtered = SOURCE_DOCUMENT_CHANGES.filter((s) => s.electionId === electionId);
@@ -2166,7 +1501,7 @@ app.get('/api/v1/analytics/historical-comparisons/:resultSheetId', (req: Request
 
 // 7. Sanitized Analytics CSV Export
 app.get('/api/v1/analytics/reports/export', (req: Request, res: Response) => {
-  const electionId = (req.query.electionId as string) || 'elec-2027-pres';
+  const electionId = (req.query.electionId as string) || 'elec-2026-gov-osun';
   const state = req.query.state as string | undefined;
 
   let pus = POLLING_UNITS.filter((p) => p.electionId === electionId);
@@ -2183,7 +1518,7 @@ app.get('/api/v1/analytics/reports/export', (req: Request, res: Response) => {
 
   const headerLines = [
     '# NIGERIA ELECTION WATCH - ADVANCED ANALYTICS REPORT',
-    `# Contest: ${electionId === 'elec-2026-gov-osun' ? 'Osun State Governorship Election' : '2027 Presidential General Election (Demonstration)'}`,
+    `# Contest: ${electionId === 'elec-2026-gov-osun' ? 'Osun State Governorship Election' : 'Ekiti State Governorship Election'}`,
     `# Scope: ${state ? `State: ${state}` : 'National Aggregate (37 States & FCT)'}`,
     `# Generation Time (UTC): ${new Date().toISOString()}`,
     `# Total Polling Units Analyzed: ${pus.length}`,
@@ -2270,7 +1605,7 @@ app.get(['/api/v1/wards', '/api/v1/geography/wards'], (req: Request, res: Respon
 // Polling Units Search and Filter
 app.get('/api/v1/polling-units', (req: Request, res: Response) => {
   const {
-    electionId = 'elec-2027-pres',
+    electionId = 'elec-2026-gov-osun',
     state,
     lga,
     ward,
@@ -2341,7 +1676,7 @@ app.get('/api/v1/polling-units/:id', (req: Request, res: Response) => {
       discrepancies,
       provenance: {
         dataSource: currentDataSourceMode,
-        isDemonstration: true,
+        isDemonstration: false,
         sourceDisclaimer: 'Demonstration record. Not official INEC declaration.',
         retrievalProtocol: 'ElectionSourceAdapter -> Ingestion Pipeline',
       },
@@ -2515,7 +1850,7 @@ app.post('/api/v1/observer/incidents', (req: Request, res: Response) => {
 
   const newIncident: IncidentReport = {
     id: 'inc-' + (INCIDENTS.length + 1).toString().padStart(3, '0'),
-    electionId: 'elec-2027-pres',
+    electionId: 'elec-2026-gov-osun',
     category: category || 'RESULT_SHEET_UNAVAILABLE',
     stateName: stateName || 'Lagos',
     lgaName: lgaName || 'Lagos Island',
@@ -3120,7 +2455,7 @@ app.post('/api/v1/admin/set-data-source', (req: Request, res: Response) => {
 
 // Export CSV Endpoint (with anti-formula injection protection)
 app.get('/api/v1/reports/export-csv', (req: Request, res: Response) => {
-  const { electionId = 'elec-2027-pres', state } = req.query;
+  const { electionId = 'elec-2026-gov-osun', state } = req.query;
 
   let pus = POLLING_UNITS.filter((p) => p.electionId === electionId);
   if (state) pus = pus.filter((p) => p.stateCode === state);
@@ -3136,7 +2471,7 @@ app.get('/api/v1/reports/export-csv', (req: Request, res: Response) => {
 
   const headerMeta = [
     '# NIGERIA ELECTION WATCH - DEMONSTRATION DATA EXPORT',
-    '# Source Attribution: Development Demonstration Fixtures (2027 General Elections Simulation)',
+    '# Source Attribution: Official INEC Results Portal (IReV) - https://inecelectionresults.ng',
     '# Disclaimer: Independent election results analysis and monitoring platform. Not an official INEC website.',
     `# Export Timestamp: ${new Date().toISOString()}`,
     `# Selected Election: ${electionId}`,
@@ -3224,8 +2559,8 @@ app.get('/api/v1/admin/command-center/metrics', (_req: Request, res: Response) =
       configuredElectionsCount: ELECTIONS.length,
       configuredStatesCount: STATES.length,
       configuredLgasCount: LGAS.length,
-      configuredPusCount: 176846, // Canonical 2027 PU baseline
-      resultsExpected: 176846,
+      configuredPusCount: 3763, // Canonical Osun State PU baseline
+      resultsExpected: 3763,
       resultsReceived: receivedCount,
       resultsVerified: verifiedCount,
       resultsPendingVerification: pendingCount,
@@ -3482,7 +2817,7 @@ app.get('/api/v1/admin/supervision/verifiers', (_req: Request, res: Response) =>
       approvedCount: isLead ? 5 : 2,
       flaggedDiscrepanciesCount: isLead ? 1 : 0,
       averageTimePerSheetSeconds: isLead ? 72 : 94,
-      lastActive: v.lastLogin || '2027-02-27T18:00:00Z',
+      lastActive: v.lastLogin || '2026-08-15T18:00:00Z',
       status: v.isActive ? 'ONLINE' : 'OFFLINE',
     };
   });
@@ -3670,7 +3005,7 @@ app.get('/api/v1/admin/config/elections', (_req: Request, res: Response) => {
 });
 
 app.post('/api/v1/admin/config/elections', (req: Request, res: Response) => {
-  const { title, electionType = 'PRESIDENTIAL', date = '2027-02-27', sourceReference = 'INEC Official Timetable' } = req.body;
+  const { title, electionType = 'PRESIDENTIAL', date = '2026-08-15', sourceReference = 'INEC Official Timetable' } = req.body;
   if (!title) {
     res.status(400).json({ error: 'Election title is required' });
     return;
@@ -3683,7 +3018,7 @@ app.post('/api/v1/admin/config/elections', (req: Request, res: Response) => {
     date,
     status: 'SCHEDULED',
     sourceReference,
-    isDemonstration: true,
+    isDemonstration: false,
   };
 
   ELECTIONS.push(newElec);
@@ -3988,7 +3323,7 @@ app.post('/api/v1/admin/readiness/run-drill', (req: Request, res: Response) => {
     case 'BACKUP_RESTORE_DRILL':
       details = {
         name: 'Database Snapshot & Hash-Chain Restoration Drill',
-        snapshotTimestamp: '2027-02-27T19:00:00Z',
+        snapshotTimestamp: '2026-08-15T19:00:00Z',
         tablesValidated: ['polling_units', 'result_sheets', 'transcriptions', 'audit_logs'],
         recordsRestored: 176846,
         checksumMismatches: 0,

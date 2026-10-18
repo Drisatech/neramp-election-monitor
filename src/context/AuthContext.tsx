@@ -1,7 +1,7 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { UserRole } from '../types';
 
-interface AuthUser {
+export interface AuthUser {
   id: string;
   name: string;
   email: string;
@@ -13,46 +13,89 @@ interface AuthUser {
 interface AuthContextType {
   user: AuthUser | null;
   role: UserRole;
+  login: (userData: AuthUser) => void;
   switchRole: (newRole: UserRole) => void;
   logout: () => void;
   isAuthenticated: boolean;
+  isSuperOrProjectAdmin: boolean;
 }
 
-const DEFAULT_USER: AuthUser = {
-  id: 'usr-obs-01',
-  name: 'Lead Election Monitor',
-  email: 'lead.observer@electionwatch.ng',
-  role: 'REGISTERED_OBSERVER',
-  badge: 'OBS-SW-042',
-  jurisdiction: 'Lagos Island LGA & Ikeja LGA',
-};
+const STORAGE_KEY = 'neramp_mgmt_auth_user';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<AuthUser | null>(DEFAULT_USER);
-  const [role, setRole] = useState<UserRole>('REGISTERED_OBSERVER');
+  const [user, setUser] = useState<AuthUser | null>(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        return JSON.parse(stored);
+      }
+    } catch {
+      // ignore
+    }
+    return null;
+  });
+
+  const [role, setRole] = useState<UserRole>(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed?.role) return parsed.role;
+      }
+    } catch {
+      // ignore
+    }
+    return 'PUBLIC_USER';
+  });
+
+  const login = (userData: AuthUser) => {
+    setUser(userData);
+    setRole(userData.role);
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(userData));
+    } catch {
+      // ignore
+    }
+  };
 
   const switchRole = (newRole: UserRole) => {
     setRole(newRole);
     if (user) {
-      setUser({ ...user, role: newRole });
+      const updated = { ...user, role: newRole };
+      setUser(updated);
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+      } catch {
+        // ignore
+      }
     }
   };
 
   const logout = () => {
     setRole('PUBLIC_USER');
     setUser(null);
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      // ignore
+    }
   };
+
+  const isAuthenticated = !!user && role !== 'PUBLIC_USER';
+  const isSuperOrProjectAdmin = role === 'SUPER_ADMIN' || role === 'PROJECT_ADMIN';
 
   return (
     <AuthContext.Provider
       value={{
         user,
         role,
+        login,
         switchRole,
         logout,
-        isAuthenticated: !!user && role !== 'PUBLIC_USER',
+        isAuthenticated,
+        isSuperOrProjectAdmin,
       }}
     >
       {children}

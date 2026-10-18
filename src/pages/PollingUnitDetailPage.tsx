@@ -16,9 +16,13 @@ import { PollingUnit, ResultSheet, Discrepancy } from '../types';
 import { SourceDocumentViewer } from '../components/SourceDocumentViewer';
 import { VerificationWorkspace } from '../components/VerificationWorkspace';
 import { DisclaimerBanner } from '../components/DisclaimerBanner';
+import { useAuth } from '../context/AuthContext';
 
 export const PollingUnitDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const { role, isSuperOrProjectAdmin } = useAuth();
+  const canVerify = isSuperOrProjectAdmin || role === 'RESULT_VERIFIER' || role === 'ELECTION_ANALYST' || role === 'STATE_COORDINATOR';
+
   const [pu, setPu] = useState<(PollingUnit & { resultSheet?: ResultSheet; discrepancies?: Discrepancy[]; provenance?: any }) | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'overview' | 'workspace'>('overview');
@@ -101,7 +105,7 @@ export const PollingUnitDetailPage: React.FC = () => {
           >
             PU Overview & Form EC8A
           </button>
-          {sheet && (
+          {sheet && canVerify && (
             <button
               onClick={() => setActiveTab('workspace')}
               className={`px-3 py-1.5 font-bold rounded-md transition-colors ${
@@ -114,7 +118,7 @@ export const PollingUnitDetailPage: React.FC = () => {
         </div>
       </div>
 
-      {activeTab === 'workspace' && sheet ? (
+      {activeTab === 'workspace' && sheet && canVerify ? (
         <VerificationWorkspace resultSheet={sheet} pollingUnitCode={pu.code} onUpdate={loadDetail} />
       ) : (
         <div className="space-y-6">

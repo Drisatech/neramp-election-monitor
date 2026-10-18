@@ -28,7 +28,7 @@ const ElectionContext = createContext<ElectionContextType | undefined>(undefined
 
 export const ElectionProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [elections, setElections] = useState<Election[]>([]);
-  const [selectedElectionId, setSelectedElectionId] = useState<string>('elec-2027-pres');
+  const [selectedElectionId, setSelectedElectionId] = useState<string>('elec-2026-gov-osun');
   const [states, setStates] = useState<State[]>([]);
   const [selectedStateCode, setSelectedStateCode] = useState<string>('');
   const [lgas, setLgas] = useState<LGA[]>([]);

@@ -173,7 +173,7 @@ export const AdvancedAnalyticsPage: React.FC = () => {
                 Advanced Election Analytics & Discrepancy Detection
               </h1>
               <span className="text-[10px] font-mono font-bold bg-emerald-50 text-emerald-800 px-2 py-0.5 rounded border border-emerald-200">
-                2027 MONITORING
+                LIVE MONITORING
               </span>
             </div>
             <p className="text-xs text-slate-500 mt-0.5">

@@ -347,22 +347,22 @@ export const AdminIngestionPage: React.FC = () => {
       <div className="bg-amber-50/70 p-5 rounded-lg border border-amber-200 shadow-2xs space-y-3">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <h3 className="text-xs font-bold text-amber-900 uppercase tracking-wide flex items-center gap-2">
-              <Trash2 className="w-4 h-4 text-amber-700" />
-              <span>Production Clean-Slate: Purge Demonstration Data</span>
+            <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wide flex items-center gap-2">
+              <Trash2 className="w-4 h-4 text-rose-600" />
+              <span>Production Clean-Slate: Purge Demo Fixtures</span>
             </h3>
-            <p className="text-xs text-amber-800 mt-1 max-w-2xl leading-relaxed">
-              Remove all preconfigured synthetic 2027 general election demo fixtures. This resets the database into pure production mode containing strictly real INEC off-cycle election results (Ekiti and Osun State).
+            <p className="text-xs text-slate-600 mt-1 max-w-2xl leading-relaxed">
+              Remove all non-official demo fixtures and reset the system to live official INEC election results only (Ekiti and Osun State).
             </p>
           </div>
 
           <button
             onClick={handlePurgeDemo}
             disabled={isPurging}
-            className="px-4 py-2 bg-amber-700 hover:bg-amber-800 text-white rounded text-xs font-bold transition-colors disabled:opacity-50 shrink-0 flex items-center gap-1.5 shadow-2xs cursor-pointer"
+            className="px-4 py-2 bg-rose-700 hover:bg-rose-800 text-white rounded text-xs font-bold transition-colors disabled:opacity-50 shrink-0 flex items-center gap-1.5 shadow-2xs cursor-pointer"
           >
             <Trash2 className="w-3.5 h-3.5" />
-            <span>{isPurging ? 'Purging Demo Data...' : 'Purge All Demo Fixtures'}</span>
+            <span>{isPurging ? 'Purging Demo Data...' : 'Purge All Demo Data'}</span>
           </button>
         </div>
 
@@ -388,10 +388,7 @@ export const AdminIngestionPage: React.FC = () => {
               className="w-full bg-slate-50 border border-slate-300 rounded px-2.5 py-1.5 text-slate-900 font-semibold focus:outline-emerald-600"
             >
               <option value="InecApprovedSourceAdapter">
-                InecApprovedSourceAdapter (Official Portal Integration)
-              </option>
-              <option value="DevelopmentFixtureAdapter">
-                DevelopmentFixtureAdapter (Demonstration Data Only)
+                InecApprovedSourceAdapter (Official INEC Portal Integration)
               </option>
             </select>
           </div>
@@ -408,9 +405,6 @@ export const AdminIngestionPage: React.FC = () => {
               </option>
               <option value="elec-2026-gov-ekiti">
                 Governorship election - 2026-06-20 - EKITI (Official Live)
-              </option>
-              <option value="elec-2027-pres">
-                2027 Presidential General Election (Demonstration)
               </option>
             </select>
           </div>

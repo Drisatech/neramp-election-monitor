@@ -23,7 +23,7 @@ import { NerampLogo } from './NerampLogo';
 
 export const Navbar: React.FC = () => {
   const location = useLocation();
-  const { role, switchRole } = useAuth();
+  const { role, switchRole, user, isAuthenticated, logout } = useAuth();
   const { elections, selectedElectionId, setSelectedElectionId } = useElection();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [roleMenuOpen, setRoleMenuOpen] = useState(false);
@@ -37,12 +37,27 @@ export const Navbar: React.FC = () => {
 
   const allNavLinks: NavItem[] = [
     { to: '/', label: 'Overview', icon: Vote },
-    { to: '/analytics', label: 'Advanced Analytics', icon: BarChart3 },
     { to: '/results', label: 'Candidate Results', icon: Layers },
     { to: '/map', label: 'Map Explorer', icon: MapPin },
     { to: '/polling-units', label: 'Polling Units', icon: FileText },
-    { to: '/discrepancies', label: 'Discrepancies', icon: AlertTriangle },
-    { to: '/incidents', label: 'Incidents', icon: Shield },
+    {
+      to: '/analytics',
+      label: 'Advanced Analytics',
+      icon: BarChart3,
+      roles: ['SUPER_ADMIN', 'PROJECT_ADMIN', 'ELECTION_ANALYST', 'STATE_COORDINATOR', 'MONITORING_COORDINATOR'],
+    },
+    {
+      to: '/discrepancies',
+      label: 'Discrepancies',
+      icon: AlertTriangle,
+      roles: ['SUPER_ADMIN', 'PROJECT_ADMIN', 'ELECTION_ANALYST', 'STATE_COORDINATOR', 'RESULT_VERIFIER', 'MONITORING_COORDINATOR'],
+    },
+    {
+      to: '/incidents',
+      label: 'Incidents',
+      icon: Shield,
+      roles: ['SUPER_ADMIN', 'PROJECT_ADMIN', 'STATE_COORDINATOR', 'LGA_COORDINATOR', 'MONITORING_COORDINATOR', 'REGISTERED_OBSERVER'],
+    },
     {
       to: '/observer-portal',
       label: 'Observer Field Portal',
@@ -131,41 +146,74 @@ export const Navbar: React.FC = () => {
               </select>
             </div>
 
-            {/* Quick Role Switcher */}
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setRoleMenuOpen(!roleMenuOpen)}
-                className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-md transition-colors"
-                title="Switch active user role for testing"
-              >
-                <span className="w-2 h-2 rounded-full bg-emerald-600"></span>
-                <span>Role: {role.replace('_', ' ')}</span>
-              </button>
-
-              {roleMenuOpen && (
-                <div className="absolute right-0 mt-1 w-56 bg-white border border-slate-200 rounded-lg shadow-lg py-1 z-50">
-                  <div className="px-3 py-1.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wider border-b border-slate-100">
-                    Switch Test Persona
+            {/* Management User Profile or Hidden for Public */}
+            {isAuthenticated && user ? (
+              <div className="flex items-center gap-2.5">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-full bg-emerald-800 text-white flex items-center justify-center font-bold text-xs">
+                    {user.name.charAt(0)}
                   </div>
-                  {roles.map((r) => (
-                    <button
-                      key={r.role}
-                      onClick={() => {
-                        switchRole(r.role);
-                        setRoleMenuOpen(false);
-                      }}
-                      className={`w-full text-left px-3 py-1.5 text-xs flex items-center justify-between ${
-                        role === r.role ? 'bg-emerald-50 text-emerald-800 font-semibold' : 'text-slate-700 hover:bg-slate-50'
-                      }`}
-                    >
-                      <span>{r.label}</span>
-                      {role === r.role && <span className="text-emerald-700 text-xs">Active</span>}
-                    </button>
-                  ))}
+                  <div className="text-left hidden xl:block">
+                    <div className="text-xs font-bold text-slate-900 leading-tight truncate max-w-[130px]">
+                      {user.name}
+                    </div>
+                    <div className="text-[10px] text-emerald-700 font-semibold font-mono">
+                      {user.role.replace(/_/g, ' ')}
+                    </div>
+                  </div>
                 </div>
-              )}
-            </div>
+
+                {/* Only Super Admin has access to Developer Persona Switcher; other personnel see their locked role */}
+                {role === 'SUPER_ADMIN' ? (
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setRoleMenuOpen(!roleMenuOpen)}
+                      className="px-2 py-1 text-[11px] font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded transition-colors cursor-pointer"
+                      title="Switch test persona (Developer Super Admin Only)"
+                    >
+                      <span>Role: {role.replace(/_/g, ' ')}</span>
+                    </button>
+
+                    {roleMenuOpen && (
+                      <div className="absolute right-0 mt-1 w-56 bg-white border border-slate-200 rounded-lg shadow-lg py-1 z-50">
+                        <div className="px-3 py-1.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wider border-b border-slate-100">
+                          Dev Persona Switcher
+                        </div>
+                        {roles.map((r) => (
+                          <button
+                            key={r.role}
+                            onClick={() => {
+                              switchRole(r.role);
+                              setRoleMenuOpen(false);
+                            }}
+                            className={`w-full text-left px-3 py-1.5 text-xs flex items-center justify-between cursor-pointer ${
+                              role === r.role ? 'bg-emerald-50 text-emerald-800 font-semibold' : 'text-slate-700 hover:bg-slate-50'
+                            }`}
+                          >
+                            <span>{r.label}</span>
+                            {role === r.role && <span className="text-emerald-700 text-xs">Active</span>}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="px-2.5 py-1 text-[11px] font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 rounded">
+                    Role: {role.replace(/_/g, ' ')}
+                  </div>
+                )}
+
+                <button
+                  type="button"
+                  onClick={logout}
+                  className="px-2.5 py-1 text-xs font-semibold text-slate-600 hover:text-rose-700 hover:bg-rose-50 border border-slate-200 rounded transition-colors cursor-pointer"
+                  title="Sign out of management portal"
+                >
+                  Sign Out
+                </button>
+              </div>
+            ) : null}
           </div>
 
           {/* Mobile menu button */}
@@ -241,25 +289,53 @@ export const Navbar: React.FC = () => {
             })}
           </div>
 
-          <div className="pt-2 border-t border-slate-100">
-            <span className="text-xs text-slate-500 font-medium block mb-1">Switch Test Role:</span>
-            <div className="grid grid-cols-2 gap-1">
-              {roles.map((r) => (
+          {/* Mobile Authenticated Management Display */}
+          {isAuthenticated && user && (
+            <div className="pt-3 border-t border-slate-100 space-y-2">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-xs font-bold text-slate-900">{user.name}</div>
+                  <div className="text-[10px] text-emerald-700 font-semibold font-mono">
+                    {user.role.replace(/_/g, ' ')}
+                  </div>
+                </div>
                 <button
-                  key={r.role}
+                  type="button"
                   onClick={() => {
-                    switchRole(r.role);
+                    logout();
                     setMobileMenuOpen(false);
                   }}
-                  className={`px-2 py-1.5 text-xs text-left rounded ${
-                    role === r.role ? 'bg-emerald-100 text-emerald-900 font-semibold' : 'bg-slate-100 text-slate-700'
-                  }`}
+                  className="px-2.5 py-1 text-xs font-semibold text-rose-700 bg-rose-50 border border-rose-200 rounded"
                 >
-                  {r.label}
+                  Sign Out
                 </button>
-              ))}
+              </div>
+
+              {role === 'SUPER_ADMIN' && (
+                <div className="pt-2">
+                  <span className="text-[10px] text-slate-400 font-bold uppercase block mb-1">
+                    Dev Test Personas:
+                  </span>
+                  <div className="grid grid-cols-2 gap-1">
+                    {roles.map((r) => (
+                      <button
+                        key={r.role}
+                        onClick={() => {
+                          switchRole(r.role);
+                          setMobileMenuOpen(false);
+                        }}
+                        className={`px-2 py-1 text-[11px] text-left rounded ${
+                          role === r.role ? 'bg-emerald-100 text-emerald-900 font-semibold' : 'bg-slate-100 text-slate-700'
+                        }`}
+                      >
+                        {r.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
-          </div>
+          )}
         </div>
       )}
     </header>

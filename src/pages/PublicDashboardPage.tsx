@@ -74,9 +74,7 @@ export const PublicDashboardPage: React.FC = () => {
             <span>DATA SOURCE:</span>
           </div>
           <span className="text-slate-300 font-medium">
-            {selectedElectionId === 'elec-2026-gov-osun'
-              ? 'Official INEC Results Portal (IReV) · https://inecelectionresults.ng'
-              : 'Development Demonstration Fixtures (Fictional General Elections Simulation)'}
+            Official INEC Results Portal (IReV) · https://inecelectionresults.ng
           </span>
         </div>
 

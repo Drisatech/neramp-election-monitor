@@ -78,7 +78,7 @@ type AdminTab =
   | 'audit';
 
 export const AdminCommandCentrePage: React.FC = () => {
-  const { role: activeUserRole } = useAuth();
+  const { role: activeUserRole, isSuperOrProjectAdmin } = useAuth();
   const { states } = useElection();
 
   const [activeTab, setActiveTab] = useState<AdminTab>('overview');
@@ -444,17 +444,19 @@ export const AdminCommandCentrePage: React.FC = () => {
           <span>System Overview</span>
         </button>
 
-        <button
-          onClick={() => setActiveTab('users')}
-          className={`flex items-center gap-2 px-3 py-2 text-xs font-semibold rounded-md transition-colors whitespace-nowrap ${
-            activeTab === 'users'
-              ? 'bg-emerald-800 text-white'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-          }`}
-        >
-          <Users className="w-4 h-4" />
-          <span>User & Role Governance</span>
-        </button>
+        {isSuperOrProjectAdmin && (
+          <button
+            onClick={() => setActiveTab('users')}
+            className={`flex items-center gap-2 px-3 py-2 text-xs font-semibold rounded-md transition-colors whitespace-nowrap ${
+              activeTab === 'users'
+                ? 'bg-emerald-800 text-white'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+            }`}
+          >
+            <Users className="w-4 h-4" />
+            <span>User & Role Governance</span>
+          </button>
+        )}
 
         <button
           onClick={() => setActiveTab('operations')}
@@ -492,17 +494,19 @@ export const AdminCommandCentrePage: React.FC = () => {
           <span>Observer Coordination</span>
         </button>
 
-        <button
-          onClick={() => setActiveTab('configuration')}
-          className={`flex items-center gap-2 px-3 py-2 text-xs font-semibold rounded-md transition-colors whitespace-nowrap ${
-            activeTab === 'configuration'
-              ? 'bg-emerald-800 text-white'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-          }`}
-        >
-          <Layers className="w-4 h-4" />
-          <span>Elections & Geography</span>
-        </button>
+        {isSuperOrProjectAdmin && (
+          <button
+            onClick={() => setActiveTab('configuration')}
+            className={`flex items-center gap-2 px-3 py-2 text-xs font-semibold rounded-md transition-colors whitespace-nowrap ${
+              activeTab === 'configuration'
+                ? 'bg-emerald-800 text-white'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+            }`}
+          >
+            <Layers className="w-4 h-4" />
+            <span>Elections & Geography</span>
+          </button>
+        )}
 
         <button
           onClick={() => setActiveTab('audit')}
@@ -721,7 +725,7 @@ export const AdminCommandCentrePage: React.FC = () => {
       {/* ======================================================== */}
       {/* TAB 2: USER & ROLE MANAGEMENT                             */}
       {/* ======================================================== */}
-      {activeTab === 'users' && (
+      {activeTab === 'users' && isSuperOrProjectAdmin && (
         <div className="space-y-4">
           <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="flex flex-wrap items-center gap-3">
@@ -1187,7 +1191,7 @@ export const AdminCommandCentrePage: React.FC = () => {
       {/* ======================================================== */}
       {/* TAB 6: CONFIGURATION (ELECTIONS & GEOGRAPHY)              */}
       {/* ======================================================== */}
-      {activeTab === 'configuration' && (
+      {activeTab === 'configuration' && isSuperOrProjectAdmin && (
         <div className="space-y-6">
           <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs flex items-center justify-between">
             <div>

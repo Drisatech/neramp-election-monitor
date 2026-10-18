@@ -6,8 +6,13 @@ import { fetchPublishedIncidents } from '../services/api';
 import { IncidentReport } from '../types';
 import { DisclaimerBanner } from '../components/DisclaimerBanner';
 
+import { useAuth } from '../context/AuthContext';
+
 export const IncidentsPage: React.FC = () => {
   const { selectedElectionId } = useElection();
+  const { role, isSuperOrProjectAdmin } = useAuth();
+  const canReport = isSuperOrProjectAdmin || role === 'REGISTERED_OBSERVER' || role === 'STATE_COORDINATOR' || role === 'LGA_COORDINATOR' || role === 'MONITORING_COORDINATOR';
+
   const [incidents, setIncidents] = useState<IncidentReport[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -39,12 +44,14 @@ export const IncidentsPage: React.FC = () => {
             Field reports submitted by authorized observers and certified by monitoring coordinators.
           </p>
         </div>
-        <Link
-          to="/observer-portal"
-          className="px-3 py-1.5 bg-emerald-800 hover:bg-emerald-700 text-white rounded text-xs font-bold transition-colors"
-        >
-          Submit Observer Field Incident
-        </Link>
+        {canReport && (
+          <Link
+            to="/observer-portal"
+            className="px-3 py-1.5 bg-emerald-800 hover:bg-emerald-700 text-white rounded text-xs font-bold transition-colors"
+          >
+            Submit Observer Field Incident
+          </Link>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
