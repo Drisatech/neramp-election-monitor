@@ -707,8 +707,8 @@ export const AdminCommandCentrePage: React.FC = () => {
               </div>
               <div className="space-y-2 text-xs">
                 <div className="flex justify-between py-1 border-b border-slate-50">
-                  <span className="text-slate-500">Database Engine:</span>
-                  <span className="font-semibold text-emerald-700">PostgreSQL / PostGIS</span>
+                  <span className="text-slate-500">Cloud SQL Instance:</span>
+                  <span className="font-semibold text-emerald-800 font-mono">neramp-db (PostgreSQL 16)</span>
                 </div>
                 <div className="flex justify-between py-1 border-b border-slate-50">
                   <span className="text-slate-500">Connection Pool:</span>
@@ -721,14 +721,14 @@ export const AdminCommandCentrePage: React.FC = () => {
                   <span className="font-mono font-semibold text-slate-900">{metrics.systemHealth.memoryUsageMb} MB</span>
                 </div>
                 <div className="flex justify-between py-1 border-b border-slate-50">
-                  <span className="text-slate-500">Evidence Archive:</span>
+                  <span className="text-slate-500">GC Storage Bucket:</span>
                   <span className="font-mono font-semibold text-slate-900">
                     {metrics.systemHealth.storageCapacityGb.used} GB / {metrics.systemHealth.storageCapacityGb.total} GB
                   </span>
                 </div>
                 <div className="flex justify-between py-1">
-                  <span className="text-slate-500">Volatile Cache:</span>
-                  <span className="font-semibold text-emerald-800">{metrics.systemHealth.cacheStatus}</span>
+                  <span className="text-slate-500">GCS Bucket Name:</span>
+                  <span className="font-mono text-[11px] text-slate-700 truncate max-w-[170px]" title="neramp-election-evidence-0652072827">neramp-election-evidence-0652072827</span>
                 </div>
               </div>
             </div>

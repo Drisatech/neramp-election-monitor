@@ -18,12 +18,18 @@ import {
   FileSpreadsheet,
   X,
   Save,
+  FolderPlus,
+  Upload,
+  FileUp,
+  Key,
 } from 'lucide-react';
 import {
   fetchStorageSummary,
   fetchStorageFiles,
   deleteStorageFile,
   editStorageFile,
+  initGcsFolders,
+  uploadAndTranscribeFormEc8a,
 } from '../services/api';
 
 interface StorageMetrics {
@@ -32,10 +38,15 @@ interface StorageMetrics {
     cloudProvider: string;
     cloudStorageBucketUri: string;
     cloudConsoleUrl: string;
+    cloudSqlInstance?: string;
     cloudSqlConsoleUrl: string;
     containerMountPath: string;
     publicCachePath: string;
     region: string;
+    gcsConnected?: boolean;
+    gcsFilesCount?: number;
+    gcsTotalBytes?: number;
+    gcsStatus?: string;
     accessInstructions: string;
   };
   metrics: {
@@ -105,7 +116,68 @@ export const StorageContentManagementTab: React.FC = () => {
   const [editValidVotes, setEditValidVotes] = useState<number | ''>('');
   const [isSubmittingEdit, setIsSubmittingEdit] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isInitializingFolders, setIsInitializingFolders] = useState(false);
   const [actionSuccessNotice, setActionSuccessNotice] = useState<string | null>(null);
+  const [showIamGuide, setShowIamGuide] = useState(false);
+
+  // Upload modal state
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [uploadPreview, setUploadPreview] = useState<string | null>(null);
+  const [uploadFileName, setUploadFileName] = useState('');
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadStatusMsg, setUploadStatusMsg] = useState<string | null>(null);
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadFile(file);
+    setUploadFileName(file.name);
+    const reader = new FileReader();
+    reader.onload = () => {
+      setUploadPreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleUploadSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!uploadPreview) return;
+    try {
+      setIsUploading(true);
+      setUploadStatusMsg('Saving file to GC Storage & initiating Gemini AI OCR transcription...');
+      const res = await uploadAndTranscribeFormEc8a({
+        imageBase64: uploadPreview,
+        fileName: uploadFileName || 'uploaded-ec8a.jpg',
+        mimeType: uploadFile?.type || 'image/jpeg',
+      });
+      setActionSuccessNotice(res.message || 'File uploaded and stored successfully.');
+      setIsUploadModalOpen(false);
+      setUploadFile(null);
+      setUploadPreview(null);
+      await loadData();
+      setTimeout(() => setActionSuccessNotice(null), 5000);
+    } catch (err: any) {
+      alert(`Upload notice: ${err.message}`);
+    } finally {
+      setIsUploading(false);
+      setUploadStatusMsg(null);
+    }
+  };
+
+  const handleInitFolders = async () => {
+    try {
+      setIsInitializingFolders(true);
+      const res = await initGcsFolders();
+      setActionSuccessNotice(res.message);
+      await loadData();
+      setTimeout(() => setActionSuccessNotice(null), 5000);
+    } catch (err: any) {
+      alert(`Folder initialization: ${err.message}`);
+    } finally {
+      setIsInitializingFolders(false);
+    }
+  };
 
   const loadData = async () => {
     setIsLoading(true);
@@ -191,6 +263,18 @@ export const StorageContentManagementTab: React.FC = () => {
     }
   };
 
+  const bucketName = summary?.storageBucket.bucketName || 'neramp-election-evidence-0652072827';
+  const bucketUri = summary?.storageBucket.cloudStorageBucketUri || `gs://${bucketName}`;
+  const cloudSqlInstance = summary?.storageBucket.cloudSqlInstance || 'neramp-db';
+
+  const getBreakdown = (keyword: string) =>
+    summary?.metrics.breakdown.find((b) => b.type.toLowerCase().includes(keyword.toLowerCase()));
+
+  const gcsItem = getBreakdown('google cloud storage') || getBreakdown('gcs');
+  const ec8aItem = getBreakdown('ec8a') || getBreakdown('result sheet');
+  const ocrItem = getBreakdown('gemini') || getBreakdown('ocr');
+  const evidenceItem = getBreakdown('observer') || getBreakdown('evidence');
+
   return (
     <div className="space-y-6">
       {/* Top Header & Refresh */}
@@ -203,19 +287,46 @@ export const StorageContentManagementTab: React.FC = () => {
             <div>
               <h2 className="text-base font-bold text-slate-900">Content Management & Storage Explorer</h2>
               <p className="text-xs text-slate-500">
-                Track storage capacity, inspect uploaded INEC Form EC8A result sheets, manage metadata, and view Cloud SQL & GCS bucket assets.
+                Track real storage capacity, inspect uploaded INEC Form EC8A result sheets, manage metadata, and connect with Google Cloud Storage & Cloud SQL.
               </p>
             </div>
           </div>
         </div>
-        <button
-          onClick={loadData}
-          disabled={isLoading}
-          className="inline-flex items-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg transition-colors"
-        >
-          <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
-          <span>Refresh Storage</span>
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={() => setIsUploadModalOpen(true)}
+            className="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold rounded-lg transition-colors shadow-2xs"
+            title="Upload Form EC8A document or incident photo directly into GC storage"
+          >
+            <Upload className="w-3.5 h-3.5" />
+            <span>Upload Document</span>
+          </button>
+          <button
+            onClick={handleInitFolders}
+            disabled={isInitializingFolders}
+            title="Create standard ec8a-result-sheets/, observer-evidence/, ocr-cache/ folders in GCS"
+            className="inline-flex items-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold rounded-lg transition-colors shadow-2xs disabled:opacity-50"
+          >
+            <FolderPlus className={`w-3.5 h-3.5 ${isInitializingFolders ? 'animate-pulse' : ''}`} />
+            <span>{isInitializingFolders ? 'Creating Folders...' : 'Init GCS Folders'}</span>
+          </button>
+          <button
+            onClick={() => setShowIamGuide(!showIamGuide)}
+            className="inline-flex items-center gap-1.5 px-3 py-2 bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-200 text-xs font-semibold rounded-lg transition-colors"
+            title="View GCP IAM Permissions & Service Account Binding instructions"
+          >
+            <Key className="w-3.5 h-3.5" />
+            <span>GCS IAM Guide</span>
+          </button>
+          <button
+            onClick={loadData}
+            disabled={isLoading}
+            className="inline-flex items-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg transition-colors"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
+            <span>Refresh Storage</span>
+          </button>
+        </div>
       </div>
 
       {actionSuccessNotice && (
@@ -230,6 +341,39 @@ export const StorageContentManagementTab: React.FC = () => {
         </div>
       )}
 
+      {/* Optional GCP IAM Permissions Guide Box */}
+      {showIamGuide && (
+        <div className="bg-sky-50 border border-sky-200 p-4 rounded-xl text-xs space-y-3">
+          <div className="flex items-center justify-between text-sky-950 font-bold">
+            <div className="flex items-center gap-2">
+              <Key className="w-4 h-4 text-sky-700" />
+              <span>Google Cloud Storage (GCS) Bucket Access Configuration</span>
+            </div>
+            <button onClick={() => setShowIamGuide(false)} className="text-sky-600 hover:text-sky-900">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+          <p className="text-sky-900 leading-relaxed">
+            Your bucket <strong className="font-mono">gs://{bucketName}</strong> is configured as the persistent store.
+            If your bucket was created in your own Google Cloud project and you wish to allow this app's service account to read/write directly, run this command in your Google Cloud Shell:
+          </p>
+          <div className="bg-slate-900 text-emerald-400 p-2.5 rounded font-mono text-[11px] overflow-x-auto flex items-center justify-between gap-2">
+            <code>gcloud storage buckets add-iam-policy-binding gs://{bucketName} --member="serviceAccount:ais-sandbox@ais-europe-west1-e2866bfcd9f34.iam.gserviceaccount.com" --role="roles/storage.objectAdmin"</code>
+            <button
+              onClick={() => handleCopyHash(`gcloud storage buckets add-iam-policy-binding gs://${bucketName} --member="serviceAccount:ais-sandbox@ais-europe-west1-e2866bfcd9f34.iam.gserviceaccount.com" --role="roles/storage.objectAdmin"`)}
+              className="p-1 hover:bg-slate-800 rounded text-slate-300"
+              title="Copy Command"
+            >
+              <Copy className="w-3.5 h-3.5" />
+            </button>
+          </div>
+          <div className="flex items-center gap-3 text-[11px] text-sky-800">
+            <span>• You can also browse, upload, and delete files directly in the <a href={`https://console.cloud.google.com/storage/browser/${bucketName}`} target="_blank" rel="noopener noreferrer" className="underline font-bold">Google Cloud Storage Console</a>.</span>
+            <span>• Database instance: <a href={`https://console.cloud.google.com/sql/instances/${cloudSqlInstance}`} target="_blank" rel="noopener noreferrer" className="underline font-bold">Cloud SQL ({cloudSqlInstance})</a>.</span>
+          </div>
+        </div>
+      )}
+
       {/* Storage Architecture & Access Guide Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Card 1: Cloud Storage Bucket (GCS) */}
@@ -240,25 +384,27 @@ export const StorageContentManagementTab: React.FC = () => {
               <span>Google Cloud Storage (GCS)</span>
             </div>
             <span className="text-[10px] font-mono font-bold bg-sky-50 text-sky-800 px-2 py-0.5 rounded">
-              Active Bucket
+              {summary?.storageBucket.gcsConnected ? (summary.storageBucket.gcsFilesCount ? `${summary.storageBucket.gcsFilesCount} Objects` : 'Connected (Empty)') : 'Target Bucket'}
             </span>
           </div>
           <div className="space-y-1.5 text-xs">
             <div className="flex justify-between py-1 border-b border-slate-100">
               <span className="text-slate-500">Bucket Name:</span>
-              <span className="font-mono font-semibold text-slate-800">
-                {summary?.storageBucket.bucketName || 'neramp-election-monitor-artifacts'}
+              <span className="font-mono font-semibold text-slate-800 truncate max-w-[190px]" title={bucketName}>
+                {bucketName}
               </span>
             </div>
             <div className="flex justify-between py-1 border-b border-slate-100">
               <span className="text-slate-500">URI Protocol:</span>
-              <span className="font-mono text-[11px] text-emerald-700">
-                {summary?.storageBucket.cloudStorageBucketUri || 'gs://neramp-election-monitor-artifacts'}
+              <span className="font-mono text-[11px] text-emerald-700 truncate max-w-[190px]" title={bucketUri}>
+                {bucketUri}
               </span>
             </div>
             <div className="flex justify-between py-1 border-b border-slate-100">
-              <span className="text-slate-500">Cloud Region:</span>
-              <span className="font-medium text-slate-700">europe-west1 / us-central1</span>
+              <span className="text-slate-500">GCS Objects:</span>
+              <span className="font-mono font-semibold text-slate-800">
+                {summary?.storageBucket.gcsFilesCount ?? 0} files ({(summary?.storageBucket.gcsTotalBytes ? (summary.storageBucket.gcsTotalBytes / (1024 * 1024)).toFixed(3) : '0.000')} MB)
+              </span>
             </div>
             <div className="flex justify-between py-1">
               <span className="text-slate-500">Container Path:</span>
@@ -267,7 +413,7 @@ export const StorageContentManagementTab: React.FC = () => {
           </div>
           <div className="pt-2">
             <a
-              href="https://console.cloud.google.com/storage/browser"
+              href={`https://console.cloud.google.com/storage/browser/${bucketName}`}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center justify-center gap-1.5 w-full py-1.5 px-3 bg-sky-50 hover:bg-sky-100 text-sky-700 text-xs font-semibold rounded-md transition-colors"
@@ -291,8 +437,8 @@ export const StorageContentManagementTab: React.FC = () => {
           </div>
           <div className="space-y-1.5 text-xs">
             <div className="flex justify-between py-1 border-b border-slate-100">
-              <span className="text-slate-500">Engine / Schema:</span>
-              <span className="font-semibold text-slate-800">PostgreSQL / Drizzle ORM</span>
+              <span className="text-slate-500">Instance Name:</span>
+              <span className="font-mono font-bold text-indigo-800">{cloudSqlInstance}</span>
             </div>
             <div className="flex justify-between py-1 border-b border-slate-100">
               <span className="text-slate-500">Relational Tables:</span>
@@ -309,7 +455,7 @@ export const StorageContentManagementTab: React.FC = () => {
           </div>
           <div className="pt-2">
             <a
-              href="https://console.cloud.google.com/sql/instances"
+              href={`https://console.cloud.google.com/sql/instances/${cloudSqlInstance}`}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center justify-center gap-1.5 w-full py-1.5 px-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-semibold rounded-md transition-colors"
@@ -328,7 +474,7 @@ export const StorageContentManagementTab: React.FC = () => {
               <span>Storage Quota & Utilization</span>
             </div>
             <span className="text-[11px] font-mono font-bold text-emerald-800">
-              {summary ? `${summary.metrics.totalStorageUsedMb} MB` : 'Calculating...'}
+              {summary ? `${summary.metrics.totalStorageUsedMb} MB` : '0.00 MB'}
             </span>
           </div>
 
@@ -336,13 +482,13 @@ export const StorageContentManagementTab: React.FC = () => {
             <div className="flex justify-between text-xs text-slate-600 mb-1">
               <span>Allocated Quota: 100 GB</span>
               <span className="font-bold text-slate-900">
-                {summary ? `${summary.metrics.usedPercentage}%` : '0%'}
+                {summary ? `${summary.metrics.usedPercentage}%` : '0.00%'}
               </span>
             </div>
             <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
               <div
                 className="bg-emerald-600 h-2.5 rounded-full transition-all duration-500"
-                style={{ width: `${Math.min(summary?.metrics.usedPercentage || 1, 100)}%` }}
+                style={{ width: `${Math.min(summary?.metrics.usedPercentage || 0, 100)}%` }}
               />
             </div>
           </div>
@@ -351,19 +497,19 @@ export const StorageContentManagementTab: React.FC = () => {
             <div className="flex justify-between">
               <span>Result Sheet Scans:</span>
               <span className="font-mono font-medium">
-                {summary?.metrics.breakdown[0]?.count || files.length} files ({summary?.metrics.breakdown[0]?.sizeMb || 0} MB)
+                {ec8aItem?.count || files.length} files ({ec8aItem?.sizeMb || 0} MB)
               </span>
             </div>
             <div className="flex justify-between">
               <span>Gemini OCR JSONs:</span>
               <span className="font-mono font-medium">
-                {summary?.metrics.breakdown[1]?.count || 0} cached ({summary?.metrics.breakdown[1]?.sizeMb || 0} MB)
+                {ocrItem?.count || 0} cached ({ocrItem?.sizeMb || 0} MB)
               </span>
             </div>
             <div className="flex justify-between">
               <span>Observer Evidence:</span>
               <span className="font-mono font-medium">
-                {summary?.metrics.breakdown[2]?.count || 0} items ({summary?.metrics.breakdown[2]?.sizeMb || 0} MB)
+                {evidenceItem?.count || 0} items ({evidenceItem?.sizeMb || 0} MB)
               </span>
             </div>
           </div>
@@ -777,6 +923,99 @@ export const StorageContentManagementTab: React.FC = () => {
                 <span>{isDeleting ? 'Deleting...' : 'Confirm Delete'}</span>
               </button>
             </div>
+          </div>
+        </div>
+      )}
+      {/* MODAL 4: Upload Document & Form EC8A Modal */}
+      {isUploadModalOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full overflow-hidden border border-slate-200">
+            <div className="p-4 border-b border-slate-200 bg-emerald-50 flex items-center justify-between text-emerald-900">
+              <div className="flex items-center gap-2">
+                <FileUp className="w-5 h-5 text-emerald-700" />
+                <h3 className="text-sm font-bold">Upload Document into Google Cloud Storage</h3>
+              </div>
+              <button
+                onClick={() => {
+                  setIsUploadModalOpen(false);
+                  setUploadFile(null);
+                  setUploadPreview(null);
+                }}
+                className="text-slate-400 hover:text-slate-700"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <form onSubmit={handleUploadSubmit} className="p-5 text-xs text-slate-700 space-y-4">
+              <div>
+                <label className="block font-semibold text-slate-800 mb-1">
+                  Select Form EC8A Result Sheet Scan / Observer Photo
+                </label>
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,application/pdf"
+                  onChange={handleFileSelect}
+                  required
+                  className="w-full text-xs text-slate-600 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-800 hover:file:bg-emerald-100 cursor-pointer"
+                />
+                <p className="text-[11px] text-slate-500 mt-1">
+                  Accepts JPG, PNG, WEBP, and PDF. File will be stored in <code className="font-mono text-emerald-800">gs://{bucketName}/ec8a-result-sheets/</code>.
+                </p>
+              </div>
+
+              {uploadPreview && (
+                <div className="space-y-2">
+                  <div className="font-semibold text-slate-800">Document Scan Preview:</div>
+                  <div className="max-h-48 overflow-hidden rounded-lg border border-slate-200 bg-slate-50 flex items-center justify-center p-2">
+                    <img
+                      src={uploadPreview}
+                      alt="Upload preview"
+                      className="max-h-44 object-contain rounded"
+                    />
+                  </div>
+                  <div className="text-[11px] text-slate-500 font-mono flex justify-between">
+                    <span>{uploadFileName}</span>
+                    <span>{uploadFile ? `${(uploadFile.size / 1024).toFixed(1)} KB` : ''}</span>
+                  </div>
+                </div>
+              )}
+
+              {uploadStatusMsg && (
+                <div className="p-3 bg-emerald-50 text-emerald-800 rounded-lg text-xs flex items-center gap-2 animate-pulse">
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  <span>{uploadStatusMsg}</span>
+                </div>
+              )}
+
+              <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 text-slate-600 text-[11px] space-y-1">
+                <div className="font-semibold text-slate-800">Automatic Storage & Pipeline Flow:</div>
+                <div>1. File is cryptographically hashed (SHA-256) and saved to persistent GC Storage.</div>
+                <div>2. Gemini AI Vision OCR automatically parses polling unit code, names, and ballot tallies.</div>
+                <div>3. Storage quota, usage MB, and result sheet registry update instantly.</div>
+              </div>
+
+              <div className="pt-2 flex justify-end gap-2 border-t border-slate-200">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsUploadModalOpen(false);
+                    setUploadFile(null);
+                    setUploadPreview(null);
+                  }}
+                  className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={!uploadPreview || isUploading}
+                  className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold rounded-lg transition-colors shadow-2xs disabled:opacity-50"
+                >
+                  <Upload className="w-3.5 h-3.5" />
+                  <span>{isUploading ? 'Uploading & Transcribing...' : 'Upload & Transcribe'}</span>
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

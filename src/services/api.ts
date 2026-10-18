@@ -728,3 +728,20 @@ export async function editStorageFile(id: string, updates: any) {
   return res.json();
 }
 
+export async function initGcsFolders() {
+  const res = await fetch(`${API_BASE}/admin/storage/init-folders`, {
+    method: 'POST',
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Failed to initialize GCS bucket folders');
+  }
+  return res.json();
+}
+
+export async function fetchOcrQuotaStatus() {
+  const res = await fetch(`${API_BASE}/ocr/quota-status`);
+  if (!res.ok) throw new Error('Failed to fetch OCR quota status');
+  return res.json();
+}
+
