@@ -167,11 +167,15 @@ export async function fetchIngestionStatus() {
   return res.json();
 }
 
-export async function triggerIngestionRun(adapter = 'InecApprovedSourceAdapter', electionId = 'elec-2026-gov-osun') {
+export async function triggerIngestionRun(
+  adapter = 'InecApprovedSourceAdapter',
+  electionId = 'elec-2026-gov-osun',
+  maxWards = 20
+) {
   const res = await fetch(`${API_BASE}/admin/ingestion/run`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ adapter, electionId }),
+    body: JSON.stringify({ adapter, electionId, maxWards }),
   });
   if (!res.ok) throw new Error('Failed to trigger ingestion run');
   return res.json();
@@ -571,6 +575,18 @@ export async function toggleReadinessChecklist(checklist: string, taskId: string
     body: JSON.stringify({ checklist, taskId }),
   });
   if (!res.ok) throw new Error('Failed to toggle checklist task');
+  return res.json();
+}
+
+export async function purgeDemonstrationData() {
+  const res = await fetch(`${API_BASE}/admin/data/purge-demo`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Failed to purge demo data');
+  }
   return res.json();
 }
 

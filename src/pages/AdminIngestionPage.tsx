@@ -13,6 +13,7 @@ import {
   ArrowRight,
   Sliders,
   CheckCircle,
+  Trash2,
 } from 'lucide-react';
 import {
   fetchIngestionStatus,
@@ -23,6 +24,7 @@ import {
   testSourceConnection,
   fetchSchedulerConfig,
   updateSchedulerConfig,
+  purgeDemonstrationData,
 } from '../services/api';
 import { DisclaimerBanner } from '../components/DisclaimerBanner';
 
@@ -35,6 +37,10 @@ export const AdminIngestionPage: React.FC = () => {
   const [isTestingConn, setIsTestingConn] = useState(false);
   const [healthResult, setHealthResult] = useState<any>(null);
   const [triggerSuccess, setTriggerSuccess] = useState<string | null>(null);
+
+  const [maxWards, setMaxWards] = useState<number>(20);
+  const [isPurging, setIsPurging] = useState(false);
+  const [purgeSuccess, setPurgeSuccess] = useState<string | null>(null);
 
   // Manual Trigger options
   const [selectedAdapter, setSelectedAdapter] = useState<'InecApprovedSourceAdapter' | 'DevelopmentFixtureAdapter'>(
@@ -63,6 +69,28 @@ export const AdminIngestionPage: React.FC = () => {
     loadAll();
   }, []);
 
+  const handlePurgeDemo = async () => {
+    if (
+      !window.confirm(
+        'CONFIRM PURGE: Are you sure you want to remove all synthetic 2027 demonstration data? This leaves only real off-cycle election records (Ekiti & Osun) and switches the platform to pure production mode.'
+      )
+    ) {
+      return;
+    }
+
+    try {
+      setIsPurging(true);
+      setPurgeSuccess(null);
+      const res = await purgeDemonstrationData();
+      setPurgeSuccess(res.message);
+      await loadAll();
+    } catch (err: any) {
+      setPurgeSuccess(`Purge failed: ${err.message}`);
+    } finally {
+      setIsPurging(false);
+    }
+  };
+
   const handleTestConnection = async () => {
     try {
       setIsTestingConn(true);
@@ -83,7 +111,7 @@ export const AdminIngestionPage: React.FC = () => {
     try {
       setIsRunning(true);
       setTriggerSuccess(null);
-      const res = await triggerIngestionRun(selectedAdapter, selectedElection);
+      const res = await triggerIngestionRun(selectedAdapter, selectedElection, maxWards);
       setTriggerSuccess(
         `Ingestion run #${res.data.id} completed. ${res.data.recordsProcessed} polling units processed from ${res.data.sourceAttribution}.`
       );
@@ -315,13 +343,43 @@ export const AdminIngestionPage: React.FC = () => {
         </div>
       </div>
 
+      {/* Production Clean-Slate: Purge Demo Fixtures */}
+      <div className="bg-amber-50/70 p-5 rounded-lg border border-amber-200 shadow-2xs space-y-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h3 className="text-xs font-bold text-amber-900 uppercase tracking-wide flex items-center gap-2">
+              <Trash2 className="w-4 h-4 text-amber-700" />
+              <span>Production Clean-Slate: Purge Demonstration Data</span>
+            </h3>
+            <p className="text-xs text-amber-800 mt-1 max-w-2xl leading-relaxed">
+              Remove all preconfigured synthetic 2027 general election demo fixtures. This resets the database into pure production mode containing strictly real INEC off-cycle election results (Ekiti and Osun State).
+            </p>
+          </div>
+
+          <button
+            onClick={handlePurgeDemo}
+            disabled={isPurging}
+            className="px-4 py-2 bg-amber-700 hover:bg-amber-800 text-white rounded text-xs font-bold transition-colors disabled:opacity-50 shrink-0 flex items-center gap-1.5 shadow-2xs cursor-pointer"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            <span>{isPurging ? 'Purging Demo Data...' : 'Purge All Demo Fixtures'}</span>
+          </button>
+        </div>
+
+        {purgeSuccess && (
+          <div className="p-3 bg-white rounded border border-amber-300 text-xs text-emerald-800 font-medium">
+            ✅ {purgeSuccess}
+          </div>
+        )}
+      </div>
+
       {/* Manual Ingestion Command for Authorized Administrators */}
       <div className="bg-white p-5 rounded-lg border border-slate-200 shadow-2xs space-y-4">
         <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wide border-b border-slate-100 pb-2">
           Manual Ingestion Command for Authorised Administrators
         </h3>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-xs">
           <div>
             <label className="block text-slate-600 font-semibold mb-1">Target Adapter</label>
             <select
@@ -346,7 +404,10 @@ export const AdminIngestionPage: React.FC = () => {
               className="w-full bg-slate-50 border border-slate-300 rounded px-2.5 py-1.5 text-slate-900 font-semibold focus:outline-emerald-600"
             >
               <option value="elec-2026-gov-osun">
-                Governorship election - 2026-08-15 - OSUN
+                Governorship election - 2026-08-15 - OSUN (Official Live)
+              </option>
+              <option value="elec-2026-gov-ekiti">
+                Governorship election - 2026-06-20 - EKITI (Official Live)
               </option>
               <option value="elec-2027-pres">
                 2027 Presidential General Election (Demonstration)
@@ -354,17 +415,37 @@ export const AdminIngestionPage: React.FC = () => {
             </select>
           </div>
 
+          <div>
+            <label className="block text-slate-600 font-semibold mb-1">Ingestion Batch Size</label>
+            <select
+              value={maxWards}
+              onChange={(e) => setMaxWards(Number(e.target.value))}
+              className="w-full bg-slate-50 border border-slate-300 rounded px-2.5 py-1.5 text-slate-900 font-semibold focus:outline-emerald-600"
+            >
+              <option value={5}>5 Wards (~35 Polling Units)</option>
+              <option value={10}>10 Wards (~70 Polling Units)</option>
+              <option value={20}>20 Wards (~140 Polling Units)</option>
+              <option value={50}>50 Wards (~350 Polling Units)</option>
+            </select>
+          </div>
+
           <div className="flex items-end">
             <button
               onClick={handleTriggerRun}
               disabled={isRunning}
-              className="w-full py-2 bg-emerald-800 hover:bg-emerald-700 text-white rounded text-xs font-bold transition-colors disabled:opacity-50 shadow-2xs flex items-center justify-center gap-1.5"
+              className="w-full py-2 bg-emerald-800 hover:bg-emerald-700 text-white rounded text-xs font-bold transition-colors disabled:opacity-50 shadow-2xs flex items-center justify-center gap-1.5 cursor-pointer"
             >
               <Play className="w-3.5 h-3.5" />
               <span>{isRunning ? 'Executing Ingestion Pipeline...' : 'Execute Manual Ingestion'}</span>
             </button>
           </div>
         </div>
+
+        {triggerSuccess && (
+          <div className="p-3 bg-emerald-50 rounded border border-emerald-200 text-xs text-emerald-900 font-semibold">
+            {triggerSuccess}
+          </div>
+        )}
 
         <p className="text-[11px] text-slate-500 italic">
           Manual ingestion triggers execute idempotent syndication. Duplicate result sheets (identical SHA-256 hash) are automatically skipped, and revisions trigger automated document version increments.
