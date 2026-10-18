@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Election, State, LGA } from '../types';
-import { fetchElections, fetchStates, fetchLgas } from '../services/api';
+import { Election, State, LGA, Ward } from '../types';
+import { fetchElections, fetchStates, fetchLgas, fetchWards } from '../services/api';
 
 interface ElectionContextType {
   elections: Election[];
@@ -12,6 +12,7 @@ interface ElectionContextType {
   lgas: LGA[];
   selectedLgaCode: string;
   setSelectedLgaCode: (code: string) => void;
+  wards: Ward[];
   selectedWardCode: string;
   setSelectedWardCode: (code: string) => void;
   uploadStatusFilter: string;
@@ -21,6 +22,7 @@ interface ElectionContextType {
   searchQuery: string;
   setSearchQuery: (query: string) => void;
   resetFilters: () => void;
+  refreshGeography: () => Promise<void>;
   isLoading: boolean;
 }
 
@@ -33,11 +35,29 @@ export const ElectionProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [selectedStateCode, setSelectedStateCode] = useState<string>('');
   const [lgas, setLgas] = useState<LGA[]>([]);
   const [selectedLgaCode, setSelectedLgaCode] = useState<string>('');
+  const [wards, setWards] = useState<Ward[]>([]);
   const [selectedWardCode, setSelectedWardCode] = useState<string>('');
   const [uploadStatusFilter, setUploadStatusFilter] = useState<string>('');
   const [verificationStatusFilter, setVerificationStatusFilter] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  const refreshGeography = async () => {
+    try {
+      const statesRes = await fetchStates();
+      setStates(statesRes.data);
+      if (selectedStateCode) {
+        const lgaRes = await fetchLgas(selectedStateCode);
+        setLgas(lgaRes.data);
+      }
+      if (selectedLgaCode) {
+        const wardRes = await fetchWards(selectedLgaCode, selectedStateCode || undefined);
+        setWards(wardRes.data);
+      }
+    } catch (err) {
+      console.error('Failed to refresh geography:', err);
+    }
+  };
 
   useEffect(() => {
     async function init() {
@@ -60,6 +80,9 @@ export const ElectionProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   useEffect(() => {
     async function loadLgas() {
+      setSelectedLgaCode('');
+      setSelectedWardCode('');
+      setWards([]);
       if (selectedStateCode) {
         try {
           const res = await fetchLgas(selectedStateCode);
@@ -69,12 +92,27 @@ export const ElectionProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         }
       } else {
         setLgas([]);
-        setSelectedLgaCode('');
-        setSelectedWardCode('');
       }
     }
     loadLgas();
   }, [selectedStateCode]);
+
+  useEffect(() => {
+    async function loadWards() {
+      setSelectedWardCode('');
+      if (selectedLgaCode) {
+        try {
+          const res = await fetchWards(selectedLgaCode, selectedStateCode || undefined);
+          setWards(res.data);
+        } catch (err) {
+          console.error('Failed to load Wards:', err);
+        }
+      } else {
+        setWards([]);
+      }
+    }
+    loadWards();
+  }, [selectedLgaCode]);
 
   const resetFilters = () => {
     setSelectedStateCode('');
@@ -97,6 +135,7 @@ export const ElectionProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         lgas,
         selectedLgaCode,
         setSelectedLgaCode,
+        wards,
         selectedWardCode,
         setSelectedWardCode,
         uploadStatusFilter,
@@ -106,6 +145,7 @@ export const ElectionProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         searchQuery,
         setSearchQuery,
         resetFilters,
+        refreshGeography,
         isLoading,
       }}
     >

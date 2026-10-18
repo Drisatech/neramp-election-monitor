@@ -70,14 +70,6 @@ export const AdminIngestionPage: React.FC = () => {
   }, []);
 
   const handlePurgeDemo = async () => {
-    if (
-      !window.confirm(
-        'CONFIRM PURGE: Are you sure you want to remove all synthetic 2027 demonstration data? This leaves only real off-cycle election records (Ekiti & Osun) and switches the platform to pure production mode.'
-      )
-    ) {
-      return;
-    }
-
     try {
       setIsPurging(true);
       setPurgeSuccess(null);

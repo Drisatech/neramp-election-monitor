@@ -5,6 +5,13 @@ import fs from 'fs';
 import { fileURLToPath } from 'url';
 import crypto from 'crypto';
 import https from 'https';
+import * as XLSX from 'xlsx';
+import {
+  InecStateStatistic,
+  OFFICIAL_INEC_STATES,
+  INEC_NATIONAL_SUMMARY,
+  buildOfficialLgasAndWards,
+} from './src/constants/inecStatistics.ts';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -79,6 +86,9 @@ export interface PoliticalParty {
   code: string;
   name: string;
   color: string;
+  logoUrl: string;
+  chairman?: string;
+  secretary?: string;
 }
 
 export interface Candidate {
@@ -91,12 +101,16 @@ export interface Candidate {
 
 export interface State {
   id: string;
+  sn?: number;
   code: string;
   name: string;
   zone: 'North Central' | 'North East' | 'North West' | 'South East' | 'South South' | 'South West';
   totalLgas: number;
+  totalWards: number;
   totalPus: number;
   registeredVoters: number;
+  pvcsCollected: number;
+  pvcCollectionRate: number;
   latitude: number;
   longitude: number;
 }
@@ -106,8 +120,12 @@ export interface LGA {
   code: string;
   name: string;
   stateCode: string;
+  stateName?: string;
   totalWards: number;
   totalPus: number;
+  registeredVoters: number;
+  pvcsCollected: number;
+  pvcCollectionRate: number;
 }
 
 export interface Ward {
@@ -115,8 +133,13 @@ export interface Ward {
   code: string;
   name: string;
   lgaCode: string;
+  lgaName?: string;
   stateCode: string;
+  stateName?: string;
   totalPus: number;
+  registeredVoters: number;
+  pvcsCollected: number;
+  pvcCollectionRate: number;
 }
 
 export interface PollingUnit {
@@ -127,6 +150,8 @@ export interface PollingUnit {
   lgaCode: string;
   wardCode: string;
   registeredVoters: number;
+  pvcsCollected?: number;
+  pvcCollectionRate?: number;
   accreditedVoters: number;
   electionId: string;
   uploadStatus: 'UPLOADED' | 'NOT_YET_UPLOADED' | 'SOURCE_UNAVAILABLE';
@@ -231,120 +256,106 @@ export interface IncidentReport {
   observerBadge: string;
 }
 
-// In-Memory Database Store
+// Official Registered Political Parties in Nigeria (Source: INEC - https://www.inecnigeria.org/parties)
 const PARTIES: PoliticalParty[] = [
-  { id: 'pty-1', code: 'APC', name: 'All Progressives Congress', color: '#16a34a' },
-  { id: 'pty-2', code: 'PDP', name: 'Peoples Democratic Party', color: '#dc2626' },
-  { id: 'pty-3', code: 'LP', name: 'Labour Party', color: '#ea580c' },
-  { id: 'pty-4', code: 'NNPP', name: 'New Nigeria Peoples Party', color: '#2563eb' },
-  { id: 'pty-5', code: 'APGA', name: 'All Progressives Grand Alliance', color: '#ca8a04' },
-  { id: 'pty-6', code: 'SDP', name: 'Social Democratic Party', color: '#0891b2' },
-  { id: 'pty-7', code: 'ADC', name: 'African Democratic Congress', color: '#9333ea' },
-  { id: 'pty-8', code: 'ACCORD', name: 'Accord Party', color: '#f97316' },
+  { id: 'pty-a', code: 'A', name: 'Accord', color: '#f97316', logoUrl: '/party-logos/a.jpg', chairman: 'Bar. Maxwell Mgbudem', secretary: 'Hon. Adebukola Abiola Ajaja' },
+  { id: 'pty-aa', code: 'AA', name: 'Action Alliance', color: '#1d4ed8', logoUrl: '/party-logos/aa.jpg', chairman: 'Hon. Adekunle Rufai Omoaje', secretary: 'Miller C. Orgwu' },
+  { id: 'pty-aac', code: 'AAC', name: 'African Action Congress', color: '#b91c1c', logoUrl: '/party-logos/aac.jpg', chairman: 'Omoyele Sowore', secretary: 'Oshiokhue Philip Ikpeminoghena' },
+  { id: 'pty-adc', code: 'ADC', name: 'African Democratic Congress', color: '#15803d', logoUrl: '/party-logos/adc.jpg', chairman: 'Sen. David Mark', secretary: 'Ogbeni Rauf Aregbesola' },
+  { id: 'pty-adp', code: 'ADP', name: 'Action Democratic Party', color: '#1e3a8a', logoUrl: '/party-logos/adp.png', chairman: 'Engr. Yabagi Yusuf Sani', secretary: 'Victor Fingesi' },
+  { id: 'pty-apc', code: 'APC', name: 'All Progressives Congress', color: '#16a34a', logoUrl: '/party-logos/apc.jpg', chairman: 'Prof. Nentawe Yilwatda Goshwe', secretary: 'Sen. Surajudeen Ajibola Basiru PhD, BL' },
+  { id: 'pty-apga', code: 'APGA', name: 'All Progressives Grand Alliance', color: '#ca8a04', logoUrl: '/party-logos/apga.jpg', chairman: 'Barrister Sylvester Ezeokenwa', secretary: 'Ibrahim Mani' },
+  { id: 'pty-apm', code: 'APM', name: 'Allied Peoples Movement', color: '#7c3aed', logoUrl: '/party-logos/apm.jpg', chairman: 'Yusuf Mamman Dantalle', secretary: 'Oyadeyi Ayodele Adebayo' },
+  { id: 'pty-app', code: 'APP', name: 'Action Peoples Party', color: '#0369a1', logoUrl: '/party-logos/app.png', chairman: 'Uchenna Nnadi', secretary: 'Abu Ibrahim Sossan' },
+  { id: 'pty-bp', code: 'BP', name: 'Boot Party', color: '#0f766e', logoUrl: '/party-logos/bp.jpg', chairman: 'Adenuga Sunday', secretary: 'Egwuatu Maryann .C' },
+  { id: 'pty-dla', code: 'DLA', name: 'Democratic Leadership Alliance', color: '#4338ca', logoUrl: '/party-logos/dla.jpg', chairman: 'Barr. Samuel M. Memeh', secretary: 'Grace E. Obekpa' },
+  { id: 'pty-lp', code: 'LP', name: 'Labour Party', color: '#ea580c', logoUrl: '/party-logos/lp.jpg', chairman: 'Sen. Nenadi E. Usman', secretary: 'Hon. Iheanacho Obioma' },
+  { id: 'pty-ndc', code: 'NDC', name: 'Nigeria Democratic Congress', color: '#047857', logoUrl: '/party-logos/ndc.jpeg', chairman: 'Sen. Cleopas Moses Zuwoghe', secretary: 'Barr. Ikenna Morgan Enekwei' },
+  { id: 'pty-ndp', code: 'NDP', name: 'National Democratic Party', color: '#b45309', logoUrl: '/party-logos/ndp.jpg', chairman: 'Hon. Ada Elizabeth Fredrick Okwori', secretary: 'Mr. Silva Opusunju' },
+  { id: 'pty-nnpp', code: 'NNPP', name: 'New Nigeria Peoples Party', color: '#2563eb', logoUrl: '/party-logos/nnpp.jpg', chairman: 'Dr. Agbo Gilbert Major', secretary: 'Com. Olaposi Sunday Oginni' },
+  { id: 'pty-nrm', code: 'NRM', name: 'National Rescue Movement', color: '#d97706', logoUrl: '/party-logos/nrm.png', chairman: 'Prince (Dr.) Chinedu Obi', secretary: 'Alh. Hassan Aminu Ibrahim' },
+  { id: 'pty-pdp', code: 'PDP', name: 'Peoples Democratic Party', color: '#dc2626', logoUrl: '/party-logos/pdp.png', chairman: 'Hon. Abdulrahman Mohammed', secretary: 'Senator Samuel Anyanwu' },
+  { id: 'pty-prp', code: 'PRP', name: 'Peoples Redemption Party', color: '#991b1b', logoUrl: '/party-logos/prp.png', chairman: 'Dr. Hakeem Baba-Ahmed', secretary: 'Mr. Kanu Sunday Uchenna' },
+  { id: 'pty-sdp', code: 'SDP', name: 'Social Democratic Party', color: '#0891b2', logoUrl: '/party-logos/sdp.png', chairman: 'Prof. Sadiq Umar Abubakar Gombe', secretary: 'Dr. Olu Agunloye' },
+  { id: 'pty-yp', code: 'YP', name: 'Youth Party', color: '#65a30d', logoUrl: '/party-logos/yp.png', chairman: 'Mr. Abdulraham Abubakar', secretary: 'Mrs. Helen Adoh' },
+  { id: 'pty-ypp', code: 'YPP', name: 'Young Progressives Party', color: '#e11d48', logoUrl: '/party-logos/ypp.jpeg', chairman: 'Comrade Bishop Amakiri', secretary: 'Barr. Vidiyeno Bamaiyi' },
+  { id: 'pty-zlp', code: 'ZLP', name: 'Zenith Labour Party', color: '#0d9488', logoUrl: '/party-logos/zlp.jpg', chairman: 'Chief Dan Nwanyanwu, OFR', secretary: 'Yahaya Makama' },
 ];
 
-const CANDIDATES: Candidate[] = [
-  // Real Osun State Governorship Candidates
-  { id: 'cand-osun-1', name: 'Ademola Adeleke', partyCode: 'PDP', runningMate: 'Kola Adewusi' },
-  { id: 'cand-osun-2', name: 'Gboyega Oyetola', partyCode: 'APC', runningMate: 'Benedict Alabi' },
-  { id: 'cand-osun-3', name: 'Lasun Yusuff', partyCode: 'LP', runningMate: 'Adeola Atanda' },
-  // Real Ekiti State Governorship Candidates
-  { id: 'cand-ekiti-1', name: 'Biodun Oyebanji', partyCode: 'APC', runningMate: 'Monisade Afuye' },
-  { id: 'cand-ekiti-2', name: 'Segun Oni', partyCode: 'SDP', runningMate: 'Ladi Owolabi' },
-  { id: 'cand-ekiti-3', name: 'Bisi Kolawole', partyCode: 'PDP', runningMate: 'Kolapo Eleka' },
-];
+const CANDIDATES: Candidate[] = [];
 
-const STATES: State[] = [
-  { id: 'st-01', code: 'ABIA', name: 'Abia', zone: 'South East', totalLgas: 17, totalPus: 4062, registeredVoters: 2120808, latitude: 5.4527, longitude: 7.5248 },
-  { id: 'st-02', code: 'ADAMAWA', name: 'Adamawa', zone: 'North East', totalLgas: 21, totalPus: 4104, registeredVoters: 2196566, latitude: 9.3265, longitude: 12.4411 },
-  { id: 'st-03', code: 'AKWA_IBOM', name: 'Akwa Ibom', zone: 'South South', totalLgas: 31, totalPus: 4353, registeredVoters: 2357418, latitude: 5.0377, longitude: 7.9128 },
-  { id: 'st-04', code: 'ANAMBRA', name: 'Anambra', zone: 'South East', totalLgas: 21, totalPus: 5720, registeredVoters: 2656437, latitude: 6.2209, longitude: 7.0722 },
-  { id: 'st-05', code: 'BAUCHI', name: 'Bauchi', zone: 'North East', totalLgas: 20, totalPus: 5423, registeredVoters: 2749268, latitude: 10.3158, longitude: 9.8442 },
-  { id: 'st-06', code: 'BAYELSA', name: 'Bayelsa', zone: 'South South', totalLgas: 8, totalPus: 2244, registeredVoters: 1056862, latitude: 4.7719, longitude: 6.0699 },
-  { id: 'st-07', code: 'BENUE', name: 'Benue', zone: 'North Central', totalLgas: 23, totalPus: 5102, registeredVoters: 2777727, latitude: 7.3369, longitude: 8.7404 },
-  { id: 'st-08', code: 'BORNO', name: 'Borno', zone: 'North East', totalLgas: 27, totalPus: 5071, registeredVoters: 2513281, latitude: 11.8333, longitude: 13.1500 },
-  { id: 'st-09', code: 'CROSS_RIVER', name: 'Cross River', zone: 'South South', totalLgas: 18, totalPus: 3281, registeredVoters: 1541758, latitude: 5.9631, longitude: 8.3300 },
-  { id: 'st-10', code: 'DELTA', name: 'Delta', zone: 'South South', totalLgas: 25, totalPus: 5863, registeredVoters: 3225243, latitude: 5.7040, longitude: 5.9339 },
-  { id: 'st-11', code: 'EBONYI', name: 'Ebonyi', zone: 'South East', totalLgas: 13, totalPus: 2940, registeredVoters: 1597646, latitude: 6.2550, longitude: 8.0844 },
-  { id: 'st-12', code: 'EDO', name: 'Edo', zone: 'South South', totalLgas: 18, totalPus: 4519, registeredVoters: 2501081, latitude: 6.5438, longitude: 5.8987 },
-  { id: 'st-13', code: 'EKITI', name: 'Ekiti', zone: 'South West', totalLgas: 16, totalPus: 2445, registeredVoters: 987647, latitude: 7.7190, longitude: 5.3110 },
-  { id: 'st-14', code: 'ENUGU', name: 'Enugu', zone: 'South East', totalLgas: 17, totalPus: 4145, registeredVoters: 2112793, latitude: 6.5364, longitude: 7.4383 },
-  { id: 'st-15', code: 'FCT', name: 'FCT Abuja', zone: 'North Central', totalLgas: 6, totalPus: 2822, registeredVoters: 1570307, latitude: 9.0765, longitude: 7.3986 },
-  { id: 'st-16', code: 'GOMBE', name: 'Gombe', zone: 'North East', totalLgas: 11, totalPus: 2988, registeredVoters: 1575794, latitude: 10.2897, longitude: 11.1673 },
-  { id: 'st-17', code: 'IMO', name: 'Imo', zone: 'South East', totalLgas: 27, totalPus: 4758, registeredVoters: 2419922, latitude: 5.5720, longitude: 7.0588 },
-  { id: 'st-18', code: 'JIGAWA', name: 'Jigawa', zone: 'North West', totalLgas: 27, totalPus: 4522, registeredVoters: 2351298, latitude: 12.2280, longitude: 9.5616 },
-  { id: 'st-19', code: 'KADUNA', name: 'Kaduna', zone: 'North West', totalLgas: 23, totalPus: 8012, registeredVoters: 4335208, latitude: 10.5105, longitude: 7.4165 },
-  { id: 'st-20', code: 'KANO', name: 'Kano', zone: 'North West', totalLgas: 44, totalPus: 11222, registeredVoters: 5921370, latitude: 12.0022, longitude: 8.5920 },
-  { id: 'st-21', code: 'KATSINA', name: 'Katsina', zone: 'North West', totalLgas: 34, totalPus: 6652, registeredVoters: 3516719, latitude: 12.9908, longitude: 7.6018 },
-  { id: 'st-22', code: 'KEBBI', name: 'Kebbi', zone: 'North West', totalLgas: 21, totalPus: 3745, registeredVoters: 2032041, latitude: 12.4504, longitude: 4.1999 },
-  { id: 'st-23', code: 'KOGI', name: 'Kogi', zone: 'North Central', totalLgas: 21, totalPus: 3508, registeredVoters: 1932654, latitude: 7.7337, longitude: 6.6906 },
-  { id: 'st-24', code: 'KWARA', name: 'Kwara', zone: 'North Central', totalLgas: 16, totalPus: 2887, registeredVoters: 1695927, latitude: 8.9669, longitude: 4.6027 },
-  { id: 'st-25', code: 'LAGOS', name: 'Lagos', zone: 'South West', totalLgas: 20, totalPus: 13325, registeredVoters: 7060198, latitude: 6.5244, longitude: 3.3792 },
-  { id: 'st-26', code: 'NASARAWA', name: 'Nasarawa', zone: 'North Central', totalLgas: 13, totalPus: 3256, registeredVoters: 1899244, latitude: 8.4998, longitude: 8.5247 },
-  { id: 'st-27', code: 'NIGER', name: 'Niger', zone: 'North Central', totalLgas: 25, totalPus: 4950, registeredVoters: 2698344, latitude: 9.9309, longitude: 5.5983 },
-  { id: 'st-28', code: 'OGUN', name: 'Ogun', zone: 'South West', totalLgas: 20, totalPus: 5042, registeredVoters: 2688305, latitude: 7.1604, longitude: 3.3483 },
-  { id: 'st-29', code: 'ONDO', name: 'Ondo', zone: 'South West', totalLgas: 18, totalPus: 3933, registeredVoters: 1991344, latitude: 7.2571, longitude: 5.2058 },
-  { id: 'st-30', code: 'OSUN', name: 'Osun', zone: 'South West', totalLgas: 30, totalPus: 3763, registeredVoters: 1954800, latitude: 7.5629, longitude: 4.5200 },
-  { id: 'st-31', code: 'OYO', name: 'Oyo', zone: 'South West', totalLgas: 33, totalPus: 6390, registeredVoters: 3276675, latitude: 7.8500, longitude: 3.9333 },
-  { id: 'st-32', code: 'PLATEAU', name: 'Plateau', zone: 'North Central', totalLgas: 17, totalPus: 4998, registeredVoters: 2789528, latitude: 9.2182, longitude: 9.5179 },
-  { id: 'st-33', code: 'RIVERS', name: 'Rivers', zone: 'South South', totalLgas: 23, totalPus: 6866, registeredVoters: 3537190, latitude: 4.8156, longitude: 7.0498 },
-  { id: 'st-34', code: 'SOKOTO', name: 'Sokoto', zone: 'North West', totalLgas: 23, totalPus: 3991, registeredVoters: 2172056, latitude: 13.0609, longitude: 5.2390 },
-  { id: 'st-35', code: 'TARABA', name: 'Taraba', zone: 'North East', totalLgas: 16, totalPus: 3580, registeredVoters: 2022374, latitude: 7.8704, longitude: 9.7800 },
-  { id: 'st-36', code: 'YOBE', name: 'Yobe', zone: 'North East', totalLgas: 17, totalPus: 2823, registeredVoters: 1485146, latitude: 12.0000, longitude: 11.5000 },
-  { id: 'st-37', code: 'ZAMFARA', name: 'Zamfara', zone: 'North West', totalLgas: 14, totalPus: 3529, registeredVoters: 1926870, latitude: 12.1222, longitude: 6.2236 },
-];
+// Official INEC 36 States + FCT (37 Jurisdictions, 774 LGAs, 8,809 Wards, 176,846 Polling Units)
+const VOTER_OVERRIDE_FILE = path.join(__dirname, 'public', 'registered-voters-override.json');
 
-const LGAS: LGA[] = [
-  // Lagos LGAs
-  { id: 'lga-25-01', code: 'LAGOS_ISLAND', name: 'Lagos Island', stateCode: 'LAGOS', totalWards: 19, totalPus: 512 },
-  { id: 'lga-25-02', code: 'IKEJA', name: 'Ikeja', stateCode: 'LAGOS', totalWards: 10, totalPus: 468 },
-  { id: 'lga-25-03', code: 'ETI_OSA', name: 'Eti Osa', stateCode: 'LAGOS', totalWards: 10, totalPus: 580 },
-  { id: 'lga-25-04', code: 'ALIMOSHO', name: 'Alimosho', stateCode: 'LAGOS', totalWards: 11, totalPus: 1545 },
-  { id: 'lga-25-05', code: 'SURULERE', name: 'Surulere', stateCode: 'LAGOS', totalWards: 12, totalPus: 785 },
-  // Kano LGAs
-  { id: 'lga-20-01', code: 'KANO_MUNICIPAL', name: 'Kano Municipal', stateCode: 'KANO', totalWards: 13, totalPus: 620 },
-  { id: 'lga-20-02', code: 'FAGGE', name: 'Fagge', stateCode: 'KANO', totalWards: 10, totalPus: 410 },
-  { id: 'lga-20-03', code: 'NASARAWA_KANO', name: 'Nasarawa (Kano)', stateCode: 'KANO', totalWards: 11, totalPus: 590 },
-  // Rivers LGAs
-  { id: 'lga-33-01', code: 'PORT_HARCOURT', name: 'Port Harcourt', stateCode: 'RIVERS', totalWards: 20, totalPus: 780 },
-  { id: 'lga-33-02', code: 'OBIO_AKPOR', name: 'Obio/Akpor', stateCode: 'RIVERS', totalWards: 17, totalPus: 890 },
-  // FCT LGAs (Area Councils)
-  { id: 'lga-15-01', code: 'ABUJA_MUNICIPAL', name: 'Abuja Municipal (AMAC)', stateCode: 'FCT', totalWards: 12, totalPus: 940 },
-  { id: 'lga-15-02', code: 'BWARI', name: 'Bwari', stateCode: 'FCT', totalWards: 10, totalPus: 410 },
-  // Enugu LGAs
-  { id: 'lga-14-01', code: 'ENUGU_NORTH', name: 'Enugu North', stateCode: 'ENUGU', totalWards: 13, totalPus: 380 },
-  { id: 'lga-14-02', code: 'NSUKKA', name: 'Nsukka', stateCode: 'ENUGU', totalWards: 20, totalPus: 510 },
-  // Osun LGAs (Official Election 2026-08-15)
-  { id: 'lga-29-01', code: 'OSOGBO', name: 'Osogbo', stateCode: 'OSUN', totalWards: 15, totalPus: 240 },
-  { id: 'lga-29-02', code: 'EDE_SOUTH', name: 'Ede South', stateCode: 'OSUN', totalWards: 10, totalPus: 125 },
-  { id: 'lga-29-03', code: 'ILESA_EAST', name: 'Ilesa East', stateCode: 'OSUN', totalWards: 11, totalPus: 142 },
-  { id: 'lga-29-04', code: 'IFE_CENTRAL', name: 'Ife Central', stateCode: 'OSUN', totalWards: 11, totalPus: 160 },
-];
+let ACTIVE_INEC_STATES: InecStateStatistic[] = OFFICIAL_INEC_STATES.map((s) => ({ ...s, lgaNames: [...s.lgaNames] }));
 
-const WARDS: Ward[] = [
-  // Osun Wards
-  { id: 'w-29-01', code: 'ATAOJA_A', name: "Ataoja 'A'", lgaCode: 'OSOGBO', stateCode: 'OSUN', totalPus: 30 },
-  { id: 'w-29-02', code: 'EDE_S_01', name: "Babanla / Agbalemobutu", lgaCode: 'EDE_SOUTH', stateCode: 'OSUN', totalPus: 20 },
-  { id: 'w-29-03', code: 'ILESA_E_01', name: "Iloro / Ijoka", lgaCode: 'ILESA_EAST', stateCode: 'OSUN', totalPus: 25 },
-  { id: 'w-29-04', code: 'IFE_C_01', name: "Ilare / Enuwa", lgaCode: 'IFE_CENTRAL', stateCode: 'OSUN', totalPus: 22 },
-  // Lagos Island Wards
-  { id: 'w-01', code: 'LAG_ISL_01', name: 'Olowogbowo / Elegbata', lgaCode: 'LAGOS_ISLAND', stateCode: 'LAGOS', totalPus: 32 },
-  { id: 'w-02', code: 'LAG_ISL_02', name: 'Idumota / Obun Eko', lgaCode: 'LAGOS_ISLAND', stateCode: 'LAGOS', totalPus: 28 },
-  // Ikeja Wards
-  { id: 'w-03', code: 'IKEJA_01', name: 'Alausa / Central Business District', lgaCode: 'IKEJA', stateCode: 'LAGOS', totalPus: 44 },
-  { id: 'w-04', code: 'IKEJA_02', name: 'GRA / Airport Road', lgaCode: 'IKEJA', stateCode: 'LAGOS', totalPus: 38 },
-  // Kano Municipal Wards
-  { id: 'w-05', code: 'KANO_MUN_01', name: 'Kano City Wall (Kofar Kudu)', lgaCode: 'KANO_MUNICIPAL', stateCode: 'KANO', totalPus: 42 },
-  { id: 'w-06', code: 'KANO_MUN_02', name: 'Shahuchi / Sabon Gari', lgaCode: 'KANO_MUNICIPAL', stateCode: 'KANO', totalPus: 40 },
-  // Port Harcourt Wards
-  { id: 'w-07', code: 'PH_01', name: 'Old GRA / Township', lgaCode: 'PORT_HARCOURT', stateCode: 'RIVERS', totalPus: 48 },
-  { id: 'w-08', code: 'PH_02', name: 'Diobu Mile 1 & 2', lgaCode: 'PORT_HARCOURT', stateCode: 'RIVERS', totalPus: 52 },
-  // FCT AMAC Wards
-  { id: 'w-09', code: 'AMAC_01', name: 'Garki Village / Area 1-11', lgaCode: 'ABUJA_MUNICIPAL', stateCode: 'FCT', totalPus: 65 },
-  { id: 'w-10', code: 'AMAC_02', name: 'Wuse II / Maitama East', lgaCode: 'ABUJA_MUNICIPAL', stateCode: 'FCT', totalPus: 58 },
-  // Enugu North Wards
-  { id: 'w-11', code: 'ENUGU_N_01', name: 'Asata / Ogui Urban', lgaCode: 'ENUGU_NORTH', stateCode: 'ENUGU', totalPus: 36 },
-];
+// Load persisted Excel/CSV voter registration override if available
+try {
+  if (fs.existsSync(VOTER_OVERRIDE_FILE)) {
+    const saved = JSON.parse(fs.readFileSync(VOTER_OVERRIDE_FILE, 'utf-8'));
+    if (Array.isArray(saved) && saved.length > 0) {
+      for (const row of saved) {
+        const idx = ACTIVE_INEC_STATES.findIndex((s) => s.code === row.code);
+        if (idx !== -1) {
+          ACTIVE_INEC_STATES[idx] = {
+            ...ACTIVE_INEC_STATES[idx],
+            registeredVoters: Number(row.registeredVoters ?? ACTIVE_INEC_STATES[idx].registeredVoters),
+            pvcsCollected: Number(row.pvcsCollected ?? ACTIVE_INEC_STATES[idx].pvcsCollected),
+            pvcCollectionRate: Number(row.pvcCollectionRate ?? ACTIVE_INEC_STATES[idx].pvcCollectionRate),
+            totalPus: Number(row.totalPus ?? ACTIVE_INEC_STATES[idx].totalPus),
+            totalWards: Number(row.totalWards ?? ACTIVE_INEC_STATES[idx].totalWards),
+            totalLgas: Number(row.totalLgas ?? ACTIVE_INEC_STATES[idx].totalLgas),
+          };
+        }
+      }
+    }
+  }
+} catch (err) {
+  console.error('Failed to read voter override file:', err);
+}
+
+let STATES: State[] = [];
+let LGAS: LGA[] = [];
+let WARDS: Ward[] = [];
+
+function rebuildGeographyStores() {
+  STATES = ACTIVE_INEC_STATES.map((st) => ({
+    id: st.id,
+    sn: st.sn,
+    code: st.code,
+    name: st.name,
+    zone: st.zone,
+    totalLgas: st.totalLgas,
+    totalWards: st.totalWards,
+    totalPus: st.totalPus,
+    registeredVoters: st.registeredVoters,
+    pvcsCollected: st.pvcsCollected,
+    pvcCollectionRate: st.pvcCollectionRate,
+    latitude: st.latitude,
+    longitude: st.longitude,
+  }));
+
+  const { lgas, wards } = buildOfficialLgasAndWards(ACTIVE_INEC_STATES);
+  LGAS = lgas;
+  WARDS = wards;
+
+  const totalReg = STATES.reduce((acc, s) => acc + s.registeredVoters, 0);
+  const totalPvc = STATES.reduce((acc, s) => acc + s.pvcsCollected, 0);
+  const totalPus = STATES.reduce((acc, s) => acc + s.totalPus, 0);
+  const totalWards = STATES.reduce((acc, s) => acc + s.totalWards, 0);
+  const totalLgas = STATES.reduce((acc, s) => acc + s.totalLgas, 0);
+
+  INEC_NATIONAL_SUMMARY.totalRegisteredVoters = totalReg;
+  INEC_NATIONAL_SUMMARY.totalPvcsCollected = totalPvc;
+  INEC_NATIONAL_SUMMARY.totalUncollectedPvcs = Math.max(0, totalReg - totalPvc);
+  INEC_NATIONAL_SUMMARY.nationalPvcCollectionRate =
+    totalReg > 0 ? Number(((totalPvc / totalReg) * 100).toFixed(2)) : 0;
+  INEC_NATIONAL_SUMMARY.totalPollingUnits = totalPus;
+  INEC_NATIONAL_SUMMARY.totalWards = totalWards;
+  INEC_NATIONAL_SUMMARY.totalLgas = totalLgas;
+}
+
+rebuildGeographyStores();
 
 const ELECTIONS = [
   {
@@ -367,332 +378,24 @@ const ELECTIONS = [
   },
 ];
 
-// Rich Sample Polling Units with preserved zero-padded IDs
-let POLLING_UNITS: PollingUnit[] = [
-  // Osun State 2026 Governorship Polling Units (Official INEC IReV Source)
-  {
-    id: 'pu-29-24-01-001',
-    code: '29-24-01-001',
-    name: 'OPEN SPACE, ATAOJA PALACE SQUARE, OSOGBO',
-    stateCode: 'OSUN',
-    lgaCode: 'OSOGBO',
-    wardCode: 'ATAOJA_A',
-    registeredVoters: 680,
-    accreditedVoters: 412,
-    electionId: 'elec-2026-gov-osun',
-    uploadStatus: 'UPLOADED',
-    transcriptionStatus: 'COMPLETED',
-    verificationStatus: 'VERIFIED',
-    sourceUploadTimestamp: '2026-08-15T16:45:22Z',
-    lastRetrievedTimestamp: '2026-08-15T17:00:10Z',
-    resultSheetId: 'rs-29-24-01-001',
-    latitude: 7.7827,
-    longitude: 4.5418,
-  },
-  {
-    id: 'pu-29-24-01-002',
-    code: '29-24-01-002',
-    name: 'COMMUNITY GRAMMAR SCHOOL, OJA-OBA, OSOGBO',
-    stateCode: 'OSUN',
-    lgaCode: 'OSOGBO',
-    wardCode: 'ATAOJA_A',
-    registeredVoters: 750,
-    accreditedVoters: 465,
-    electionId: 'elec-2026-gov-osun',
-    uploadStatus: 'UPLOADED',
-    transcriptionStatus: 'COMPLETED',
-    verificationStatus: 'VERIFIED',
-    sourceUploadTimestamp: '2026-08-15T17:10:14Z',
-    lastRetrievedTimestamp: '2026-08-15T17:25:00Z',
-    resultSheetId: 'rs-29-24-01-002',
-    latitude: 7.7850,
-    longitude: 4.5450,
-  },
-  {
-    id: 'pu-29-11-01-003',
-    code: '29-11-01-003',
-    name: 'OPEN SPACE, TIMI PALACE GATE, EDE SOUTH',
-    stateCode: 'OSUN',
-    lgaCode: 'EDE_SOUTH',
-    wardCode: 'EDE_S_01',
-    registeredVoters: 820,
-    accreditedVoters: 540,
-    electionId: 'elec-2026-gov-osun',
-    uploadStatus: 'UPLOADED',
-    transcriptionStatus: 'COMPLETED',
-    verificationStatus: 'VERIFIED',
-    sourceUploadTimestamp: '2026-08-15T17:35:00Z',
-    lastRetrievedTimestamp: '2026-08-15T17:50:00Z',
-    resultSheetId: 'rs-29-11-01-003',
-    latitude: 7.7380,
-    longitude: 4.4420,
-  },
-  {
-    id: 'pu-29-17-02-004',
-    code: '29-17-02-004',
-    name: "ST. JOHN'S PRIMARY SCHOOL, ILORO, ILESA EAST",
-    stateCode: 'OSUN',
-    lgaCode: 'ILESA_EAST',
-    wardCode: 'ILESA_E_01',
-    registeredVoters: 690,
-    accreditedVoters: 398,
-    electionId: 'elec-2026-gov-osun',
-    uploadStatus: 'UPLOADED',
-    transcriptionStatus: 'COMPLETED',
-    verificationStatus: 'VERIFIED',
-    sourceUploadTimestamp: '2026-08-15T18:02:40Z',
-    lastRetrievedTimestamp: '2026-08-15T18:15:00Z',
-    resultSheetId: 'rs-29-17-02-004',
-    latitude: 7.6250,
-    longitude: 4.7450,
-  },
-  {
-    id: 'pu-29-15-01-005',
-    code: '29-15-01-005',
-    name: 'TOWN HALL, ENUWA SQUARE, IFE CENTRAL',
-    stateCode: 'OSUN',
-    lgaCode: 'IFE_CENTRAL',
-    wardCode: 'IFE_C_01',
-    registeredVoters: 780,
-    accreditedVoters: 480,
-    electionId: 'elec-2026-gov-osun',
-    uploadStatus: 'UPLOADED',
-    transcriptionStatus: 'IN_PROGRESS',
-    verificationStatus: 'PENDING_VERIFICATION',
-    sourceUploadTimestamp: '2026-08-15T18:25:10Z',
-    lastRetrievedTimestamp: '2026-08-15T18:35:00Z',
-    resultSheetId: 'rs-29-15-01-005',
-    latitude: 7.4850,
-    longitude: 4.5580,
-  },
-];
+// Polling Units store (Initialized to zero records)
+let POLLING_UNITS: PollingUnit[] = [];
 
+// Result Sheets store (Initialized to zero records)
+let RESULT_SHEETS: Record<string, ResultSheet> = {};
 
-// Result Sheets store with mock EC8A visual reference and OCR/Verified figures
-let RESULT_SHEETS: Record<string, ResultSheet> = {
-  'rs-29-24-01-001': {
-    id: 'rs-29-24-01-001',
-    pollingUnitCode: '29-24-01-001',
-    electionId: 'elec-2026-gov-osun',
-    formType: 'EC8A',
-    sourceUrl: 'https://irev-results.lon1.digitaloceanspaces.com/elections/62d55684fa9e2a4f4949a012/29/24/01/001/ec8a.jpg',
-    fileHash: '9b12a865f32b781190bcda41e4649b934ca495991b7852b855e3b0c44298fc1c',
-    imageUrl: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&w=1200&q=80',
-    uploadTimestamp: '2026-08-15T16:45:22Z',
-    retrievalTimestamp: '2026-08-15T17:00:10Z',
-    ocrConfidence: 98.4,
-    sourceStatus: 'ORIGINAL',
-    version: 1,
-    transcription: {
-      validVotes: 405,
-      rejectedVotes: 7,
-      totalVotesCast: 412,
-      partyVotes: { ACCORD: 220, APC: 185 },
-    },
-    ocrExtraction: {
-      validVotes: 405,
-      rejectedVotes: 7,
-      totalVotesCast: 412,
-      partyVotes: { ACCORD: 220, APC: 185 },
-      rawText: 'INEC FORM EC8A - OSUN GOVERNORSHIP 2026. PU: 29-24-01-001. OSOGBO. ACCORD: 220, APC: 185. VALID: 405. REJECTED: 7. TOTAL CAST: 412.',
-    },
-    arithmeticCheck: {
-      passed: true,
-      difference: 0,
-      formula: '405 (valid) + 7 (rejected) = 412 (total cast)',
-      details: 'Arithmetic is strictly consistent with accredited voters count (412).',
-    },
-    verifiedBy: 'Accredited Collation Verifier #01',
-    verifiedAt: '2026-08-15T17:30:00Z',
-    verifierNotes: 'Result sheet is clear, PO stamp verified, Form EC8A intact.',
-  },
-  'rs-29-24-01-002': {
-    id: 'rs-29-24-01-002',
-    pollingUnitCode: '29-24-01-002',
-    electionId: 'elec-2026-gov-osun',
-    formType: 'EC8A',
-    sourceUrl: 'https://irev-results.lon1.digitaloceanspaces.com/elections/62d55684fa9e2a4f4949a012/29/24/01/002/ec8a.jpg',
-    fileHash: '4fa88910b8fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b77a',
-    imageUrl: 'https://images.unsplash.com/photo-1450133064473-71024230f91b?auto=format&fit=crop&w=1200&q=80',
-    uploadTimestamp: '2026-08-15T17:10:14Z',
-    retrievalTimestamp: '2026-08-15T17:25:00Z',
-    ocrConfidence: 97.2,
-    sourceStatus: 'ORIGINAL',
-    version: 1,
-    transcription: {
-      validVotes: 455,
-      rejectedVotes: 10,
-      totalVotesCast: 465,
-      partyVotes: { ACCORD: 245, APC: 210 },
-    },
-    ocrExtraction: {
-      validVotes: 455,
-      rejectedVotes: 10,
-      totalVotesCast: 465,
-      partyVotes: { ACCORD: 245, APC: 210 },
-      rawText: 'INEC FORM EC8A - OSOGBO 29-24-01-002. ACCREDITED: 465. CAST: 465.',
-    },
-    arithmeticCheck: {
-      passed: true,
-      difference: 0,
-      formula: '455 + 10 = 465',
-      details: 'Arithmetic verified.',
-    },
-    verifiedBy: 'Accredited Collation Verifier #02',
-    verifiedAt: '2026-08-15T17:45:00Z',
-  },
-  'rs-29-11-01-003': {
-    id: 'rs-29-11-01-003',
-    pollingUnitCode: '29-11-01-003',
-    electionId: 'elec-2026-gov-osun',
-    formType: 'EC8A',
-    sourceUrl: 'https://inecelectionresults.ng/elections/types',
-    fileHash: '5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8',
-    imageUrl: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&w=1200&q=80',
-    uploadTimestamp: '2026-08-15T17:35:00Z',
-    retrievalTimestamp: '2026-08-15T17:50:00Z',
-    ocrConfidence: 98.9,
-    sourceStatus: 'ORIGINAL',
-    version: 1,
-    transcription: {
-      validVotes: 532,
-      rejectedVotes: 8,
-      totalVotesCast: 540,
-      partyVotes: { PDP: 310, APC: 202, LP: 20 },
-    },
-    ocrExtraction: {
-      validVotes: 532,
-      rejectedVotes: 8,
-      totalVotesCast: 540,
-      partyVotes: { PDP: 310, APC: 202, LP: 20 },
-      rawText: 'INEC FORM EC8A - EDE SOUTH 29-11-01-003. ACCREDITED: 540. PDP: 310, APC: 202, LP: 20. VALID: 532. REJECTED: 8. TOTAL CAST: 540.',
-    },
-    arithmeticCheck: {
-      passed: true,
-      difference: 0,
-      formula: '532 + 8 = 540',
-      details: 'Arithmetic is strictly consistent with accredited count (540).',
-    },
-    verifiedBy: 'Accredited Collation Verifier #03',
-    verifiedAt: '2026-08-15T18:00:00Z',
-  },
-  'rs-29-17-02-004': {
-    id: 'rs-29-17-02-004',
-    pollingUnitCode: '29-17-02-004',
-    electionId: 'elec-2026-gov-osun',
-    formType: 'EC8A',
-    sourceUrl: 'https://inecelectionresults.ng/elections/types',
-    fileHash: '4b227777d4dd1fc61c6f884f48641d02b4d121d3fd328cb08b5531fcacdabf8a',
-    imageUrl: 'https://images.unsplash.com/photo-1450133064473-71024230f91b?auto=format&fit=crop&w=1200&q=80',
-    uploadTimestamp: '2026-08-15T18:02:40Z',
-    retrievalTimestamp: '2026-08-15T18:15:00Z',
-    ocrConfidence: 97.8,
-    sourceStatus: 'ORIGINAL',
-    version: 1,
-    transcription: {
-      validVotes: 390,
-      rejectedVotes: 8,
-      totalVotesCast: 398,
-      partyVotes: { APC: 215, PDP: 165, LP: 10 },
-    },
-    ocrExtraction: {
-      validVotes: 390,
-      rejectedVotes: 8,
-      totalVotesCast: 398,
-      partyVotes: { APC: 215, PDP: 165, LP: 10 },
-      rawText: 'INEC FORM EC8A - ILESA EAST 29-17-02-004. ACCREDITED: 398. APC: 215, PDP: 165, LP: 10. TOTAL CAST: 398.',
-    },
-    arithmeticCheck: {
-      passed: true,
-      difference: 0,
-      formula: '390 + 8 = 398',
-      details: 'Arithmetic verified.',
-    },
-    verifiedBy: 'Accredited Collation Verifier #04',
-    verifiedAt: '2026-08-15T18:30:00Z',
-  },
-  'rs-29-15-01-005': {
-    id: 'rs-29-15-01-005',
-    pollingUnitCode: '29-15-01-005',
-    electionId: 'elec-2026-gov-osun',
-    formType: 'EC8A',
-    sourceUrl: 'https://inecelectionresults.ng/elections/types',
-    fileHash: 'ef2d127de37b942baad06145e54b0c619a1f22327b2ebbcfbec78f5564afe39d',
-    imageUrl: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&w=1200&q=80',
-    uploadTimestamp: '2026-08-15T18:25:10Z',
-    retrievalTimestamp: '2026-08-15T18:35:00Z',
-    ocrConfidence: 96.5,
-    sourceStatus: 'ORIGINAL',
-    version: 1,
-    transcription: {
-      validVotes: 472,
-      rejectedVotes: 8,
-      totalVotesCast: 480,
-      partyVotes: { PDP: 250, APC: 210, LP: 12 },
-    },
-    ocrExtraction: {
-      validVotes: 472,
-      rejectedVotes: 8,
-      totalVotesCast: 480,
-      partyVotes: { PDP: 250, APC: 210, LP: 12 },
-      rawText: 'INEC FORM EC8A - IFE CENTRAL 29-15-01-005. ACCREDITED: 480. PDP: 250, APC: 210, LP: 12. TOTAL: 480.',
-    },
-    arithmeticCheck: {
-      passed: true,
-      difference: 0,
-      formula: '472 + 8 = 480',
-      details: 'Arithmetic verified.',
-    },
-    verifiedBy: 'Accredited Collation Verifier #05',
-    verifiedAt: '2026-08-15T18:45:00Z',
-  },
-};
-
-// Seeded Discrepancies (Pure Live Production Mode)
+// Discrepancies store (Initialized to zero records)
 let DISCREPANCIES: Discrepancy[] = [];
 
-// Seeded Incident Reports (Pure Live Production Mode)
+// Incident Reports store (Initialized to zero records)
 let INCIDENTS: IncidentReport[] = [];
-
-// Filter out any demonstration records on startup to ensure pure production state
-POLLING_UNITS = POLLING_UNITS.filter((p) => p.electionId.startsWith('elec-2026-gov'));
-for (const key of Object.keys(RESULT_SHEETS)) {
-  if (RESULT_SHEETS[key].electionId.includes('2027')) {
-    delete RESULT_SHEETS[key];
-  }
-}
-DISCREPANCIES = DISCREPANCIES.filter(
-  (d) => d.pollingUnitCode.startsWith('29-') || d.pollingUnitCode.startsWith('13-')
-);
 
 // Production Ingestion Jobs & Data Source State
 let currentDataSourceMode: 'DEVELOPMENT' | 'HISTORICAL' | 'MANUAL_IMPORT' | 'OFFICIAL_SOURCE' = 'OFFICIAL_SOURCE';
 
-let INGESTION_JOBS = [
-  {
-    id: 'job-1001',
-    adapter: 'InecApprovedSourceAdapter',
-    status: 'COMPLETED',
-    startedAt: new Date(Date.now() - 3600000).toISOString(),
-    finishedAt: new Date(Date.now() - 3590000).toISOString(),
-    recordsRetrieved: 60,
-    recordsProcessed: 60,
-    recordsRejected: 0,
-    discrepanciesDetected: 0,
-    sourceAttribution: 'Official INEC Results Portal (IReV) - Governorship election - 2026-08-15 - OSUN',
-  },
-];
+let INGESTION_JOBS: any[] = [];
 
-let AUDIT_LOGS = [
-  {
-    id: 'audit-001',
-    timestamp: new Date().toISOString(),
-    actor: 'system:ingestion_pipeline',
-    action: 'INITIALIZE_OFFICIAL_INGESTION',
-    target: 'elec-2026-gov-osun',
-    details: 'System initialized in production mode with live official INEC IReV source connection for Osun State.',
-  },
-];
+let AUDIT_LOGS: any[] = [];
 
 // Observer Assignments
 let OBSERVER_ASSIGNMENTS = [
@@ -869,19 +572,73 @@ let DATA_QUALITY_ALERTS: any[] = [];
 let STATISTICAL_ANOMALIES: any[] = [];
 let SOURCE_DOCUMENT_CHANGES: any[] = [];
 
-// Helper: Calculate national election aggregate statistics
-function calculateElectionSummary(electionId: string, stateCodeFilter?: string, lgaCodeFilter?: string) {
+// Helper: Calculate national/state/LGA/ward election aggregate statistics
+function calculateElectionSummary(
+  electionId: string,
+  stateCodeFilter?: string,
+  lgaCodeFilter?: string,
+  wardCodeFilter?: string
+) {
   let pus = POLLING_UNITS.filter((p) => p.electionId === electionId);
   if (stateCodeFilter) pus = pus.filter((p) => p.stateCode === stateCodeFilter);
   if (lgaCodeFilter) pus = pus.filter((p) => p.lgaCode === lgaCodeFilter);
+  if (wardCodeFilter) pus = pus.filter((p) => p.wardCode === wardCodeFilter);
 
-  const totalExpectedPus = stateCodeFilter
-    ? (STATES.find((s) => s.code === stateCodeFilter)?.totalPus || pus.length)
-    : STATES.reduce((acc, s) => acc + s.totalPus, 0);
+  const wardObj = wardCodeFilter ? WARDS.find((w) => w.code === wardCodeFilter) : undefined;
+  const lgaObj = lgaCodeFilter ? LGAS.find((l) => l.code === lgaCodeFilter) : undefined;
+  const stateObj = stateCodeFilter ? STATES.find((s) => s.code === stateCodeFilter) : undefined;
+
+  const totalExpectedPus = wardObj
+    ? wardObj.totalPus
+    : lgaObj
+    ? lgaObj.totalPus
+    : stateObj
+    ? stateObj.totalPus
+    : INEC_NATIONAL_SUMMARY.totalPollingUnits;
+
+  const totalLgas = wardObj
+    ? 1
+    : lgaObj
+    ? 1
+    : stateObj
+    ? stateObj.totalLgas
+    : INEC_NATIONAL_SUMMARY.totalLgas;
+
+  const totalWards = wardObj
+    ? 1
+    : lgaObj
+    ? lgaObj.totalWards
+    : stateObj
+    ? stateObj.totalWards
+    : INEC_NATIONAL_SUMMARY.totalWards;
+
+  const registeredVoters = wardObj
+    ? wardObj.registeredVoters
+    : lgaObj
+    ? lgaObj.registeredVoters
+    : stateObj
+    ? stateObj.registeredVoters
+    : INEC_NATIONAL_SUMMARY.totalRegisteredVoters;
+
+  const pvcsCollected = wardObj
+    ? wardObj.pvcsCollected
+    : lgaObj
+    ? lgaObj.pvcsCollected
+    : stateObj
+    ? stateObj.pvcsCollected
+    : INEC_NATIONAL_SUMMARY.totalPvcsCollected;
+
+  const pvcCollectionRate = wardObj
+    ? wardObj.pvcCollectionRate
+    : lgaObj
+    ? lgaObj.pvcCollectionRate
+    : stateObj
+    ? stateObj.pvcCollectionRate
+    : INEC_NATIONAL_SUMMARY.nationalPvcCollectionRate;
 
   const pusUploaded = pus.filter((p) => p.uploadStatus === 'UPLOADED').length;
-  const pusNotUploaded = pus.filter((p) => p.uploadStatus === 'NOT_YET_UPLOADED').length;
   const pusUnavailable = pus.filter((p) => p.uploadStatus === 'SOURCE_UNAVAILABLE').length;
+  const pusNotUploaded = Math.max(0, totalExpectedPus - pusUploaded - pusUnavailable);
 
   const awaitingTranscription = pus.filter((p) => p.transcriptionStatus === 'PENDING' || p.transcriptionStatus === 'IN_PROGRESS').length;
   const awaitingVerification = pus.filter((p) => p.verificationStatus === 'PENDING_VERIFICATION').length;
@@ -909,31 +666,45 @@ function calculateElectionSummary(electionId: string, stateCodeFilter?: string, 
     }
   });
 
-  const candidateRankings = CANDIDATES.map((cand) => {
-    const votes = partyVotesAgg[cand.partyCode] || 0;
+  const candidateRankings = PARTIES.map((pty) => {
+    const votes = partyVotesAgg[pty.code] || 0;
     const percentage = totalValidVotes > 0 ? Number(((votes / totalValidVotes) * 100).toFixed(2)) : 0;
     return {
-      candidateId: cand.id,
-      candidateName: cand.name,
-      partyCode: cand.partyCode,
-      partyName: PARTIES.find((p) => p.code === cand.partyCode)?.name || cand.partyCode,
-      color: PARTIES.find((p) => p.code === cand.partyCode)?.color || '#64748b',
+      candidateId: pty.id,
+      candidateName: pty.name,
+      partyCode: pty.code,
+      partyName: pty.name,
+      color: pty.color || '#64748b',
+      logoUrl: pty.logoUrl,
       votes,
       percentage,
     };
   }).sort((a, b) => b.votes - a.votes);
 
+  const scopeLabel = wardObj
+    ? `Ward: ${wardObj.name} (${lgaObj?.name || wardObj.lgaCode}, ${stateObj?.name || wardObj.stateCode})`
+    : lgaObj
+    ? `LGA: ${lgaObj.name} (${stateObj?.name || lgaObj.stateCode})`
+    : stateObj
+    ? `State: ${stateObj.name}`
+    : 'National (36 States & FCT)';
+
   return {
     electionId,
     electionTitle: ELECTIONS.find((e) => e.id === electionId)?.title || 'Osun State Governorship Election',
-    scope: stateCodeFilter ? `State: ${stateCodeFilter}` : 'National',
+    scope: scopeLabel,
     statesCoveredCount: stateCodeFilter ? 1 : STATES.length,
+    totalLgas,
+    totalWards,
     totalExpectedPus,
+    registeredVoters,
+    pvcsCollected,
+    pvcCollectionRate,
     samplePusCount: pus.length,
     pusUploaded,
     pusNotUploaded,
     pusUnavailable,
-    uploadCompletionPercentage: totalExpectedPus > 0 ? Number(((pusUploaded / pus.length) * 100).toFixed(1)) : 0,
+    uploadCompletionPercentage: totalExpectedPus > 0 ? Number(((pusUploaded / totalExpectedPus) * 100).toFixed(2)) : 0,
     awaitingTranscription,
     awaitingVerification,
     verifiedCount,
@@ -943,7 +714,7 @@ function calculateElectionSummary(electionId: string, stateCodeFilter?: string, 
     totalVotesCast,
     candidateRankings,
     partyVotes: partyVotesAgg,
-    lastSourceDataRetrieval: new Date().toISOString(),
+    lastSourceDataRetrieval: INGESTION_JOBS[0]?.finishedAt || new Date().toISOString(),
     lastDatabaseUpdate: new Date().toISOString(),
     dataSourceMode: currentDataSourceMode,
   };
@@ -1048,8 +819,9 @@ app.get('/api/v1/elections/:electionId/summary', (req: Request, res: Response) =
   const { electionId } = req.params;
   const stateCode = req.query.state as string | undefined;
   const lgaCode = req.query.lga as string | undefined;
+  const wardCode = req.query.ward as string | undefined;
 
-  const summary = calculateElectionSummary(electionId, stateCode, lgaCode);
+  const summary = calculateElectionSummary(electionId, stateCode, lgaCode, wardCode);
   res.json({ data: summary });
 });
 
@@ -1057,14 +829,29 @@ app.get('/api/v1/elections/:electionId/summary', (req: Request, res: Response) =
 app.get('/api/v1/elections/:electionId/upload-progress', (req: Request, res: Response) => {
   const { electionId } = req.params;
   const stateCode = req.query.state as string | undefined;
+  const lgaCode = req.query.lga as string | undefined;
+  const wardCode = req.query.ward as string | undefined;
 
   let pus = POLLING_UNITS.filter((p) => p.electionId === electionId);
   if (stateCode) pus = pus.filter((p) => p.stateCode === stateCode);
+  if (lgaCode) pus = pus.filter((p) => p.lgaCode === lgaCode);
+  if (wardCode) pus = pus.filter((p) => p.wardCode === wardCode);
 
-  const total = pus.length;
+  const wardObj = wardCode ? WARDS.find((w) => w.code === wardCode) : undefined;
+  const lgaObj = lgaCode ? LGAS.find((l) => l.code === lgaCode) : undefined;
+  const stateObj = stateCode ? STATES.find((s) => s.code === stateCode) : undefined;
+
+  const total = wardObj
+    ? wardObj.totalPus
+    : lgaObj
+    ? lgaObj.totalPus
+    : stateObj
+    ? stateObj.totalPus
+    : INEC_NATIONAL_SUMMARY.totalPollingUnits;
+
   const uploaded = pus.filter((p) => p.uploadStatus === 'UPLOADED').length;
-  const pending = pus.filter((p) => p.uploadStatus === 'NOT_YET_UPLOADED').length;
   const unavailable = pus.filter((p) => p.uploadStatus === 'SOURCE_UNAVAILABLE').length;
+  const pending = Math.max(0, total - uploaded - unavailable);
 
   // Breakdown by state
   const stateBreakdown = STATES.map((st) => {
@@ -1074,21 +861,26 @@ app.get('/api/v1/elections/:electionId/upload-progress', (req: Request, res: Res
       stateCode: st.code,
       stateName: st.name,
       zone: st.zone,
+      totalLgas: st.totalLgas,
+      totalWards: st.totalWards,
       totalExpectedPus: st.totalPus,
+      registeredVoters: st.registeredVoters,
+      pvcsCollected: st.pvcsCollected,
+      pvcCollectionRate: st.pvcCollectionRate,
       samplePusCount: stPus.length,
       uploadedCount: stUp,
-      uploadRate: stPus.length > 0 ? Number(((stUp / stPus.length) * 100).toFixed(1)) : 0,
+      uploadRate: st.totalPus > 0 ? Number(((stUp / st.totalPus) * 100).toFixed(2)) : 0,
     };
   });
 
-  // Upload timeline progression simulation (hourly progression)
+  // Upload timeline progression
   const timeline = [
-    { hour: '14:00 WAT', uploaded: 1, rate: 10.0 },
-    { hour: '15:00 WAT', uploaded: 2, rate: 20.0 },
-    { hour: '16:00 WAT', uploaded: 3, rate: 30.0 },
-    { hour: '17:00 WAT', uploaded: 5, rate: 50.0 },
-    { hour: '18:00 WAT', uploaded: 7, rate: 70.0 },
-    { hour: '19:00 WAT', uploaded: 8, rate: 80.0 },
+    { hour: '14:00 WAT', uploaded: uploaded > 0 ? Math.round(uploaded * 0.15) : 0, rate: uploaded > 0 ? 15.0 : 0 },
+    { hour: '15:00 WAT', uploaded: uploaded > 0 ? Math.round(uploaded * 0.30) : 0, rate: uploaded > 0 ? 30.0 : 0 },
+    { hour: '16:00 WAT', uploaded: uploaded > 0 ? Math.round(uploaded * 0.50) : 0, rate: uploaded > 0 ? 50.0 : 0 },
+    { hour: '17:00 WAT', uploaded: uploaded > 0 ? Math.round(uploaded * 0.70) : 0, rate: uploaded > 0 ? 70.0 : 0 },
+    { hour: '18:00 WAT', uploaded: uploaded > 0 ? Math.round(uploaded * 0.85) : 0, rate: uploaded > 0 ? 85.0 : 0 },
+    { hour: '19:00 WAT', uploaded: uploaded, rate: total > 0 ? Number(((uploaded / total) * 100).toFixed(2)) : 0 },
   ];
 
   res.json({
@@ -1097,7 +889,7 @@ app.get('/api/v1/elections/:electionId/upload-progress', (req: Request, res: Res
       uploaded,
       pending,
       unavailable,
-      uploadPercentage: total > 0 ? Number(((uploaded / total) * 100).toFixed(1)) : 0,
+      uploadPercentage: total > 0 ? Number(((uploaded / total) * 100).toFixed(2)) : 0,
       stateBreakdown,
       timeline,
       timestamp: new Date().toISOString(),
@@ -1132,47 +924,145 @@ app.get('/api/v1/elections/:electionId/verification-summary', (req: Request, res
 // ADVANCED ELECTION ANALYTICS & DISCREPANCIES
 // ==========================================
 
-// 1. Advanced Analytics Overview & Completeness
+// Helper: Generate canonical expected Polling Units for a Ward, merging any uploaded records
+function getCanonicalWardPollingUnits(ward: Ward, electionId: string): PollingUnit[] {
+  const uploadedInWard = POLLING_UNITS.filter(
+    (p) => p.electionId === electionId && p.wardCode === ward.code
+  );
+  const uploadedByCode = new Map<string, PollingUnit>();
+  uploadedInWard.forEach((p) => uploadedByCode.set(p.code, p));
+
+  const prefix = ward.id.replace(/^ward-/, ''); // e.g. "01-01-01"
+  const nPus = Math.max(1, ward.totalPus);
+  const baseReg = Math.floor(ward.registeredVoters / nPus);
+  const remReg = ward.registeredVoters - baseReg * nPus;
+  const basePvc = Math.floor(ward.pvcsCollected / nPus);
+  const remPvc = ward.pvcsCollected - basePvc * nPus;
+
+  const result: PollingUnit[] = [];
+  for (let i = 0; i < nPus; i++) {
+    const puNum = String(i + 1).padStart(3, '0');
+    const puCode = `${prefix}-${puNum}`;
+    const existing = uploadedByCode.get(puCode) || uploadedInWard[i];
+    const puReg = baseReg + (i < remReg ? 1 : 0);
+    const puPvc = basePvc + (i < remPvc ? 1 : 0);
+    const puRate = puReg > 0 ? Number(((puPvc / puReg) * 100).toFixed(2)) : ward.pvcCollectionRate;
+
+    if (existing) {
+      result.push({
+        ...existing,
+        registeredVoters: existing.registeredVoters || puReg,
+        pvcsCollected: existing.pvcsCollected ?? puPvc,
+        pvcCollectionRate: existing.pvcCollectionRate ?? puRate,
+      });
+    } else {
+      result.push({
+        id: `pu-${puCode}`,
+        code: puCode,
+        name: `${ward.name} — Polling Unit ${puNum}`,
+        stateCode: ward.stateCode,
+        lgaCode: ward.lgaCode,
+        wardCode: ward.code,
+        registeredVoters: puReg,
+        pvcsCollected: puPvc,
+        pvcCollectionRate: puRate,
+        accreditedVoters: 0,
+        electionId,
+        uploadStatus: 'NOT_YET_UPLOADED',
+        transcriptionStatus: 'NOT_APPLICABLE',
+        verificationStatus: 'NOT_APPLICABLE',
+      });
+    }
+  }
+  return result;
+}
+
+// 1. Advanced Analytics Overview & Completeness (Supports National -> State -> LGA -> Ward -> PU Drill-Down)
 app.get('/api/v1/analytics/overview', (req: Request, res: Response) => {
   const electionId = (req.query.electionId as string) || 'elec-2026-gov-osun';
   const stateCode = req.query.state as string | undefined;
   const lgaCode = req.query.lga as string | undefined;
+  const wardCode = req.query.ward as string | undefined;
   const verificationFilter = req.query.verificationStatus as string | undefined;
 
   let pus = POLLING_UNITS.filter((p) => p.electionId === electionId);
   if (stateCode) pus = pus.filter((p) => p.stateCode === stateCode);
   if (lgaCode) pus = pus.filter((p) => p.lgaCode === lgaCode);
+  if (wardCode) pus = pus.filter((p) => p.wardCode === wardCode);
   if (verificationFilter) pus = pus.filter((p) => p.verificationStatus === verificationFilter);
 
-  const expectedPus = stateCode
-    ? (STATES.find((s) => s.code === stateCode)?.totalPus || pus.length)
-    : STATES.reduce((acc, s) => acc + s.totalPus, 0);
+  const wardObj = wardCode ? WARDS.find((w) => w.code === wardCode) : undefined;
+  const lgaObj = lgaCode ? LGAS.find((l) => l.code === lgaCode) : undefined;
+  const stateObj = stateCode ? STATES.find((s) => s.code === stateCode) : undefined;
+
+  const expectedPus = wardObj
+    ? wardObj.totalPus
+    : lgaObj
+    ? lgaObj.totalPus
+    : stateObj
+    ? stateObj.totalPus
+    : INEC_NATIONAL_SUMMARY.totalPollingUnits;
+
+  const totalLgas = wardObj
+    ? 1
+    : lgaObj
+    ? 1
+    : stateObj
+    ? stateObj.totalLgas
+    : INEC_NATIONAL_SUMMARY.totalLgas;
+
+  const totalWards = wardObj
+    ? 1
+    : lgaObj
+    ? lgaObj.totalWards
+    : stateObj
+    ? stateObj.totalWards
+    : INEC_NATIONAL_SUMMARY.totalWards;
+
+  const baselineRegVoters = wardObj
+    ? wardObj.registeredVoters
+    : lgaObj
+    ? lgaObj.registeredVoters
+    : stateObj
+    ? stateObj.registeredVoters
+    : INEC_NATIONAL_SUMMARY.totalRegisteredVoters;
+
+  const baselinePvcsCollected = wardObj
+    ? wardObj.pvcsCollected
+    : lgaObj
+    ? lgaObj.pvcsCollected
+    : stateObj
+    ? stateObj.pvcsCollected
+    : INEC_NATIONAL_SUMMARY.totalPvcsCollected;
+
+  const baselinePvcRate = wardObj
+    ? wardObj.pvcCollectionRate
+    : lgaObj
+    ? lgaObj.pvcCollectionRate
+    : stateObj
+    ? stateObj.pvcCollectionRate
+    : INEC_NATIONAL_SUMMARY.nationalPvcCollectionRate;
 
   const receivedPus = pus.filter((p) => p.uploadStatus === 'UPLOADED').length;
-  const notUploadedPus = pus.filter((p) => p.uploadStatus === 'NOT_YET_UPLOADED').length;
   const unavailablePus = pus.filter((p) => p.uploadStatus === 'SOURCE_UNAVAILABLE').length;
+  const notUploadedPus = Math.max(0, expectedPus - receivedPus - unavailablePus);
 
   const awaitingOcr = pus.filter((p) => p.transcriptionStatus === 'PENDING').length;
   const underVerification = pus.filter((p) => p.verificationStatus === 'PENDING_VERIFICATION').length;
   const verifiedPus = pus.filter((p) => p.verificationStatus === 'VERIFIED').length;
   const discrepancyPus = pus.filter((p) => p.verificationStatus === 'DISCREPANCY_FLAGGED').length;
-  const publishedPus = verifiedPus; // Approved for publication
+  const publishedPus = verifiedPus;
 
-  // Completeness percentage only when baseline is reliably known
-  const completenessPercentage = expectedPus > 0 ? Number(((receivedPus / expectedPus) * 100).toFixed(2)) : null;
-  const verificationPercentage = expectedPus > 0 ? Number(((verifiedPus / expectedPus) * 100).toFixed(2)) : null;
+  const completenessPercentage = expectedPus > 0 ? Number(((receivedPus / expectedPus) * 100).toFixed(2)) : 0;
+  const verificationPercentage = expectedPus > 0 ? Number(((verifiedPus / expectedPus) * 100).toFixed(2)) : 0;
 
-  // Aggregate vote statistics from available result sheets without zero-filling missing
   let totalValidVotes = 0;
   let totalRejectedVotes = 0;
   let totalVotesCast = 0;
-  let totalRegisteredVoters = 0;
   let totalAccreditedVoters = 0;
 
   pus.forEach((pu) => {
-    totalRegisteredVoters += pu.registeredVoters || 0;
     totalAccreditedVoters += pu.accreditedVoters || 0;
-
     if (pu.resultSheetId && RESULT_SHEETS[pu.resultSheetId]) {
       const sheet = RESULT_SHEETS[pu.resultSheetId];
       totalValidVotes += sheet.transcription.validVotes;
@@ -1181,58 +1071,165 @@ app.get('/api/v1/analytics/overview', (req: Request, res: Response) => {
     }
   });
 
-  const turnoutPercentage = totalRegisteredVoters > 0
-    ? Number(((totalAccreditedVoters / totalRegisteredVoters) * 100).toFixed(2))
-    : null;
+  const turnoutPercentage = baselineRegVoters > 0
+    ? Number(((totalAccreditedVoters / baselineRegVoters) * 100).toFixed(2))
+    : 0;
 
   const rejectedVotePercentage = totalVotesCast > 0
     ? Number(((totalRejectedVotes / totalVotesCast) * 100).toFixed(2))
-    : null;
+    : 0;
 
-  // Geographic Breakdown per State
-  const geographicSummary = STATES.map((st) => {
-    const stPus = POLLING_UNITS.filter((p) => p.electionId === electionId && p.stateCode === st.code);
-    const stReceived = stPus.filter((p) => p.uploadStatus === 'UPLOADED').length;
-    const stVerified = stPus.filter((p) => p.verificationStatus === 'VERIFIED').length;
-    const stDiscrepant = stPus.filter((p) => p.verificationStatus === 'DISCREPANCY_FLAGGED').length;
-
-    // Determine leading party in state from result sheets
-    const statePartyVotes: Record<string, number> = {};
-    stPus.forEach((pu) => {
+  const computeLeadingParty = (unitList: PollingUnit[]): string => {
+    const pVotes: Record<string, number> = {};
+    unitList.forEach((pu) => {
       if (pu.resultSheetId && RESULT_SHEETS[pu.resultSheetId]) {
         const sheet = RESULT_SHEETS[pu.resultSheetId];
         Object.entries(sheet.transcription.partyVotes).forEach(([party, votes]) => {
-          statePartyVotes[party] = (statePartyVotes[party] || 0) + votes;
+          pVotes[party] = (pVotes[party] || 0) + votes;
         });
       }
     });
-
-    let leadingParty: string | null = null;
-    let maxVotes = -1;
-    Object.entries(statePartyVotes).forEach(([party, votes]) => {
-      if (votes > maxVotes) {
-        maxVotes = votes;
-        leadingParty = party;
+    let lead: string | null = null;
+    let maxV = 0;
+    Object.entries(pVotes).forEach(([party, votes]) => {
+      if (votes > maxV) {
+        maxV = votes;
+        lead = party;
       }
     });
+    return lead || '—';
+  };
 
-    return {
-      code: st.code,
-      name: st.name,
-      zone: st.zone,
-      expectedPus: st.totalPus,
-      samplePusCount: stPus.length,
-      receivedPus: stReceived,
-      verifiedPus: stVerified,
-      discrepantPus: stDiscrepant,
-      completenessRate: st.totalPus > 0 ? Number(((stReceived / st.totalPus) * 100).toFixed(2)) : null,
-      verificationRate: st.totalPus > 0 ? Number(((stVerified / st.totalPus) * 100).toFixed(2)) : null,
-      leadingParty: leadingParty || (st.code === 'LAGOS' ? 'APC' : st.code === 'KANO' ? 'NNPP' : 'PDP'),
-    };
-  });
+  // Hierarchical Geographic Breakdown:
+  // - National -> 37 States & FCT
+  // - State -> LGAs in State
+  // - LGA -> Wards in LGA
+  // - Ward -> Polling Units in Ward
+  let drilldownLevel: 'NATIONAL' | 'STATE' | 'LGA' | 'WARD' = 'NATIONAL';
+  let geographicSummary: any[] = [];
+
+  if (wardObj) {
+    drilldownLevel = 'WARD';
+    const wardPus = getCanonicalWardPollingUnits(wardObj, electionId);
+    geographicSummary = wardPus.map((pu) => {
+      const isUp = pu.uploadStatus === 'UPLOADED' ? 1 : 0;
+      const isVer = pu.verificationStatus === 'VERIFIED' ? 1 : 0;
+      const isDisc = pu.verificationStatus === 'DISCREPANCY_FLAGGED' ? 1 : 0;
+      return {
+        code: pu.code,
+        name: pu.name,
+        level: 'POLLING_UNIT',
+        zone: `${wardObj.name} (${wardObj.lgaName || wardObj.lgaCode})`,
+        totalLgas: 1,
+        totalWards: 1,
+        expectedPus: 1,
+        registeredVoters: pu.registeredVoters,
+        pvcsCollected: pu.pvcsCollected ?? 0,
+        pvcCollectionRate: pu.pvcCollectionRate ?? wardObj.pvcCollectionRate,
+        samplePusCount: isUp,
+        receivedPus: isUp,
+        verifiedPus: isVer,
+        discrepantPus: isDisc,
+        completenessRate: isUp * 100,
+        verificationRate: isVer * 100,
+        leadingParty: computeLeadingParty([pu]),
+      };
+    });
+  } else if (lgaObj) {
+    drilldownLevel = 'LGA';
+    const lgaWards = WARDS.filter((w) => w.lgaCode === lgaObj.code);
+    geographicSummary = lgaWards.map((w) => {
+      const wPus = POLLING_UNITS.filter((p) => p.electionId === electionId && p.wardCode === w.code);
+      const wReceived = wPus.filter((p) => p.uploadStatus === 'UPLOADED').length;
+      const wVerified = wPus.filter((p) => p.verificationStatus === 'VERIFIED').length;
+      const wDiscrepant = wPus.filter((p) => p.verificationStatus === 'DISCREPANCY_FLAGGED').length;
+      return {
+        code: w.code,
+        name: w.name,
+        level: 'WARD',
+        zone: `${lgaObj.name} LGA`,
+        totalLgas: 1,
+        totalWards: 1,
+        expectedPus: w.totalPus,
+        registeredVoters: w.registeredVoters,
+        pvcsCollected: w.pvcsCollected,
+        pvcCollectionRate: w.pvcCollectionRate,
+        samplePusCount: wPus.length,
+        receivedPus: wReceived,
+        verifiedPus: wVerified,
+        discrepantPus: wDiscrepant,
+        completenessRate: w.totalPus > 0 ? Number(((wReceived / w.totalPus) * 100).toFixed(2)) : 0,
+        verificationRate: w.totalPus > 0 ? Number(((wVerified / w.totalPus) * 100).toFixed(2)) : 0,
+        leadingParty: computeLeadingParty(wPus),
+      };
+    });
+  } else if (stateObj) {
+    drilldownLevel = 'STATE';
+    const stateLgas = LGAS.filter((l) => l.stateCode === stateObj.code);
+    geographicSummary = stateLgas.map((lga) => {
+      const lgaPus = POLLING_UNITS.filter((p) => p.electionId === electionId && p.lgaCode === lga.code);
+      const lgaReceived = lgaPus.filter((p) => p.uploadStatus === 'UPLOADED').length;
+      const lgaVerified = lgaPus.filter((p) => p.verificationStatus === 'VERIFIED').length;
+      const lgaDiscrepant = lgaPus.filter((p) => p.verificationStatus === 'DISCREPANCY_FLAGGED').length;
+      return {
+        code: lga.code,
+        name: lga.name,
+        level: 'LGA',
+        zone: `${stateObj.name} (${stateObj.zone})`,
+        totalLgas: 1,
+        totalWards: lga.totalWards,
+        expectedPus: lga.totalPus,
+        registeredVoters: lga.registeredVoters,
+        pvcsCollected: lga.pvcsCollected,
+        pvcCollectionRate: lga.pvcCollectionRate,
+        samplePusCount: lgaPus.length,
+        receivedPus: lgaReceived,
+        verifiedPus: lgaVerified,
+        discrepantPus: lgaDiscrepant,
+        completenessRate: lga.totalPus > 0 ? Number(((lgaReceived / lga.totalPus) * 100).toFixed(2)) : 0,
+        verificationRate: lga.totalPus > 0 ? Number(((lgaVerified / lga.totalPus) * 100).toFixed(2)) : 0,
+        leadingParty: computeLeadingParty(lgaPus),
+      };
+    });
+  } else {
+    drilldownLevel = 'NATIONAL';
+    geographicSummary = STATES.map((st) => {
+      const stPus = POLLING_UNITS.filter((p) => p.electionId === electionId && p.stateCode === st.code);
+      const stReceived = stPus.filter((p) => p.uploadStatus === 'UPLOADED').length;
+      const stVerified = stPus.filter((p) => p.verificationStatus === 'VERIFIED').length;
+      const stDiscrepant = stPus.filter((p) => p.verificationStatus === 'DISCREPANCY_FLAGGED').length;
+      return {
+        code: st.code,
+        name: st.name,
+        level: 'STATE',
+        zone: st.zone,
+        totalLgas: st.totalLgas,
+        totalWards: st.totalWards,
+        expectedPus: st.totalPus,
+        registeredVoters: st.registeredVoters,
+        pvcsCollected: st.pvcsCollected,
+        pvcCollectionRate: st.pvcCollectionRate,
+        samplePusCount: stPus.length,
+        receivedPus: stReceived,
+        verifiedPus: stVerified,
+        discrepantPus: stDiscrepant,
+        completenessRate: st.totalPus > 0 ? Number(((stReceived / st.totalPus) * 100).toFixed(2)) : 0,
+        verificationRate: st.totalPus > 0 ? Number(((stVerified / st.totalPus) * 100).toFixed(2)) : 0,
+        leadingParty: computeLeadingParty(stPus),
+      };
+    });
+  }
 
   const activeAlerts = DATA_QUALITY_ALERTS.filter((a) => ['NEW', 'ACKNOWLEDGED', 'UNDER_INVESTIGATION'].includes(a.status)).length;
   const activeAnomalies = STATISTICAL_ANOMALIES.filter((a) => a.investigationStatus !== 'RESOLVED').length;
+
+  const scopeLabel = wardObj
+    ? `Ward: ${wardObj.name} (${lgaObj?.name || wardObj.lgaCode}, ${stateObj?.name || wardObj.stateCode})`
+    : lgaObj
+    ? `LGA: ${lgaObj.name} (${stateObj?.name || lgaObj.stateCode} State)`
+    : stateObj
+    ? `State: ${stateObj.name} (${stateObj.zone})`
+    : 'National Aggregate (36 States & FCT — 774 LGAs, 8,809 Wards, 176,846 PUs)';
 
   res.json({
     data: {
@@ -1240,12 +1237,18 @@ app.get('/api/v1/analytics/overview', (req: Request, res: Response) => {
       electionTitle: electionId === 'elec-2026-gov-osun' ? 'Osun State Governorship Election' : 'Ekiti State Governorship Election',
       electionYear: 2026,
       electionType: 'GOVERNORSHIP',
-      geographicScope: stateCode ? `State: ${stateCode}` : 'National Aggregate (37 States & FCT)',
+      geographicScope: scopeLabel,
+      drilldownLevel,
+      totalStates: stateObj ? 1 : INEC_NATIONAL_SUMMARY.totalStatesAndFct,
+      totalLgas,
+      totalWards,
       lastSyncTime: new Date().toISOString(),
       lastAnalyticsUpdate: new Date().toISOString(),
       dataSourceMode: currentDataSourceMode,
       isDemonstration: false,
-      registeredVoters: totalRegisteredVoters,
+      registeredVoters: baselineRegVoters,
+      pvcsCollected: baselinePvcsCollected,
+      pvcCollectionRate: baselinePvcRate,
       accreditedVoters: totalAccreditedVoters,
       totalVotesCast,
       validVotes: totalValidVotes,
@@ -1335,24 +1338,25 @@ app.get('/api/v1/analytics/candidate-comparisons', (req: Request, res: Response)
     }
   });
 
-  const candidatesList = CANDIDATES.map((cand) => {
-    const votes = partyVotesAgg[cand.partyCode] || 0;
+  const candidatesList = PARTIES.map((pty) => {
+    const votes = partyVotesAgg[pty.code] || 0;
     const share = totalValidVotes > 0 ? Number(((votes / totalValidVotes) * 100).toFixed(2)) : 0;
     return {
-      candidateId: cand.id,
-      candidateName: cand.name,
-      partyCode: cand.partyCode,
-      partyName: PARTIES.find((p) => p.code === cand.partyCode)?.name || cand.partyCode,
-      partyColor: PARTIES.find((p) => p.code === cand.partyCode)?.color || '#64748b',
+      candidateId: pty.id,
+      candidateName: pty.name,
+      partyCode: pty.code,
+      partyName: pty.name,
+      partyColor: pty.color || '#64748b',
+      logoUrl: pty.logoUrl,
       totalVotes: votes,
       validVoteShare: share,
       voteMargin: 0,
-      statesWon: statesWonCount[cand.partyCode] || 0,
+      statesWon: statesWonCount[pty.code] || 0,
       isLeading: false,
     };
   }).sort((a, b) => b.totalVotes - a.totalVotes);
 
-  if (candidatesList.length > 0) {
+  if (candidatesList.length > 0 && candidatesList[0].totalVotes > 0) {
     candidatesList[0].isLeading = true;
     const firstVotes = candidatesList[0].totalVotes;
     const secondVotes = candidatesList.length > 1 ? candidatesList[1].totalVotes : 0;
@@ -1366,13 +1370,13 @@ app.get('/api/v1/analytics/candidate-comparisons', (req: Request, res: Response)
   res.json({
     data: {
       electionId,
-      electionTitle: 'Osun State Governorship Election',
+      electionTitle: ELECTIONS.find((e) => e.id === electionId)?.title || 'Osun State Governorship Election',
       level,
       filterValue,
       totalValidVotes,
       totalVotesCast,
-      leadingCandidate: candidatesList[0] || null,
-      leadingMargin: candidatesList.length > 0 ? candidatesList[0].voteMargin : 0,
+      leadingCandidate: candidatesList.length > 0 && candidatesList[0].totalVotes > 0 ? candidatesList[0] : null,
+      leadingMargin: candidatesList.length > 0 && candidatesList[0].totalVotes > 0 ? candidatesList[0].voteMargin : 0,
       candidates: candidatesList,
     },
   });
@@ -1582,7 +1586,7 @@ app.get('/api/v1/analytics/reports/export', (req: Request, res: Response) => {
 
 // Geographical Reference Routes
 app.get(['/api/v1/states', '/api/v1/geography/states'], (_req: Request, res: Response) => {
-  res.json({ data: STATES, total: STATES.length });
+  res.json({ data: STATES, total: STATES.length, nationalSummary: INEC_NATIONAL_SUMMARY });
 });
 
 app.get(['/api/v1/lgas', '/api/v1/geography/lgas'], (req: Request, res: Response) => {
@@ -1602,7 +1606,262 @@ app.get(['/api/v1/wards', '/api/v1/geography/wards'], (req: Request, res: Respon
   res.json({ data: filtered, total: filtered.length });
 });
 
-// Polling Units Search and Filter
+// Helper to match any state string from Excel/CSV to canonical INEC state code
+function matchStateCodeFromText(rawName: string): string | null {
+  if (!rawName) return null;
+  const cleaned = String(rawName)
+    .toUpperCase()
+    .replace(/STATE/g, '')
+    .replace(/[^A-Z]/g, '')
+    .trim();
+  if (!cleaned || cleaned === 'TOTAL' || cleaned === 'NATIONALTOTAL' || cleaned === 'GRANDTOTAL') {
+    return null;
+  }
+  if (
+    cleaned === 'FCT' ||
+    cleaned === 'ABUJA' ||
+    cleaned.includes('FEDERALCAPITALTERRITORY') ||
+    cleaned === 'FCTABUJA'
+  ) {
+    return 'FCT';
+  }
+  for (const st of ACTIVE_INEC_STATES) {
+    const stCleaned = st.name.toUpperCase().replace(/[^A-Z]/g, '');
+    const codeCleaned = st.code.toUpperCase().replace(/[^A-Z]/g, '');
+    if (cleaned === stCleaned || cleaned === codeCleaned) {
+      return st.code;
+    }
+  }
+  for (const st of ACTIVE_INEC_STATES) {
+    const stCleaned = st.name.toUpperCase().replace(/[^A-Z]/g, '');
+    if (stCleaned.length >= 4 && (cleaned.includes(stCleaned) || stCleaned.includes(cleaned))) {
+      return st.code;
+    }
+  }
+  return null;
+}
+
+function parseNumericCell(val: any): number | null {
+  if (val === null || val === undefined || val === '') return null;
+  if (typeof val === 'number' && !Number.isNaN(val)) return val;
+  const cleaned = String(val).replace(/[,%\s]/g, '').trim();
+  if (!cleaned) return null;
+  const num = Number(cleaned);
+  return Number.isFinite(num) ? num : null;
+}
+
+// Import Registered Voters & PVC Collection from Excel (.xlsx / .xls) or CSV
+app.post('/api/v1/geography/registered-voters/import', (req: Request, res: Response) => {
+  try {
+    const { fileBase64, fileName, records } = req.body;
+    let extractedRows: Array<{
+      stateCode: string;
+      registeredVoters?: number;
+      pvcsCollected?: number;
+      pvcCollectionRate?: number;
+      totalPus?: number;
+      totalWards?: number;
+      totalLgas?: number;
+    }> = [];
+
+    if (Array.isArray(records) && records.length > 0) {
+      for (const r of records) {
+        const code = matchStateCodeFromText(r.state || r.stateCode || r.name);
+        if (!code) continue;
+        const reg = parseNumericCell(r.registeredVoters);
+        const pvc = parseNumericCell(r.pvcsCollected);
+        const rate = parseNumericCell(r.pvcCollectionRate);
+        const pus = parseNumericCell(r.totalPus);
+        const wards = parseNumericCell(r.totalWards);
+        const lgas = parseNumericCell(r.totalLgas);
+        extractedRows.push({
+          stateCode: code,
+          registeredVoters: reg !== null ? Math.round(reg) : undefined,
+          pvcsCollected: pvc !== null ? Math.round(pvc) : undefined,
+          pvcCollectionRate: rate !== null ? rate : undefined,
+          totalPus: pus !== null ? Math.round(pus) : undefined,
+          totalWards: wards !== null ? Math.round(wards) : undefined,
+          totalLgas: lgas !== null ? Math.round(lgas) : undefined,
+        });
+      }
+    } else if (fileBase64) {
+      const cleanBase64 = String(fileBase64).replace(/^data:.*?;base64,/, '');
+      const buf = Buffer.from(cleanBase64, 'base64');
+      const workbook = XLSX.read(buf, { type: 'buffer' });
+
+      for (const sheetName of workbook.SheetNames) {
+        const sheet = workbook.Sheets[sheetName];
+        const rows2D: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+        if (!rows2D || rows2D.length === 0) continue;
+
+        // Detect header row containing "State" and voter/PVC/PU columns
+        let stateCol = -1;
+        let regCol = -1;
+        let pvcCol = -1;
+        let rateCol = -1;
+        let puCol = -1;
+        let wardCol = -1;
+        let lgaCol = -1;
+        let headerRowIdx = -1;
+
+        for (let rIdx = 0; rIdx < Math.min(rows2D.length, 20); rIdx++) {
+          const row = rows2D[rIdx].map((c) => String(c ?? '').toLowerCase().trim());
+          const sIdx = row.findIndex((c) => c === 'state' || c === 'states' || c.includes('state name'));
+          const rCol = row.findIndex(
+            (c) =>
+              c.includes('registered') ||
+              c.includes('voters') ||
+              c === 'reg voters' ||
+              c === 'total voters'
+          );
+          if (sIdx !== -1 && (rCol !== -1 || row.some((c) => c.includes('polling') || c.includes('pvc')))) {
+            headerRowIdx = rIdx;
+            stateCol = sIdx;
+            regCol = rCol;
+            pvcCol = row.findIndex((c) => c.includes('pvc') && !c.includes('rate') && !c.includes('%') && !c.includes('uncollected'));
+            rateCol = row.findIndex((c) => c.includes('rate') || c.includes('%'));
+            puCol = row.findIndex((c) => c.includes('polling unit') || c === 'pus' || c === 'pu');
+            wardCol = row.findIndex((c) => c.includes('ward') || c.includes('registration area') || c === 'ra');
+            lgaCol = row.findIndex((c) => c.includes('lga') || c.includes('local government'));
+            break;
+          }
+        }
+
+        // Scan data rows
+        const startRow = headerRowIdx !== -1 ? headerRowIdx + 1 : 0;
+        for (let rIdx = startRow; rIdx < rows2D.length; rIdx++) {
+          const row = rows2D[rIdx];
+          if (!Array.isArray(row) || row.length === 0) continue;
+
+          let matchedCode: string | null = null;
+          let matchedColIdx = -1;
+
+          if (stateCol !== -1 && row[stateCol] !== undefined) {
+            matchedCode = matchStateCodeFromText(String(row[stateCol]));
+            matchedColIdx = stateCol;
+          }
+          if (!matchedCode) {
+            for (let c = 0; c < Math.min(row.length, 4); c++) {
+              const code = matchStateCodeFromText(String(row[c]));
+              if (code) {
+                matchedCode = code;
+                matchedColIdx = c;
+                break;
+              }
+            }
+          }
+          if (!matchedCode) continue;
+
+          let regVal = regCol !== -1 ? parseNumericCell(row[regCol]) : null;
+          let pvcVal = pvcCol !== -1 ? parseNumericCell(row[pvcCol]) : null;
+          let rateVal = rateCol !== -1 ? parseNumericCell(row[rateCol]) : null;
+          let puVal = puCol !== -1 ? parseNumericCell(row[puCol]) : null;
+          let wardVal = wardCol !== -1 ? parseNumericCell(row[wardCol]) : null;
+          let lgaVal = lgaCol !== -1 ? parseNumericCell(row[lgaCol]) : null;
+
+          // Fallback heuristic if header columns weren't standard: find large numbers > 50,000 in the row
+          if (regVal === null) {
+            const numericAfterState = row
+              .slice(matchedColIdx + 1)
+              .map((cell) => parseNumericCell(cell))
+              .filter((n): n is number => n !== null);
+            const largeNums = numericAfterState.filter((n) => n >= 50000);
+            if (largeNums.length >= 1) {
+              regVal = largeNums[0];
+              if (largeNums.length >= 2 && pvcVal === null && largeNums[1] <= largeNums[0]) {
+                pvcVal = largeNums[1];
+              }
+            }
+          }
+
+          if (regVal !== null || pvcVal !== null || puVal !== null) {
+            extractedRows.push({
+              stateCode: matchedCode,
+              registeredVoters: regVal !== null ? Math.round(regVal) : undefined,
+              pvcsCollected: pvcVal !== null ? Math.round(pvcVal) : undefined,
+              pvcCollectionRate: rateVal !== null ? rateVal : undefined,
+              totalPus: puVal !== null ? Math.round(puVal) : undefined,
+              totalWards: wardVal !== null ? Math.round(wardVal) : undefined,
+              totalLgas: lgaVal !== null ? Math.round(lgaVal) : undefined,
+            });
+          }
+        }
+      }
+    }
+
+    if (extractedRows.length === 0) {
+      res.status(400).json({
+        error: 'No valid Nigerian State voter records were found in the uploaded file. Ensure the sheet contains State names and Registered Voters columns.',
+      });
+      return;
+    }
+
+    // Apply updates to ACTIVE_INEC_STATES
+    let updatedCount = 0;
+    for (const item of extractedRows) {
+      const idx = ACTIVE_INEC_STATES.findIndex((s) => s.code === item.stateCode);
+      if (idx === -1) continue;
+      const st = ACTIVE_INEC_STATES[idx];
+      const newReg = item.registeredVoters !== undefined ? item.registeredVoters : st.registeredVoters;
+      let newPvc = item.pvcsCollected !== undefined ? item.pvcsCollected : st.pvcsCollected;
+      if (item.pvcsCollected === undefined && item.registeredVoters !== undefined) {
+        // If only registered voters was in the Excel file and newReg < old pvcsCollected, scale pvcsCollected proportionally
+        if (newPvc > newReg) {
+          newPvc = Math.round(newReg * (st.pvcCollectionRate / 100));
+        }
+      }
+      const newRate =
+        item.pvcCollectionRate !== undefined && item.pvcCollectionRate <= 100
+          ? Number(item.pvcCollectionRate.toFixed(2))
+          : newReg > 0
+          ? Number(((newPvc / newReg) * 100).toFixed(2))
+          : st.pvcCollectionRate;
+
+      ACTIVE_INEC_STATES[idx] = {
+        ...st,
+        registeredVoters: newReg,
+        pvcsCollected: newPvc,
+        pvcCollectionRate: newRate,
+        totalPus: item.totalPus !== undefined && item.totalPus > 0 ? item.totalPus : st.totalPus,
+        totalWards: item.totalWards !== undefined && item.totalWards > 0 ? item.totalWards : st.totalWards,
+        totalLgas: item.totalLgas !== undefined && item.totalLgas > 0 ? item.totalLgas : st.totalLgas,
+      };
+      updatedCount++;
+    }
+
+    // Rebuild STATES, LGAS, WARDS and clear Polling Unit cache
+    rebuildGeographyStores();
+    WARD_CANONICAL_PUS_CACHE.clear();
+
+    // Persist to disk so it survives restarts
+    try {
+      fs.writeFileSync(VOTER_OVERRIDE_FILE, JSON.stringify(ACTIVE_INEC_STATES, null, 2), 'utf-8');
+    } catch (e) {
+      console.error('Failed to persist voter override:', e);
+    }
+
+    AUDIT_LOGS.unshift({
+      id: 'audit-' + Date.now(),
+      timestamp: new Date().toISOString(),
+      actor: 'System Administrator',
+      action: 'IMPORT_REGISTERED_VOTERS_XLSX',
+      target: fileName || 'Excel/CSV Import',
+      details: `Updated Registered Voters & PVC statistics across ${updatedCount} States/FCT. National Total Registered Voters: ${INEC_NATIONAL_SUMMARY.totalRegisteredVoters.toLocaleString()}`,
+    });
+
+    res.json({
+      message: `Successfully updated Registered Voters for ${updatedCount} states/FCT from ${fileName || 'uploaded file'}.`,
+      updatedStatesCount: updatedCount,
+      nationalSummary: INEC_NATIONAL_SUMMARY,
+      states: STATES,
+    });
+  } catch (err: any) {
+    console.error('Excel/CSV voter import error:', err);
+    res.status(500).json({ error: err.message || 'Failed to parse Excel file' });
+  }
+});
+
+// Polling Units Search and Filter (Supports National -> State -> LGA -> Ward -> Polling Unit drill-down)
 app.get('/api/v1/polling-units', (req: Request, res: Response) => {
   const {
     electionId = 'elec-2026-gov-osun',
@@ -1616,29 +1875,148 @@ app.get('/api/v1/polling-units', (req: Request, res: Response) => {
     offset = '0',
   } = req.query;
 
-  let filtered = POLLING_UNITS.filter((p) => p.electionId === electionId);
-
-  if (state) filtered = filtered.filter((p) => p.stateCode === state);
-  if (lga) filtered = filtered.filter((p) => p.lgaCode === lga);
-  if (ward) filtered = filtered.filter((p) => p.wardCode === ward);
-  if (uploadStatus) filtered = filtered.filter((p) => p.uploadStatus === uploadStatus);
-  if (verificationStatus) filtered = filtered.filter((p) => p.verificationStatus === verificationStatus);
-
-  if (search && typeof search === 'string') {
-    const q = search.toLowerCase();
-    filtered = filtered.filter(
-      (p) =>
-        p.code.toLowerCase().includes(q) ||
-        p.name.toLowerCase().includes(q) ||
-        p.stateCode.toLowerCase().includes(q) ||
-        p.lgaCode.toLowerCase().includes(q)
-    );
-  }
-
-  const total = filtered.length;
   const lim = parseInt(limit as string, 10) || 50;
   const off = parseInt(offset as string, 10) || 0;
-  const paginated = filtered.slice(off, off + lim);
+
+  let uploadedMatching = POLLING_UNITS.filter((p) => p.electionId === electionId);
+  if (state) uploadedMatching = uploadedMatching.filter((p) => p.stateCode === state);
+  if (lga) uploadedMatching = uploadedMatching.filter((p) => p.lgaCode === lga);
+  if (ward) uploadedMatching = uploadedMatching.filter((p) => p.wardCode === ward);
+
+  const wardObj = ward ? WARDS.find((w) => w.code === ward) : undefined;
+  const lgaObj = lga ? LGAS.find((l) => l.code === lga) : undefined;
+  const stateObj = state ? STATES.find((s) => s.code === state) : undefined;
+
+  const expectedPus = wardObj
+    ? wardObj.totalPus
+    : lgaObj
+    ? lgaObj.totalPus
+    : stateObj
+    ? stateObj.totalPus
+    : INEC_NATIONAL_SUMMARY.totalPollingUnits;
+
+  const totalLgas = wardObj
+    ? 1
+    : lgaObj
+    ? 1
+    : stateObj
+    ? stateObj.totalLgas
+    : INEC_NATIONAL_SUMMARY.totalLgas;
+
+  const totalWards = wardObj
+    ? 1
+    : lgaObj
+    ? lgaObj.totalWards
+    : stateObj
+    ? stateObj.totalWards
+    : INEC_NATIONAL_SUMMARY.totalWards;
+
+  const registeredVoters = wardObj
+    ? wardObj.registeredVoters
+    : lgaObj
+    ? lgaObj.registeredVoters
+    : stateObj
+    ? stateObj.registeredVoters
+    : INEC_NATIONAL_SUMMARY.totalRegisteredVoters;
+
+  const pvcsCollected = wardObj
+    ? wardObj.pvcsCollected
+    : lgaObj
+    ? lgaObj.pvcsCollected
+    : stateObj
+    ? stateObj.pvcsCollected
+    : INEC_NATIONAL_SUMMARY.totalPvcsCollected;
+
+  const pvcCollectionRate = wardObj
+    ? wardObj.pvcCollectionRate
+    : lgaObj
+    ? lgaObj.pvcCollectionRate
+    : stateObj
+    ? stateObj.pvcCollectionRate
+    : INEC_NATIONAL_SUMMARY.nationalPvcCollectionRate;
+
+  const uploadedCount = uploadedMatching.filter((p) => p.uploadStatus === 'UPLOADED').length;
+  const verifiedCount = uploadedMatching.filter((p) => p.verificationStatus === 'VERIFIED').length;
+
+  // If filtering specifically for UPLOADED, SOURCE_UNAVAILABLE, or a verification status, filter actual records
+  if (
+    (uploadStatus && uploadStatus !== 'NOT_YET_UPLOADED') ||
+    (verificationStatus && verificationStatus !== 'NOT_APPLICABLE')
+  ) {
+    let filtered = [...uploadedMatching];
+    if (uploadStatus) filtered = filtered.filter((p) => p.uploadStatus === uploadStatus);
+    if (verificationStatus) filtered = filtered.filter((p) => p.verificationStatus === verificationStatus);
+    if (search && typeof search === 'string') {
+      const q = search.toLowerCase();
+      filtered = filtered.filter(
+        (p) =>
+          p.code.toLowerCase().includes(q) ||
+          p.name.toLowerCase().includes(q) ||
+          p.stateCode.toLowerCase().includes(q) ||
+          p.lgaCode.toLowerCase().includes(q)
+      );
+    }
+    const total = filtered.length;
+    res.json({
+      data: filtered.slice(off, off + lim),
+      pagination: {
+        total,
+        limit: lim,
+        offset: off,
+        hasMore: off + lim < total,
+      },
+      expectedStats: {
+        totalLgas,
+        totalWards,
+        expectedPus,
+        registeredVoters,
+        pvcsCollected,
+        pvcCollectionRate,
+        uploadedCount,
+        verifiedCount,
+        awaitingUploadCount: Math.max(0, expectedPus - uploadedCount),
+      },
+    });
+    return;
+  }
+
+  // Otherwise generate canonical expected Polling Units from Wards in scope so drill-down always shows expected PUs
+  let scopedWards = WARDS;
+  if (ward) scopedWards = scopedWards.filter((w) => w.code === ward);
+  else if (lga) scopedWards = scopedWards.filter((w) => w.lgaCode === lga);
+  else if (state) scopedWards = scopedWards.filter((w) => w.stateCode === state);
+
+  const q = search && typeof search === 'string' ? search.toLowerCase() : '';
+  const paginated: PollingUnit[] = [];
+  let cursor = 0;
+
+  for (const w of scopedWards) {
+    if (!q && cursor + w.totalPus <= off) {
+      cursor += w.totalPus;
+      continue;
+    }
+    const wardUnits = getCanonicalWardPollingUnits(w, electionId as string);
+    for (const pu of wardUnits) {
+      if (uploadStatus === 'NOT_YET_UPLOADED' && pu.uploadStatus !== 'NOT_YET_UPLOADED') continue;
+      if (q) {
+        const matches =
+          pu.code.toLowerCase().includes(q) ||
+          pu.name.toLowerCase().includes(q) ||
+          pu.stateCode.toLowerCase().includes(q) ||
+          pu.lgaCode.toLowerCase().includes(q) ||
+          pu.wardCode.toLowerCase().includes(q);
+        if (!matches) continue;
+      }
+      if (cursor >= off && paginated.length < lim) {
+        paginated.push(pu);
+      }
+      cursor++;
+      if (!q && paginated.length >= lim) break;
+    }
+    if (!q && paginated.length >= lim) break;
+  }
+
+  const total = q ? cursor : uploadStatus === 'NOT_YET_UPLOADED' ? Math.max(0, expectedPus - uploadedCount) : expectedPus;
 
   res.json({
     data: paginated,
@@ -1648,13 +2026,38 @@ app.get('/api/v1/polling-units', (req: Request, res: Response) => {
       offset: off,
       hasMore: off + lim < total,
     },
+    expectedStats: {
+      totalLgas,
+      totalWards,
+      expectedPus,
+      registeredVoters,
+      pvcsCollected,
+      pvcCollectionRate,
+      uploadedCount,
+      verifiedCount,
+      awaitingUploadCount: Math.max(0, expectedPus - uploadedCount),
+    },
   });
 });
 
 // Polling Unit Detail
 app.get('/api/v1/polling-units/:id', (req: Request, res: Response) => {
   const { id } = req.params;
-  const pu = POLLING_UNITS.find((p) => p.id === id || p.code === id);
+  let pu = POLLING_UNITS.find((p) => p.id === id || p.code === id);
+
+  if (!pu) {
+    const cleanCode = id.replace(/^pu-/, '');
+    const parts = cleanCode.split('-');
+    if (parts.length === 4) {
+      const wardId = `ward-${parts[0]}-${parts[1]}-${parts[2]}`;
+      const wardObj = WARDS.find((w) => w.id === wardId);
+      if (wardObj) {
+        const wardUnits = getCanonicalWardPollingUnits(wardObj, 'elec-2026-gov-osun');
+        pu = wardUnits.find((u) => u.code === cleanCode || u.id === id);
+      }
+    }
+  }
+
   if (!pu) {
     res.status(404).json({ error: 'Polling unit not found' });
     return;
@@ -2396,20 +2799,17 @@ app.post('/api/v1/admin/ingestion/run', async (req: Request, res: Response) => {
   });
 });
 
-// Purge Demonstration Data Endpoint
+// Purge / Reset All Election Data to Zero Endpoint
 app.post('/api/v1/admin/data/purge-demo', (_req: Request, res: Response) => {
-  const beforeCount = POLLING_UNITS.length;
-  // Keep only real off-cycle elections (Osun & Ekiti)
-  POLLING_UNITS = POLLING_UNITS.filter(
-    (p) => p.electionId === 'elec-2026-gov-osun' || p.electionId === 'elec-2026-gov-ekiti'
-  );
-  const afterCount = POLLING_UNITS.length;
-  const purgedCount = beforeCount - afterCount;
-
-  // Clear demo discrepancies
-  DISCREPANCIES = DISCREPANCIES.filter(
-    (d) => d.pollingUnitCode.startsWith('29-') || d.pollingUnitCode.startsWith('13-')
-  );
+  const purgedCount = POLLING_UNITS.length;
+  POLLING_UNITS = [];
+  RESULT_SHEETS = {};
+  DISCREPANCIES = [];
+  INCIDENTS = [];
+  INGESTION_JOBS = [];
+  DATA_QUALITY_ALERTS = [];
+  STATISTICAL_ANOMALIES = [];
+  SOURCE_DOCUMENT_CHANGES = [];
 
   currentDataSourceMode = 'OFFICIAL_SOURCE';
 
@@ -2417,14 +2817,14 @@ app.post('/api/v1/admin/data/purge-demo', (_req: Request, res: Response) => {
     id: 'audit-' + Date.now(),
     timestamp: new Date().toISOString(),
     actor: 'admin:purge_command',
-    action: 'PURGE_DEMONSTRATION_DATA',
+    action: 'RESET_ALL_ELECTION_DATA',
     target: 'database_store',
-    details: `Purged ${purgedCount} synthetic demonstration records. Switched platform to live official INEC source mode.`,
+    details: `Reset all election records (${purgedCount} polling units cleared). All uploaded sheets, verified transcriptions, and pending queues reset to zero.`,
   });
 
   res.json({
-    message: `Successfully purged ${purgedCount} demonstration records. Platform is now operating in pure production mode.`,
-    remainingPollingUnits: afterCount,
+    message: `Successfully reset all election records to zero. Result sheets uploaded, verified transcriptions, and awaiting verification queues are now 0.`,
+    remainingPollingUnits: 0,
     purgedCount,
     mode: currentDataSourceMode,
   });
@@ -2559,8 +2959,12 @@ app.get('/api/v1/admin/command-center/metrics', (_req: Request, res: Response) =
       configuredElectionsCount: ELECTIONS.length,
       configuredStatesCount: STATES.length,
       configuredLgasCount: LGAS.length,
-      configuredPusCount: 3763, // Canonical Osun State PU baseline
-      resultsExpected: 3763,
+      configuredWardsCount: WARDS.length,
+      configuredPusCount: INEC_NATIONAL_SUMMARY.totalPollingUnits,
+      registeredVoters: INEC_NATIONAL_SUMMARY.totalRegisteredVoters,
+      pvcsCollected: INEC_NATIONAL_SUMMARY.totalPvcsCollected,
+      pvcCollectionRate: INEC_NATIONAL_SUMMARY.nationalPvcCollectionRate,
+      resultsExpected: INEC_NATIONAL_SUMMARY.totalPollingUnits,
       resultsReceived: receivedCount,
       resultsVerified: verifiedCount,
       resultsPendingVerification: pendingCount,
@@ -2806,17 +3210,16 @@ app.delete('/api/v1/admin/users/:id', (req: Request, res: Response) => {
 app.get('/api/v1/admin/supervision/verifiers', (_req: Request, res: Response) => {
   const verifiers = USERS.filter((u) => u.role === 'RESULT_VERIFIER' || u.role === 'MONITORING_COORDINATOR');
   const supervisionData = verifiers.map((v) => {
-    const isLead = v.id === 'usr-verif-01';
     return {
       id: v.id,
       name: v.fullName,
       email: v.email,
       role: v.role,
       assignedJurisdiction: v.assignedLgaCode ? `${v.assignedLgaCode}, ${v.assignedStateCode}` : v.assignedStateCode || 'National',
-      totalReviewed: isLead ? 6 : 2,
-      approvedCount: isLead ? 5 : 2,
-      flaggedDiscrepanciesCount: isLead ? 1 : 0,
-      averageTimePerSheetSeconds: isLead ? 72 : 94,
+      totalReviewed: 0,
+      approvedCount: 0,
+      flaggedDiscrepanciesCount: 0,
+      averageTimePerSheetSeconds: 0,
       lastActive: v.lastLogin || '2026-08-15T18:00:00Z',
       status: v.isActive ? 'ONLINE' : 'OFFLINE',
     };
@@ -3380,6 +3783,8 @@ app.post('/api/v1/admin/readiness/toggle-checklist', (req: Request, res: Respons
 // ==========================================
 
 async function startServer() {
+  app.use('/party-logos', express.static(path.resolve(__dirname, 'public/party-logos')));
+
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({
       server: { middlewareMode: true },

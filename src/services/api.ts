@@ -17,19 +17,23 @@ export async function fetchElections(): Promise<{ data: Election[]; total: numbe
 export async function fetchElectionSummary(
   electionId: string,
   state?: string,
-  lga?: string
+  lga?: string,
+  ward?: string
 ): Promise<{ data: ElectionSummary }> {
   const params = new URLSearchParams();
   if (state) params.set('state', state);
   if (lga) params.set('lga', lga);
+  if (ward) params.set('ward', ward);
   const res = await fetch(`${API_BASE}/elections/${electionId}/summary?${params.toString()}`);
   if (!res.ok) throw new Error('Failed to fetch election summary');
   return res.json();
 }
 
-export async function fetchUploadProgress(electionId: string, state?: string) {
+export async function fetchUploadProgress(electionId: string, state?: string, lga?: string, ward?: string) {
   const params = new URLSearchParams();
   if (state) params.set('state', state);
+  if (lga) params.set('lga', lga);
+  if (ward) params.set('ward', ward);
   const res = await fetch(`${API_BASE}/elections/${electionId}/upload-progress?${params.toString()}`);
   if (!res.ok) throw new Error('Failed to fetch upload progress');
   return res.json();
@@ -74,7 +78,21 @@ export async function fetchPollingUnits(params: {
   search?: string;
   limit?: number;
   offset?: number;
-}): Promise<{ data: PollingUnit[]; pagination: { total: number; limit: number; offset: number; hasMore: boolean } }> {
+}): Promise<{
+  data: PollingUnit[];
+  pagination: { total: number; limit: number; offset: number; hasMore: boolean };
+  expectedStats?: {
+    totalLgas: number;
+    totalWards: number;
+    expectedPus: number;
+    registeredVoters: number;
+    pvcsCollected: number;
+    pvcCollectionRate: number;
+    uploadedCount: number;
+    verifiedCount: number;
+    awaitingUploadCount: number;
+  };
+}> {
   const q = new URLSearchParams();
   if (params.electionId) q.set('electionId', params.electionId);
   if (params.state) q.set('state', params.state);
@@ -239,12 +257,14 @@ export async function fetchAnalyticsOverview(params: {
   electionId?: string;
   state?: string;
   lga?: string;
+  ward?: string;
   verificationStatus?: string;
 }) {
   const q = new URLSearchParams();
   if (params.electionId) q.set('electionId', params.electionId);
   if (params.state) q.set('state', params.state);
   if (params.lga) q.set('lga', params.lga);
+  if (params.ward) q.set('ward', params.ward);
   if (params.verificationStatus) q.set('verificationStatus', params.verificationStatus);
 
   const res = await fetch(`${API_BASE}/analytics/overview?${q.toString()}`);
@@ -589,4 +609,30 @@ export async function purgeDemonstrationData() {
   }
   return res.json();
 }
+
+export async function importRegisteredVotersFile(payload: {
+  fileBase64?: string;
+  fileName?: string;
+  records?: Array<{
+    state: string;
+    registeredVoters: number;
+    pvcsCollected?: number;
+    pvcCollectionRate?: number;
+    totalPus?: number;
+    totalWards?: number;
+    totalLgas?: number;
+  }>;
+}) {
+  const res = await fetch(`${API_BASE}/geography/registered-voters/import`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Failed to import Registered Voters Excel file');
+  }
+  return res.json();
+}
+
 

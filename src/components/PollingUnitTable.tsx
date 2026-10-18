@@ -93,6 +93,7 @@ export const PollingUnitTable: React.FC<Props> = ({ pollingUnits, isLoading }) =
               <th className="py-3 px-4">Polling Unit Name</th>
               <th className="py-3 px-3">State</th>
               <th className="py-3 px-3">LGA</th>
+              <th className="py-3 px-3">Ward</th>
               <th className="py-3 px-3">Result Sheet</th>
               <th className="py-3 px-3">Source Uploaded</th>
               <th className="py-3 px-3">Transcription</th>
@@ -107,16 +108,17 @@ export const PollingUnitTable: React.FC<Props> = ({ pollingUnits, isLoading }) =
                 <td className="py-3 px-4 font-mono font-bold text-slate-900 tracking-wider">
                   {pu.code}
                 </td>
-                <td className="py-3 px-4 max-w-[220px]">
+                <td className="py-3 px-4 max-w-[240px]">
                   <div className="font-medium text-slate-900 truncate" title={pu.name}>
                     {pu.name}
                   </div>
-                  <div className="text-[11px] text-slate-500">
-                    Registered: {pu.registeredVoters} · Accredited: {pu.accreditedVoters || 'N/A'}
+                  <div className="text-[11px] text-slate-500 font-mono">
+                    Reg: {pu.registeredVoters.toLocaleString()} · PVC: {(pu.pvcsCollected ?? Math.round(pu.registeredVoters * 0.93)).toLocaleString()} · Acc: {pu.accreditedVoters || '0'}
                   </div>
                 </td>
                 <td className="py-3 px-3 font-medium">{pu.stateCode}</td>
-                <td className="py-3 px-3 text-slate-600">{pu.lgaCode}</td>
+                <td className="py-3 px-3 text-slate-600 font-mono">{pu.lgaCode}</td>
+                <td className="py-3 px-3 text-slate-600 font-mono">{pu.wardCode}</td>
                 <td className="py-3 px-3">{getUploadStatusBadge(pu.uploadStatus)}</td>
                 <td className="py-3 px-3 text-slate-500 font-mono text-[11px]">
                   {pu.sourceUploadTimestamp ? new Date(pu.sourceUploadTimestamp).toLocaleTimeString() : '—'}

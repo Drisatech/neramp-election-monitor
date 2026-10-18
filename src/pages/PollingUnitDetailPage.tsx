@@ -17,6 +17,7 @@ import { SourceDocumentViewer } from '../components/SourceDocumentViewer';
 import { VerificationWorkspace } from '../components/VerificationWorkspace';
 import { DisclaimerBanner } from '../components/DisclaimerBanner';
 import { useAuth } from '../context/AuthContext';
+import { getPartyInfo } from '../constants/parties';
 
 export const PollingUnitDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -202,11 +203,11 @@ export const PollingUnitDetailPage: React.FC = () => {
                   <p className="text-xs text-slate-600 mt-1">{sheet.arithmeticCheck.details}</p>
                 </div>
 
-                {/* Candidate & Party Scores Table */}
+                {/* Political Party Scores Table */}
                 <div className="bg-white p-4 rounded-lg border border-slate-200 shadow-2xs">
                   <div className="flex items-center justify-between mb-3 border-b border-slate-100 pb-2">
                     <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wide">
-                      Transcribed Candidate Scores (Form EC8A)
+                      Transcribed Political Party Scores (Form EC8A)
                     </h3>
                     <span className="text-[11px] text-slate-500">
                       Total Valid Votes: <strong>{sheet.transcription.validVotes}</strong>
@@ -226,9 +227,26 @@ export const PollingUnitDetailPage: React.FC = () => {
                       {Object.entries(sheet.transcription.partyVotes).map(([party, votes]) => {
                         const ocrVal = sheet.ocrExtraction.partyVotes[party] ?? '—';
                         const pct = sheet.transcription.validVotes > 0 ? ((votes / sheet.transcription.validVotes) * 100).toFixed(1) : 0;
+                        const partyInfo = getPartyInfo(party);
                         return (
                           <tr key={party} className="hover:bg-slate-50">
-                            <td className="py-1.5 font-bold text-slate-900">{party}</td>
+                            <td className="py-1.5 font-sans">
+                              <div className="flex items-center gap-2">
+                                {partyInfo?.logoUrl && (
+                                  <img
+                                    src={partyInfo.logoUrl}
+                                    alt={party}
+                                    className="w-6 h-6 object-contain rounded bg-white p-0.5 border border-slate-200 shrink-0"
+                                  />
+                                )}
+                                <div>
+                                  <span className="font-bold text-slate-900 font-mono">{partyInfo?.code || party}</span>
+                                  {partyInfo?.name && (
+                                    <span className="text-[11px] text-slate-500 ml-1.5">— {partyInfo.name}</span>
+                                  )}
+                                </div>
+                              </div>
+                            </td>
                             <td className="py-1.5 text-right font-bold text-emerald-800">{votes}</td>
                             <td className="py-1.5 text-right text-slate-500">{ocrVal}</td>
                             <td className="py-1.5 text-right text-slate-600">{pct}%</td>

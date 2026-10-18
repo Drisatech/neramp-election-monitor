@@ -37,7 +37,7 @@ export const Navbar: React.FC = () => {
 
   const allNavLinks: NavItem[] = [
     { to: '/', label: 'Overview', icon: Vote },
-    { to: '/results', label: 'Candidate Results', icon: Layers },
+    { to: '/results', label: 'Party Results', icon: Layers },
     { to: '/map', label: 'Map Explorer', icon: MapPin },
     { to: '/polling-units', label: 'Polling Units', icon: FileText },
     {

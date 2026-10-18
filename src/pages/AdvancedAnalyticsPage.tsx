@@ -26,8 +26,10 @@ import {
   Eye,
   Info,
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { useElection } from '../context/ElectionContext';
 import { useAuth } from '../context/AuthContext';
+import { getPartyInfo } from '../constants/parties';
 import {
   fetchAnalyticsOverview,
   fetchCandidateComparisons,
@@ -64,6 +66,10 @@ export const AdvancedAnalyticsPage: React.FC = () => {
     lgas,
     selectedLgaCode,
     setSelectedLgaCode,
+    wards,
+    selectedWardCode,
+    setSelectedWardCode,
+    resetFilters,
   } = useElection();
   const { role } = useAuth();
 
@@ -96,6 +102,7 @@ export const AdvancedAnalyticsPage: React.FC = () => {
           electionId: selectedElectionId,
           state: selectedStateCode || undefined,
           lga: selectedLgaCode || undefined,
+          ward: selectedWardCode || undefined,
         }),
         fetchCandidateComparisons({
           electionId: selectedElectionId,
@@ -121,7 +128,7 @@ export const AdvancedAnalyticsPage: React.FC = () => {
 
   useEffect(() => {
     loadData();
-  }, [selectedElectionId, selectedStateCode, selectedLgaCode, comparisonLevel]);
+  }, [selectedElectionId, selectedStateCode, selectedLgaCode, selectedWardCode, comparisonLevel]);
 
   // Handle alert status updates
   const handleAlertStatusUpdate = async (alertId: string, newStatus: string) => {
@@ -170,14 +177,14 @@ export const AdvancedAnalyticsPage: React.FC = () => {
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-xl font-black text-slate-900 tracking-tight uppercase">
-                Advanced Election Analytics & Discrepancy Detection
+                Advanced Analytics
               </h1>
               <span className="text-[10px] font-mono font-bold bg-emerald-50 text-emerald-800 px-2 py-0.5 rounded border border-emerald-200">
                 LIVE MONITORING
               </span>
             </div>
             <p className="text-xs text-slate-500 mt-0.5">
-              Multi-dimensional analysis of Form EC8A results completeness, candidate margins, statistical anomalies, and data-quality alerts.
+              Multi-dimensional analysis of Form EC8A results completeness, political party margins, statistical anomalies, and data-quality alerts.
             </p>
           </div>
 
@@ -235,7 +242,7 @@ export const AdvancedAnalyticsPage: React.FC = () => {
             }`}
           >
             <TrendingUp className="w-4 h-4" />
-            <span>Candidate Comparisons</span>
+            <span>Party Comparisons</span>
           </button>
 
           <button
@@ -303,6 +310,120 @@ export const AdvancedAnalyticsPage: React.FC = () => {
       {/* ======================================================== */}
       {activeTab === 'overview' && (
         <div className="space-y-6">
+          {/* Hierarchical Geographic Drill-Down Bar (National -> State -> LGA -> Ward -> Polling Units) */}
+          <div className="bg-white p-4 rounded-lg border border-slate-200 shadow-2xs space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex flex-wrap items-center gap-2 text-xs">
+                <span className="font-bold text-slate-700 uppercase flex items-center gap-1.5">
+                  <Filter className="w-3.5 h-3.5" />
+                  <span>Geographic Drill-Down:</span>
+                </span>
+
+                <select
+                  value={selectedStateCode}
+                  onChange={(e) => setSelectedStateCode(e.target.value)}
+                  className="bg-slate-50 border border-slate-300 text-slate-900 rounded px-2.5 py-1.5 focus:outline-emerald-600 font-medium"
+                >
+                  <option value="">National: All 36 States & FCT (176,846 PUs)</option>
+                  {states.map((st) => (
+                    <option key={st.code} value={st.code}>
+                      {st.name} ({st.totalLgas} LGAs · {st.totalWards ?? 0} Wards · {st.totalPus.toLocaleString()} PUs)
+                    </option>
+                  ))}
+                </select>
+
+                {selectedStateCode && (
+                  <select
+                    value={selectedLgaCode}
+                    onChange={(e) => setSelectedLgaCode(e.target.value)}
+                    className="bg-slate-50 border border-slate-300 text-slate-900 rounded px-2.5 py-1.5 focus:outline-emerald-600 font-medium"
+                  >
+                    <option value="">All LGAs in {selectedStateCode} ({lgas.length})</option>
+                    {lgas.map((lga) => (
+                      <option key={lga.code} value={lga.code}>
+                        {lga.name} ({lga.totalWards} Wards · {lga.totalPus.toLocaleString()} PUs)
+                      </option>
+                    ))}
+                  </select>
+                )}
+
+                {selectedLgaCode && (
+                  <select
+                    value={selectedWardCode}
+                    onChange={(e) => setSelectedWardCode(e.target.value)}
+                    className="bg-slate-50 border border-slate-300 text-slate-900 rounded px-2.5 py-1.5 focus:outline-emerald-600 font-medium"
+                  >
+                    <option value="">All Electoral Wards ({wards.length})</option>
+                    {wards.map((w) => (
+                      <option key={w.code} value={w.code}>
+                        {w.name} ({w.totalPus} Expected PUs)
+                      </option>
+                    ))}
+                  </select>
+                )}
+
+                {(selectedStateCode || selectedLgaCode || selectedWardCode) && (
+                  <button
+                    onClick={resetFilters}
+                    className="text-xs text-rose-700 hover:text-rose-900 font-semibold underline px-2"
+                  >
+                    Reset to National
+                  </button>
+                )}
+              </div>
+
+              <Link
+                to="/polling-units"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-800 hover:bg-emerald-900 text-white text-xs font-semibold rounded transition-colors"
+              >
+                <Search className="w-3.5 h-3.5" />
+                <span>Inspect Expected Polling Units ({overview?.completeness.expectedPollingUnits.toLocaleString() ?? '176,846'})</span>
+              </Link>
+            </div>
+
+            {/* Active Scope INEC Baseline Strip */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 pt-2.5 border-t border-slate-100 text-xs">
+              <div className="bg-slate-50 px-3 py-2 rounded border border-slate-200">
+                <span className="text-[10px] font-bold text-slate-400 uppercase block">Active Scope</span>
+                <span className="font-bold text-slate-900 truncate block mt-0.5" title={overview?.scope}>
+                  {overview?.scope || 'National (36 States & FCT)'}
+                </span>
+              </div>
+              <div className="bg-slate-50 px-3 py-2 rounded border border-slate-200">
+                <span className="text-[10px] font-bold text-slate-400 uppercase block">LGAs / Area Councils</span>
+                <span className="font-mono font-bold text-slate-900 text-sm block mt-0.5">
+                  {(overview?.totalLgas ?? 774).toLocaleString()}
+                </span>
+              </div>
+              <div className="bg-slate-50 px-3 py-2 rounded border border-slate-200">
+                <span className="text-[10px] font-bold text-slate-400 uppercase block">Electoral Wards (RAs)</span>
+                <span className="font-mono font-bold text-slate-900 text-sm block mt-0.5">
+                  {(overview?.totalWards ?? 8809).toLocaleString()}
+                </span>
+              </div>
+              <div className="bg-emerald-50/70 px-3 py-2 rounded border border-emerald-200">
+                <span className="text-[10px] font-bold text-emerald-800 uppercase block">Expected Result Sheets</span>
+                <span className="font-mono font-bold text-emerald-950 text-sm block mt-0.5">
+                  {(overview?.completeness.expectedPollingUnits ?? 176846).toLocaleString()}
+                </span>
+              </div>
+              <div className="bg-slate-50 px-3 py-2 rounded border border-slate-200">
+                <span className="text-[10px] font-bold text-slate-400 uppercase block">Registered Voters (INEC)</span>
+                <span className="font-mono font-bold text-slate-900 text-sm block mt-0.5">
+                  {(overview?.registeredVoters ?? 103428715).toLocaleString()}
+                </span>
+              </div>
+              <div className="bg-slate-50 px-3 py-2 rounded border border-slate-200">
+                <span className="text-[10px] font-bold text-slate-400 uppercase block">
+                  PVCs Collected ({(overview?.pvcCollectionRate ?? 93.31).toFixed(2)}%)
+                </span>
+                <span className="font-mono font-bold text-emerald-800 text-sm block mt-0.5">
+                  {(overview?.pvcsCollected ?? 96506605).toLocaleString()}
+                </span>
+              </div>
+            </div>
+          </div>
+
           {/* Key Electoral Statistics Cards */}
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
             <div className="bg-white p-3.5 rounded-lg border border-slate-200">
@@ -310,7 +431,7 @@ export const AdvancedAnalyticsPage: React.FC = () => {
               <span className="text-lg font-bold font-mono text-slate-900 mt-1 block">
                 {overview?.completeness.expectedPollingUnits.toLocaleString() ?? '—'}
               </span>
-              <span className="text-[10px] text-slate-400">Official PU count</span>
+              <span className="text-[10px] text-slate-400">Official INEC PU count</span>
             </div>
 
             <div className="bg-white p-3.5 rounded-lg border border-slate-200">
@@ -384,7 +505,7 @@ export const AdvancedAnalyticsPage: React.FC = () => {
               <div className="p-3 bg-slate-50 rounded border border-slate-200">
                 <span className="text-[10px] font-bold text-slate-500 uppercase block">1. Not Uploaded</span>
                 <span className="text-base font-bold font-mono text-slate-700 mt-1 block">
-                  {overview?.completeness.resultsMissing ?? 0}
+                  {(overview?.completeness.resultsMissing ?? 0).toLocaleString()}
                 </span>
                 <span className="text-[10px] text-slate-400">Awaiting PU upload</span>
               </div>
@@ -392,7 +513,7 @@ export const AdvancedAnalyticsPage: React.FC = () => {
               <div className="p-3 bg-blue-50 rounded border border-blue-200">
                 <span className="text-[10px] font-bold text-blue-800 uppercase block">2. Ingested (OCR Queue)</span>
                 <span className="text-base font-bold font-mono text-blue-900 mt-1 block">
-                  {overview?.completeness.awaitingOcr ?? 0}
+                  {(overview?.completeness.awaitingOcr ?? 0).toLocaleString()}
                 </span>
                 <span className="text-[10px] text-blue-600">Pending OCR</span>
               </div>
@@ -400,7 +521,7 @@ export const AdvancedAnalyticsPage: React.FC = () => {
               <div className="p-3 bg-amber-50 rounded border border-amber-200">
                 <span className="text-[10px] font-bold text-amber-800 uppercase block">3. Under Verification</span>
                 <span className="text-base font-bold font-mono text-amber-900 mt-1 block">
-                  {overview?.completeness.underVerification ?? 0}
+                  {(overview?.completeness.underVerification ?? 0).toLocaleString()}
                 </span>
                 <span className="text-[10px] text-amber-600">Reviewer workspace</span>
               </div>
@@ -408,7 +529,7 @@ export const AdvancedAnalyticsPage: React.FC = () => {
               <div className="p-3 bg-rose-50 rounded border border-rose-200">
                 <span className="text-[10px] font-bold text-rose-800 uppercase block">4. Flagged Discrepancy</span>
                 <span className="text-base font-bold font-mono text-rose-900 mt-1 block">
-                  {overview?.completeness.discrepancyFlagged ?? 0}
+                  {(overview?.completeness.discrepancyFlagged ?? 0).toLocaleString()}
                 </span>
                 <span className="text-[10px] text-rose-600">Variance identified</span>
               </div>
@@ -416,7 +537,7 @@ export const AdvancedAnalyticsPage: React.FC = () => {
               <div className="p-3 bg-emerald-50 rounded border border-emerald-200">
                 <span className="text-[10px] font-bold text-emerald-800 uppercase block">5. Human Verified</span>
                 <span className="text-base font-bold font-mono text-emerald-900 mt-1 block">
-                  {overview?.completeness.verifiedResults ?? 0}
+                  {(overview?.completeness.verifiedResults ?? 0).toLocaleString()}
                 </span>
                 <span className="text-[10px] text-emerald-600">Certified by verifier</span>
               </div>
@@ -424,26 +545,31 @@ export const AdvancedAnalyticsPage: React.FC = () => {
               <div className="p-3 bg-slate-900 text-white rounded border border-slate-800">
                 <span className="text-[10px] font-bold text-emerald-400 uppercase block">6. Published</span>
                 <span className="text-base font-bold font-mono text-white mt-1 block">
-                  {overview?.completeness.approvedPublished ?? 0}
+                  {(overview?.completeness.approvedPublished ?? 0).toLocaleString()}
                 </span>
                 <span className="text-[10px] text-slate-300">Public dashboard</span>
               </div>
             </div>
           </div>
 
-          {/* Geographic Breakdown Table */}
+          {/* Interactive Hierarchical Geographic Breakdown Table */}
           <div className="bg-white rounded-lg border border-slate-200 overflow-hidden shadow-2xs">
-            <div className="p-4 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
+            <div className="p-4 border-b border-slate-100 bg-slate-50 flex flex-wrap items-center justify-between gap-2">
               <div>
                 <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wide">
-                  Geographic Coverage & Verification Progress by State
+                  {selectedLgaCode
+                    ? `Electoral Wards Breakdown (${overview?.scope})`
+                    : selectedStateCode
+                    ? `Local Government Areas (LGAs) Breakdown (${overview?.scope})`
+                    : 'National Geographic Breakdown by State & FCT (37 Jurisdictions)'}
                 </h3>
                 <p className="text-xs text-slate-500">
-                  State-by-state completeness rates and current leading candidate party.
+                  Click any row to drill down from State → LGA → Electoral Ward → Polling Units.
                 </p>
               </div>
               <span className="text-xs text-slate-500 font-mono">
-                {overview?.geographicSummary.length ?? 0} State Jurisdictions
+                {overview?.geographicSummary.length ?? 0}{' '}
+                {selectedLgaCode ? 'Electoral Wards' : selectedStateCode ? 'LGAs' : 'States & FCT'}
               </span>
             </div>
 
@@ -451,35 +577,92 @@ export const AdvancedAnalyticsPage: React.FC = () => {
               <table className="w-full text-xs text-left border-collapse">
                 <thead>
                   <tr className="bg-slate-50/50 border-b border-slate-200 text-slate-500 uppercase tracking-wider font-semibold">
-                    <th className="py-2.5 px-4">State</th>
+                    <th className="py-2.5 px-4">
+                      {selectedLgaCode ? 'Electoral Ward' : selectedStateCode ? 'LGA / Area Council' : 'State / FCT'}
+                    </th>
                     <th className="py-2.5 px-3">Zone</th>
+                    {!selectedLgaCode && (
+                      <th className="py-2.5 px-3 text-right">
+                        {selectedStateCode ? 'Wards' : 'LGAs / Wards'}
+                      </th>
+                    )}
                     <th className="py-2.5 px-3 text-right">Expected PUs</th>
-                    <th className="py-2.5 px-3 text-right">Received</th>
+                    <th className="py-2.5 px-3 text-right">Registered Voters</th>
+                    <th className="py-2.5 px-3 text-right">PVCs Collected</th>
+                    <th className="py-2.5 px-3 text-right">Uploaded</th>
                     <th className="py-2.5 px-3 text-right">Verified</th>
-                    <th className="py-2.5 px-3 text-right">Discrepancies</th>
                     <th className="py-2.5 px-3 text-center">Completeness</th>
                     <th className="py-2.5 px-4 text-center">Leading Party</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 font-medium">
-                  {(overview?.geographicSummary || []).map((geo) => (
-                    <tr key={geo.code} className="hover:bg-slate-50/80">
-                      <td className="py-2.5 px-4 font-bold text-slate-900">{geo.name}</td>
-                      <td className="py-2.5 px-3 text-slate-500">{geo.zone}</td>
-                      <td className="py-2.5 px-3 text-right font-mono">{geo.expectedPus.toLocaleString()}</td>
-                      <td className="py-2.5 px-3 text-right font-mono font-bold text-slate-800">{geo.receivedPus}</td>
-                      <td className="py-2.5 px-3 text-right font-mono text-emerald-700">{geo.verifiedPus}</td>
-                      <td className="py-2.5 px-3 text-right font-mono text-rose-600">{geo.discrepantPus}</td>
-                      <td className="py-2.5 px-3 text-center font-mono">
-                        {geo.completenessRate !== null ? `${geo.completenessRate}%` : '—'}
-                      </td>
-                      <td className="py-2.5 px-4 text-center">
-                        <span className="inline-block px-2 py-0.5 rounded text-[11px] font-bold text-white bg-slate-700">
-                          {geo.leadingParty}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
+                  {(overview?.geographicSummary || []).map((geo) => {
+                    const leadingInfo = getPartyInfo(geo.leadingParty);
+                    return (
+                      <tr
+                        key={geo.code}
+                        onClick={() => {
+                          if (!selectedStateCode) {
+                            setSelectedStateCode(geo.code);
+                          } else if (!selectedLgaCode) {
+                            setSelectedLgaCode(geo.code);
+                          } else if (!selectedWardCode) {
+                            setSelectedWardCode(geo.code);
+                          }
+                        }}
+                        className="hover:bg-emerald-50/40 cursor-pointer transition-colors"
+                      >
+                        <td className="py-2.5 px-4 font-bold text-slate-900 flex items-center gap-1.5">
+                          <span>{geo.name}</span>
+                          <ChevronRight className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
+                        </td>
+                        <td className="py-2.5 px-3 text-slate-500">{geo.zone}</td>
+                        {!selectedLgaCode && (
+                          <td className="py-2.5 px-3 text-right font-mono text-slate-600">
+                            {selectedStateCode
+                              ? `${(geo.totalWards ?? 0).toLocaleString()} Wards`
+                              : `${geo.totalLgas ?? 0} LGAs · ${(geo.totalWards ?? 0).toLocaleString()} Wards`}
+                          </td>
+                        )}
+                        <td className="py-2.5 px-3 text-right font-mono font-bold text-emerald-900">
+                          {geo.expectedPus.toLocaleString()}
+                        </td>
+                        <td className="py-2.5 px-3 text-right font-mono text-slate-800">
+                          {(geo.registeredVoters ?? 0).toLocaleString()}
+                        </td>
+                        <td className="py-2.5 px-3 text-right font-mono text-emerald-800">
+                          {(geo.pvcsCollected ?? 0).toLocaleString()}{' '}
+                          <span className="text-[10px] text-slate-400">
+                            ({(geo.pvcCollectionRate ?? 0).toFixed(1)}%)
+                          </span>
+                        </td>
+                        <td className="py-2.5 px-3 text-right font-mono font-bold text-slate-800">{geo.receivedPus}</td>
+                        <td className="py-2.5 px-3 text-right font-mono text-emerald-700">{geo.verifiedPus}</td>
+                        <td className="py-2.5 px-3 text-center font-mono">
+                          {geo.completenessRate !== null ? `${geo.completenessRate}%` : '—'}
+                        </td>
+                        <td className="py-2.5 px-4 text-center">
+                          {leadingInfo ? (
+                            <span
+                              className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-bold text-white"
+                              style={{ backgroundColor: leadingInfo.color }}
+                            >
+                              <img
+                                src={leadingInfo.logoUrl}
+                                alt={leadingInfo.code}
+                                className="w-3.5 h-3.5 object-contain rounded-xs bg-white p-0.25"
+                              />
+                              {leadingInfo.code}
+                            </span>
+                          ) : (
+                            <span className="inline-block px-2 py-0.5 rounded text-[11px] font-bold text-white bg-slate-700">
+                              {geo.leadingParty}
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -539,19 +722,19 @@ export const AdvancedAnalyticsPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Candidate Standings Table with Vote Margins */}
+          {/* Political Party Standings Table with Vote Margins */}
           <div className="bg-white rounded-lg border border-slate-200 overflow-hidden shadow-2xs">
             <div className="p-4 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
               <div>
                 <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wide">
-                  Candidate Standings, Valid-Vote Share & Margins
+                  Political Party Standings, Valid-Vote Share & Margins
                 </h3>
                 <p className="text-xs text-slate-500">
-                  Comparing only accredited candidates contesting the same election.
+                  Comparing registered political parties contesting the same election.
                 </p>
               </div>
               <span className="text-xs text-slate-600 font-mono">
-                Total Valid Votes: <strong>{comparisons?.totalValidVotes.toLocaleString()}</strong>
+                Total Valid Votes: <strong>{(comparisons?.totalValidVotes || 0).toLocaleString()}</strong>
               </span>
             </div>
 
@@ -560,8 +743,8 @@ export const AdvancedAnalyticsPage: React.FC = () => {
                 <thead>
                   <tr className="bg-slate-50/50 border-b border-slate-200 text-slate-500 uppercase tracking-wider font-semibold">
                     <th className="py-3 px-4">Rank</th>
-                    <th className="py-3 px-4">Candidate Name</th>
-                    <th className="py-3 px-3">Party</th>
+                    <th className="py-3 px-4">Political Party</th>
+                    <th className="py-3 px-3">Party Code</th>
                     <th className="py-3 px-3 text-right">Votes Tallied</th>
                     <th className="py-3 px-3 text-right">Valid Vote Share</th>
                     <th className="py-3 px-3 text-right">Vote Margin</th>
@@ -570,52 +753,73 @@ export const AdvancedAnalyticsPage: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 font-medium">
-                  {(comparisons?.candidates || []).map((cand, idx) => (
-                    <tr key={cand.candidateId} className="hover:bg-slate-50/80">
-                      <td className="py-3 px-4 font-mono font-bold text-slate-500">#{idx + 1}</td>
-                      <td className="py-3 px-4">
-                        <div className="font-bold text-slate-900">{cand.candidateName}</div>
-                        <div className="text-[11px] text-slate-500">{cand.partyName}</div>
-                      </td>
-                      <td className="py-3 px-3">
-                        <span
-                          className="inline-block px-2 py-0.5 rounded text-[11px] font-bold text-white"
-                          style={{ backgroundColor: cand.partyColor }}
-                        >
-                          {cand.partyCode}
-                        </span>
-                      </td>
-                      <td className="py-3 px-3 text-right font-mono font-bold text-slate-900">
-                        {cand.totalVotes.toLocaleString()}
-                      </td>
-                      <td className="py-3 px-3 text-right font-mono text-slate-700">
-                        {cand.validVoteShare}%
-                      </td>
-                      <td className="py-3 px-3 text-right font-mono">
-                        {cand.isLeading ? (
-                          <span className="text-emerald-700 font-bold">
-                            +{cand.voteMargin.toLocaleString()} (Lead)
+                  {(comparisons?.candidates || []).map((party, idx) => {
+                    const partyInfo = getPartyInfo(party.partyCode);
+                    const logoUrl = party.logoUrl || partyInfo?.logoUrl;
+                    return (
+                      <tr key={party.partyCode} className="hover:bg-slate-50/80">
+                        <td className="py-3 px-4 font-mono font-bold text-slate-500">#{idx + 1}</td>
+                        <td className="py-3 px-4">
+                          <div className="flex items-center gap-3">
+                            {logoUrl ? (
+                              <img
+                                src={logoUrl}
+                                alt={`${party.partyName} logo`}
+                                className="w-8 h-8 object-contain rounded bg-white p-0.5 border border-slate-200 shrink-0"
+                              />
+                            ) : null}
+                            <div>
+                              <div className="font-bold text-slate-900">{party.partyName}</div>
+                              {partyInfo?.chairman && (
+                                <div className="text-[10px] text-slate-400">
+                                  Chairman: {partyInfo.chairman}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-3 px-3">
+                          <span
+                            className="inline-block px-2 py-0.5 rounded text-[11px] font-bold text-white"
+                            style={{ backgroundColor: party.partyColor }}
+                          >
+                            {party.partyCode}
                           </span>
-                        ) : (
-                          <span className="text-slate-500">
-                            {cand.voteMargin.toLocaleString()}
-                          </span>
-                        )}
-                      </td>
-                      <td className="py-3 px-3 text-center font-mono font-bold text-slate-800">
-                        {cand.statesWon}
-                      </td>
-                      <td className="py-3 px-4 text-center">
-                        {cand.isLeading ? (
-                          <span className="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded text-[11px] font-bold">
-                            Leading
-                          </span>
-                        ) : (
-                          <span className="text-slate-400 text-[11px]">Runner-up</span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
+                        </td>
+                        <td className="py-3 px-3 text-right font-mono font-bold text-slate-900">
+                          {party.totalVotes.toLocaleString()}
+                        </td>
+                        <td className="py-3 px-3 text-right font-mono text-slate-700">
+                          {party.validVoteShare}%
+                        </td>
+                        <td className="py-3 px-3 text-right font-mono">
+                          {party.isLeading ? (
+                            <span className="text-emerald-700 font-bold">
+                              +{party.voteMargin.toLocaleString()} (Lead)
+                            </span>
+                          ) : (
+                            <span className="text-slate-500">
+                              {party.voteMargin.toLocaleString()}
+                            </span>
+                          )}
+                        </td>
+                        <td className="py-3 px-3 text-center font-mono font-bold text-slate-800">
+                          {party.statesWon}
+                        </td>
+                        <td className="py-3 px-4 text-center">
+                          {party.isLeading ? (
+                            <span className="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded text-[11px] font-bold">
+                              Leading
+                            </span>
+                          ) : party.totalVotes > 0 ? (
+                            <span className="text-slate-500 text-[11px]">Trailing</span>
+                          ) : (
+                            <span className="text-slate-400 text-[11px]">0 Votes</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

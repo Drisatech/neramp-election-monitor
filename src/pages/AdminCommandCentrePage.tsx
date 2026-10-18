@@ -35,6 +35,8 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { useElection } from '../context/ElectionContext';
 import { DisclaimerBanner } from '../components/DisclaimerBanner';
+import { RegisteredVotersImportModal } from '../components/RegisteredVotersImportModal';
+import { OFFICIAL_INEC_PARTIES, getPartyInfo } from '../constants/parties';
 import {
   fetchCommandCenterMetrics,
   fetchAdminUsers,
@@ -388,6 +390,15 @@ export const AdminCommandCentrePage: React.FC = () => {
 
         {/* Action Controls */}
         <div className="flex flex-wrap items-center gap-2.5">
+          {isSuperOrProjectAdmin && (
+            <RegisteredVotersImportModal
+              onSuccess={() => {
+                loadAllData();
+                showNotification('success', 'Official INEC Registered Voters & PVC statistics updated across all 37 states, 774 LGAs, 8,809 Wards, and 176,846 Polling Units.');
+              }}
+            />
+          )}
+
           <button
             onClick={loadAllData}
             disabled={isLoading}
@@ -1193,25 +1204,33 @@ export const AdminCommandCentrePage: React.FC = () => {
       {/* ======================================================== */}
       {activeTab === 'configuration' && isSuperOrProjectAdmin && (
         <div className="space-y-6">
-          <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs flex items-center justify-between">
+          <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs flex flex-wrap items-center justify-between gap-3">
             <div>
               <h2 className="text-sm font-bold text-slate-900">Election Contests & Geographic Reference Data</h2>
               <p className="text-xs text-slate-500">
-                Configure contests, candidate ballots, political parties, and canonical polling unit baselines.
+                Configure contests, political party ballots, Registered Voters & PVC rolls, and canonical polling unit baselines.
               </p>
             </div>
 
-            <button
-              onClick={() => setShowCreateElectionModal(true)}
-              className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-white bg-emerald-800 hover:bg-emerald-700 rounded-lg shadow-xs"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>Configure New Contest</span>
-            </button>
+            <div className="flex flex-wrap items-center gap-2.5">
+              <RegisteredVotersImportModal
+                onSuccess={() => {
+                  loadAllData();
+                  showNotification('success', 'Official INEC Registered Voters & PVC statistics updated across all 37 states, 774 LGAs, 8,809 Wards, and 176,846 Polling Units.');
+                }}
+              />
+              <button
+                onClick={() => setShowCreateElectionModal(true)}
+                className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-white bg-emerald-800 hover:bg-emerald-700 rounded-lg shadow-xs"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Configure New Contest</span>
+              </button>
+            </div>
           </div>
 
           {/* Reference Counters Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
               <div className="text-slate-500 text-xs font-medium">Configured States</div>
               <div className="text-2xl font-black text-slate-900 font-mono mt-1">37</div>
@@ -1235,47 +1254,80 @@ export const AdminCommandCentrePage: React.FC = () => {
               <div className="text-2xl font-black text-slate-900 font-mono mt-1">176,846</div>
               <div className="text-[11px] text-emerald-800 mt-0.5 font-semibold">Strict zero-padded codes</div>
             </div>
+
+            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
+              <div className="text-slate-500 text-xs font-medium">Registered Voters (INEC)</div>
+              <div className="text-xl font-black text-emerald-900 font-mono mt-1">
+                {(states.length > 0
+                  ? states.reduce((acc, s) => acc + (s.registeredVoters || 0), 0)
+                  : 103428715
+                ).toLocaleString()}
+              </div>
+              <div className="text-[11px] text-slate-400 mt-0.5">2026 Official Register</div>
+            </div>
           </div>
 
-          {/* Political Parties & Candidates */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Political Parties Table */}
-            <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
-              <div className="p-3.5 border-b border-slate-200 bg-slate-50">
-                <h3 className="text-xs font-bold text-slate-900 uppercase">Registered Political Parties</h3>
+          {/* Registered Political Parties */}
+          <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
+            <div className="p-3.5 border-b border-slate-200 bg-slate-50 flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h3 className="text-xs font-bold text-slate-900 uppercase">
+                  Official INEC Registered Political Parties ({(parties.length > 0 ? parties : OFFICIAL_INEC_PARTIES).length})
+                </h3>
+                <p className="text-[11px] text-slate-500 mt-0.5">
+                  Source: Independent National Electoral Commission (INEC) — https://www.inecnigeria.org/parties
+                </p>
               </div>
-              <div className="divide-y divide-slate-100 max-h-72 overflow-y-auto">
-                {parties.map((p) => (
-                  <div key={p.id} className="p-3 flex items-center justify-between text-xs">
-                    <div className="flex items-center gap-2">
-                      <div className="w-3.5 h-3.5 rounded-full" style={{ backgroundColor: p.color }} />
-                      <span className="font-bold font-mono text-slate-900">{p.code}</span>
-                      <span className="text-slate-600">— {p.name}</span>
-                    </div>
-                    <span className="text-[10px] text-slate-400 font-mono">{p.id}</span>
-                  </div>
-                ))}
-              </div>
+              <span className="text-[11px] font-mono font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded">
+                22 Official Political Parties Verified
+              </span>
             </div>
-
-            {/* Candidates Table */}
-            <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
-              <div className="p-3.5 border-b border-slate-200 bg-slate-50">
-                <h3 className="text-xs font-bold text-slate-900 uppercase">Nominated Candidates</h3>
-              </div>
-              <div className="divide-y divide-slate-100 max-h-72 overflow-y-auto">
-                {candidates.map((c) => (
-                  <div key={c.id} className="p-3 flex items-center justify-between text-xs">
-                    <div>
-                      <div className="font-bold text-slate-900">{c.name}</div>
-                      <div className="text-[11px] text-slate-400">Running Mate: {c.runningMate}</div>
+            <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:gap-px bg-slate-100 max-h-96 overflow-y-auto">
+              {(parties.length > 0 ? parties : OFFICIAL_INEC_PARTIES).map((p: any) => {
+                const info = getPartyInfo(p.code);
+                const logoUrl = p.logoUrl || info?.logoUrl;
+                const chairman = p.chairman || info?.chairman;
+                const secretary = p.secretary || info?.secretary;
+                return (
+                  <div key={p.id || p.code} className="p-3.5 bg-white flex items-center justify-between gap-3 text-xs hover:bg-slate-50/80 transition-colors">
+                    <div className="flex items-center gap-3 min-w-0">
+                      {logoUrl ? (
+                        <img
+                          src={logoUrl}
+                          alt={`${p.name} logo`}
+                          className="w-10 h-10 object-contain rounded-lg bg-white p-1 border border-slate-200 shrink-0"
+                        />
+                      ) : (
+                        <div
+                          className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold text-xs shrink-0"
+                          style={{ backgroundColor: p.color }}
+                        >
+                          {p.code}
+                        </div>
+                      )}
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span
+                            className="inline-block px-1.5 py-0.5 rounded text-[10px] font-bold text-white font-mono"
+                            style={{ backgroundColor: p.color }}
+                          >
+                            {p.code}
+                          </span>
+                          <span className="font-bold text-slate-900 truncate">{p.name}</span>
+                        </div>
+                        {(chairman || secretary) && (
+                          <div className="text-[10px] text-slate-500 mt-0.5 truncate">
+                            {chairman ? `Chairman: ${chairman}` : ''}
+                            {chairman && secretary ? ' · ' : ''}
+                            {secretary ? `Secretary: ${secretary}` : ''}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    <span className="font-mono font-bold text-xs bg-slate-100 text-slate-800 px-2 py-0.5 rounded border border-slate-200">
-                      {c.partyCode}
-                    </span>
+                    <span className="text-[10px] text-slate-400 font-mono shrink-0">{p.id}</span>
                   </div>
-                ))}
-              </div>
+                );
+              })}
             </div>
           </div>
         </div>

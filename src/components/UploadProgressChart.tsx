@@ -8,13 +8,13 @@ interface Props {
 }
 
 export const UploadProgressChart: React.FC<Props> = ({ uploadedCount, totalPus, timeline }) => {
-  const defaultTimeline = timeline || [
-    { hour: '14:00 WAT', uploaded: 1, rate: 10.0 },
-    { hour: '15:00 WAT', uploaded: 2, rate: 20.0 },
-    { hour: '16:00 WAT', uploaded: 3, rate: 30.0 },
-    { hour: '17:00 WAT', uploaded: 5, rate: 50.0 },
-    { hour: '18:00 WAT', uploaded: 7, rate: 70.0 },
-    { hour: '19:00 WAT', uploaded: 8, rate: 80.0 },
+  const defaultTimeline = (timeline && timeline.length > 0) ? timeline : [
+    { hour: '14:00 WAT', uploaded: 0, rate: 0.0 },
+    { hour: '15:00 WAT', uploaded: 0, rate: 0.0 },
+    { hour: '16:00 WAT', uploaded: 0, rate: 0.0 },
+    { hour: '17:00 WAT', uploaded: 0, rate: 0.0 },
+    { hour: '18:00 WAT', uploaded: 0, rate: 0.0 },
+    { hour: '19:00 WAT', uploaded: 0, rate: 0.0 },
   ];
 
   const option = {
@@ -23,11 +23,12 @@ export const UploadProgressChart: React.FC<Props> = ({ uploadedCount, totalPus, 
       axisPointer: { type: 'cross' },
       formatter: (params: any) => {
         const item = params[0];
+        const pct = totalPus > 0 ? ((item.value / totalPus) * 100).toFixed(1) : '0.0';
         return `
           <div style="font-size:12px;">
             <strong>${item.name}</strong><br/>
             Sheets Uploaded: <strong>${item.value}</strong><br/>
-            Cumulative Progress: <strong>${((item.value / (totalPus || 10)) * 100).toFixed(1)}%</strong>
+            Cumulative Progress: <strong>${pct}%</strong>
           </div>
         `;
       },

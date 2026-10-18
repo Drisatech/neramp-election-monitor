@@ -12,12 +12,16 @@ export interface Election {
 
 export interface State {
   id: string;
+  sn?: number;
   code: string;
   name: string;
   zone: string;
   totalLgas: number;
+  totalWards?: number;
   totalPus: number;
   registeredVoters: number;
+  pvcsCollected?: number;
+  pvcCollectionRate?: number;
   latitude: number;
   longitude: number;
 }
@@ -27,8 +31,12 @@ export interface LGA {
   code: string;
   name: string;
   stateCode: string;
+  stateName?: string;
   totalWards: number;
   totalPus: number;
+  registeredVoters?: number;
+  pvcsCollected?: number;
+  pvcCollectionRate?: number;
 }
 
 export interface Ward {
@@ -36,8 +44,13 @@ export interface Ward {
   code: string;
   name: string;
   lgaCode: string;
+  lgaName?: string;
   stateCode: string;
+  stateName?: string;
   totalPus: number;
+  registeredVoters?: number;
+  pvcsCollected?: number;
+  pvcCollectionRate?: number;
 }
 
 export interface PollingUnit {
@@ -48,6 +61,8 @@ export interface PollingUnit {
   lgaCode: string;
   wardCode: string;
   registeredVoters: number;
+  pvcsCollected?: number;
+  pvcCollectionRate?: number;
   accreditedVoters: number;
   electionId: string;
   uploadStatus: 'UPLOADED' | 'NOT_YET_UPLOADED' | 'SOURCE_UNAVAILABLE';
@@ -170,6 +185,7 @@ export interface CandidateRanking {
   partyCode: string;
   partyName: string;
   color: string;
+  logoUrl?: string;
   votes: number;
   percentage: number;
 }
@@ -179,7 +195,12 @@ export interface ElectionSummary {
   electionTitle: string;
   scope: string;
   statesCoveredCount: number;
+  totalLgas?: number;
+  totalWards?: number;
   totalExpectedPus: number;
+  registeredVoters?: number;
+  pvcsCollected?: number;
+  pvcCollectionRate?: number;
   samplePusCount: number;
   pusUploaded: number;
   pusNotUploaded: number;
@@ -228,8 +249,14 @@ export interface CompletenessMetrics {
 export interface GeographicCompletenessSummary {
   code: string;
   name: string;
+  level?: 'STATE' | 'LGA' | 'WARD' | 'POLLING_UNIT';
   zone?: string;
+  totalLgas?: number;
+  totalWards?: number;
   expectedPus: number;
+  registeredVoters?: number;
+  pvcsCollected?: number;
+  pvcCollectionRate?: number;
   samplePusCount: number;
   receivedPus: number;
   verifiedPus: number;
@@ -245,11 +272,17 @@ export interface AnalyticsOverview {
   electionYear: number;
   electionType: string;
   geographicScope: string;
+  drilldownLevel?: 'NATIONAL' | 'STATE' | 'LGA' | 'WARD';
+  totalStates?: number;
+  totalLgas?: number;
+  totalWards?: number;
   lastSyncTime: string;
   lastAnalyticsUpdate: string;
   dataSourceMode: string;
   isDemonstration: boolean;
   registeredVoters: number;
+  pvcsCollected?: number;
+  pvcCollectionRate?: number;
   accreditedVoters: number;
   totalVotesCast: number;
   validVotes: number;
@@ -269,6 +302,7 @@ export interface CandidateComparison {
   partyCode: string;
   partyName: string;
   partyColor: string;
+  logoUrl?: string;
   totalVotes: number;
   validVoteShare: number;
   voteMargin: number;

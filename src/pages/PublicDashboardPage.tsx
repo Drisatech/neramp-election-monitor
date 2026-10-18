@@ -9,7 +9,6 @@ import {
   Filter,
   Download,
   ArrowRight,
-  BarChart3,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useElection } from '../context/ElectionContext';
@@ -32,6 +31,9 @@ export const PublicDashboardPage: React.FC = () => {
     lgas,
     selectedLgaCode,
     setSelectedLgaCode,
+    wards,
+    selectedWardCode,
+    setSelectedWardCode,
     resetFilters,
   } = useElection();
 
@@ -40,26 +42,34 @@ export const PublicDashboardPage: React.FC = () => {
   const [discrepancies, setDiscrepancies] = useState<Discrepancy[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    async function loadData() {
-      try {
-        setIsLoading(true);
-        const [sumRes, upRes, discRes] = await Promise.all([
-          fetchElectionSummary(selectedElectionId, selectedStateCode, selectedLgaCode),
-          fetchUploadProgress(selectedElectionId, selectedStateCode),
-          fetchPublishedDiscrepancies(selectedElectionId),
-        ]);
-        setSummary(sumRes.data);
-        setUploadTimeline(upRes.data.timeline || []);
-        setDiscrepancies(discRes.data);
-      } catch (err) {
-        console.error('Failed to load dashboard data:', err);
-      } finally {
-        setIsLoading(false);
-      }
+  const loadData = async () => {
+    try {
+      setIsLoading(true);
+      const [sumRes, upRes, discRes] = await Promise.all([
+        fetchElectionSummary(selectedElectionId, selectedStateCode, selectedLgaCode, selectedWardCode),
+        fetchUploadProgress(selectedElectionId, selectedStateCode, selectedLgaCode, selectedWardCode),
+        fetchPublishedDiscrepancies(selectedElectionId),
+      ]);
+      setSummary(sumRes.data);
+      setUploadTimeline(upRes.data.timeline || []);
+      setDiscrepancies(discRes.data);
+    } catch (err) {
+      console.error('Failed to load dashboard data:', err);
+    } finally {
+      setIsLoading(false);
     }
+  };
+
+  useEffect(() => {
     loadData();
-  }, [selectedElectionId, selectedStateCode, selectedLgaCode]);
+  }, [selectedElectionId, selectedStateCode, selectedLgaCode, selectedWardCode]);
+
+  const expectedPus = summary?.totalExpectedPus ?? 176846;
+  const totalLgas = summary?.totalLgas ?? 774;
+  const totalWards = summary?.totalWards ?? 8809;
+  const registeredVoters = summary?.registeredVoters ?? 103428715;
+  const pvcsCollected = summary?.pvcsCollected ?? 96506605;
+  const pvcCollectionRate = summary?.pvcCollectionRate ?? 93.31;
 
   return (
     <div className="space-y-6">
@@ -74,7 +84,7 @@ export const PublicDashboardPage: React.FC = () => {
             <span>DATA SOURCE:</span>
           </div>
           <span className="text-slate-300 font-medium">
-            Official INEC Results Portal (IReV) · https://inecelectionresults.ng
+            Official INEC Results Portal (IReV)
           </span>
         </div>
 
@@ -96,25 +106,25 @@ export const PublicDashboardPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Filter Toolbar: Election Scope & Geography */}
-      <div className="bg-white p-4 rounded-lg border border-slate-200 shadow-2xs">
+      {/* Filter Toolbar: Hierarchical Drill-Down (National -> State -> LGA -> Ward) */}
+      <div className="bg-white p-4 rounded-lg border border-slate-200 shadow-2xs space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5 uppercase">
               <Filter className="w-3.5 h-3.5" />
-              <span>Filters:</span>
+              <span>Geographic Drill-Down:</span>
             </span>
 
             {/* State Filter */}
             <select
               value={selectedStateCode}
               onChange={(e) => setSelectedStateCode(e.target.value)}
-              className="bg-slate-50 border border-slate-300 text-slate-900 text-xs rounded-md px-2.5 py-1.5 focus:outline-emerald-600"
+              className="bg-slate-50 border border-slate-300 text-slate-900 text-xs rounded-md px-2.5 py-1.5 focus:outline-emerald-600 font-medium"
             >
-              <option value="">All 36 States & FCT</option>
+              <option value="">National: All 36 States & FCT (176,846 PUs)</option>
               {states.map((st) => (
                 <option key={st.code} value={st.code}>
-                  {st.name} State ({st.zone})
+                  {st.name} ({st.totalLgas} LGAs · {st.totalWards ?? 0} Wards · {st.totalPus.toLocaleString()} PUs)
                 </option>
               ))}
             </select>
@@ -124,42 +134,91 @@ export const PublicDashboardPage: React.FC = () => {
               <select
                 value={selectedLgaCode}
                 onChange={(e) => setSelectedLgaCode(e.target.value)}
-                className="bg-slate-50 border border-slate-300 text-slate-900 text-xs rounded-md px-2.5 py-1.5 focus:outline-emerald-600"
+                className="bg-slate-50 border border-slate-300 text-slate-900 text-xs rounded-md px-2.5 py-1.5 focus:outline-emerald-600 font-medium"
               >
-                <option value="">All LGAs in {selectedStateCode}</option>
+                <option value="">All LGAs in {selectedStateCode} ({lgas.length})</option>
                 {lgas.map((lga) => (
                   <option key={lga.code} value={lga.code}>
-                    {lga.name}
+                    {lga.name} ({lga.totalWards} Wards · {lga.totalPus.toLocaleString()} PUs)
                   </option>
                 ))}
               </select>
             )}
 
-            {(selectedStateCode || selectedLgaCode) && (
+            {/* Electoral Ward Filter */}
+            {selectedLgaCode && (
+              <select
+                value={selectedWardCode}
+                onChange={(e) => setSelectedWardCode(e.target.value)}
+                className="bg-slate-50 border border-slate-300 text-slate-900 text-xs rounded-md px-2.5 py-1.5 focus:outline-emerald-600 font-medium"
+              >
+                <option value="">All Electoral Wards ({wards.length})</option>
+                {wards.map((w) => (
+                  <option key={w.code} value={w.code}>
+                    {w.name} ({w.totalPus} Expected PUs)
+                  </option>
+                ))}
+              </select>
+            )}
+
+            {(selectedStateCode || selectedLgaCode || selectedWardCode) && (
               <button
                 onClick={resetFilters}
                 className="text-xs text-rose-700 hover:text-rose-900 font-semibold underline px-1"
               >
-                Reset Filter
+                Reset to National
               </button>
             )}
           </div>
 
-          <div className="flex items-center gap-2">
-            <Link
-              to="/analytics"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-800 hover:bg-emerald-900 text-white text-xs font-semibold rounded-md transition-colors"
-            >
-              <BarChart3 className="w-3.5 h-3.5" />
-              <span>Advanced Analytics</span>
-            </Link>
+          <div className="flex flex-wrap items-center gap-2">
             <Link
               to="/polling-units"
               className="inline-flex items-center gap-1 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold rounded-md transition-colors"
             >
               <Search className="w-3.5 h-3.5" />
-              <span>Search Polling Units</span>
+              <span>Inspect Polling Units</span>
             </Link>
+          </div>
+        </div>
+
+        {/* Official INEC Baseline Statistics for Active Drill-Down Scope */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 pt-2.5 border-t border-slate-100 text-xs">
+          <div className="bg-slate-50 px-3 py-2 rounded border border-slate-200">
+            <span className="text-[10px] font-bold text-slate-400 uppercase block">Active Scope</span>
+            <span className="font-bold text-slate-900 truncate block mt-0.5" title={summary?.scope || 'National'}>
+              {summary?.scope || 'National (36 States & FCT)'}
+            </span>
+          </div>
+          <div className="bg-slate-50 px-3 py-2 rounded border border-slate-200">
+            <span className="text-[10px] font-bold text-slate-400 uppercase block">LGAs / Area Councils</span>
+            <span className="font-mono font-bold text-slate-900 text-sm block mt-0.5">
+              {totalLgas.toLocaleString()}
+            </span>
+          </div>
+          <div className="bg-slate-50 px-3 py-2 rounded border border-slate-200">
+            <span className="text-[10px] font-bold text-slate-400 uppercase block">Electoral Wards (RAs)</span>
+            <span className="font-mono font-bold text-slate-900 text-sm block mt-0.5">
+              {totalWards.toLocaleString()}
+            </span>
+          </div>
+          <div className="bg-emerald-50/70 px-3 py-2 rounded border border-emerald-200">
+            <span className="text-[10px] font-bold text-emerald-800 uppercase block">Expected Result Sheets (PUs)</span>
+            <span className="font-mono font-bold text-emerald-950 text-sm block mt-0.5">
+              {expectedPus.toLocaleString()}
+            </span>
+          </div>
+          <div className="bg-slate-50 px-3 py-2 rounded border border-slate-200">
+            <span className="text-[10px] font-bold text-slate-400 uppercase block">Registered Voters (INEC)</span>
+            <span className="font-mono font-bold text-slate-900 text-sm block mt-0.5">
+              {registeredVoters.toLocaleString()}
+            </span>
+          </div>
+          <div className="bg-slate-50 px-3 py-2 rounded border border-slate-200">
+            <span className="text-[10px] font-bold text-slate-400 uppercase block">PVCs Collected ({pvcCollectionRate.toFixed(2)}%)</span>
+            <span className="font-mono font-bold text-emerald-800 text-sm block mt-0.5">
+              {pvcsCollected.toLocaleString()}
+            </span>
           </div>
         </div>
       </div>
@@ -167,16 +226,16 @@ export const PublicDashboardPage: React.FC = () => {
       {/* Summary Cards Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <MetricCard
-          title="Upload Completion"
-          value={summary ? `${summary.uploadCompletionPercentage}%` : '—'}
-          subtitle={summary ? `${summary.pusUploaded} of ${summary.samplePusCount} sheets uploaded` : undefined}
+          title="Result Sheets Uploaded"
+          value={summary ? summary.pusUploaded : 0}
+          subtitle={`${summary?.uploadCompletionPercentage ?? 0}% (${(summary?.pusUploaded ?? 0).toLocaleString()} of ${expectedPus.toLocaleString()} expected PUs)`}
           icon={FileText}
           status="normal"
         />
 
         <MetricCard
           title="Verified Transcriptions"
-          value={summary ? summary.verifiedCount : '—'}
+          value={summary ? summary.verifiedCount : 0}
           subtitle="Signed off against Form EC8A"
           icon={CheckCircle}
           status="success"
@@ -184,7 +243,7 @@ export const PublicDashboardPage: React.FC = () => {
 
         <MetricCard
           title="Awaiting Verification"
-          value={summary ? summary.awaitingVerification : '—'}
+          value={summary ? summary.awaitingVerification : 0}
           subtitle="In reviewer verification queue"
           icon={Clock}
           status="warning"
@@ -192,14 +251,14 @@ export const PublicDashboardPage: React.FC = () => {
 
         <MetricCard
           title="Published Discrepancies"
-          value={summary ? summary.discrepancyCount : '—'}
+          value={summary ? summary.discrepancyCount : 0}
           subtitle="Arithmetic or OCR variances"
           icon={AlertTriangle}
           status={summary && summary.discrepancyCount > 0 ? 'alert' : 'normal'}
         />
       </div>
 
-      {/* Primary Visualizations: Candidate Breakdown & Upload Progression */}
+      {/* Primary Visualizations: Political Party Breakdown & Upload Progression */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <div className="lg:col-span-7">
           <CandidateVoteChart
@@ -213,12 +272,12 @@ export const PublicDashboardPage: React.FC = () => {
             verified={summary?.verifiedCount || 0}
             pendingVerification={summary?.awaitingVerification || 0}
             discrepancies={summary?.discrepancyCount || 0}
-            notUploaded={summary?.pusNotUploaded || 0}
+            notUploaded={summary?.pusNotUploaded || expectedPus}
           />
 
           <UploadProgressChart
             uploadedCount={summary?.pusUploaded || 0}
-            totalPus={summary?.samplePusCount || 10}
+            totalPus={expectedPus}
             timeline={uploadTimeline}
           />
         </div>

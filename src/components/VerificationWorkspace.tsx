@@ -18,6 +18,7 @@ import {
 import { ResultSheet } from '../types';
 import { reviewVerificationRecord, correctTranscription } from '../services/api';
 import { SourceDocumentViewer } from './SourceDocumentViewer';
+import { getPartyInfo } from '../constants/parties';
 
 interface Props {
   resultSheet: ResultSheet;
@@ -264,23 +265,42 @@ export const VerificationWorkspace: React.FC<Props> = ({ resultSheet, pollingUni
                   </span>
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                  {Object.entries(partyVotes).map(([party, votes]) => (
-                    <div key={party} className="p-2 bg-slate-50 rounded border border-slate-200">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="font-bold text-slate-900 text-xs">{party}</span>
-                        <span className="text-[10px] text-slate-500 font-mono bg-white px-1 rounded border border-slate-200">
-                          OCR: {resultSheet.ocrExtraction.partyVotes[party] ?? '—'}
-                        </span>
+                  {Object.entries(partyVotes).map(([party, votes]) => {
+                    const partyInfo = getPartyInfo(party);
+                    return (
+                      <div key={party} className="p-2 bg-slate-50 rounded border border-slate-200">
+                        <div className="flex items-center justify-between mb-1.5 gap-1">
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            {partyInfo?.logoUrl && (
+                              <img
+                                src={partyInfo.logoUrl}
+                                alt={party}
+                                className="w-5 h-5 object-contain rounded bg-white p-0.5 border border-slate-200 shrink-0"
+                              />
+                            )}
+                            <span className="font-bold text-slate-900 text-xs truncate" title={partyInfo?.name || party}>
+                              {partyInfo?.code || party}
+                            </span>
+                          </div>
+                          <span className="text-[10px] text-slate-500 font-mono bg-white px-1 rounded border border-slate-200 shrink-0">
+                            OCR: {resultSheet.ocrExtraction.partyVotes[party] ?? '—'}
+                          </span>
+                        </div>
+                        {partyInfo?.name && (
+                          <div className="text-[10px] text-slate-500 truncate mb-1" title={partyInfo.name}>
+                            {partyInfo.name}
+                          </div>
+                        )}
+                        <input
+                          type="number"
+                          min="0"
+                          value={votes}
+                          onChange={(e) => handlePartyVoteChange(party, parseInt(e.target.value, 10) || 0)}
+                          className="w-full bg-white border border-slate-300 rounded px-2 py-1 text-xs font-mono font-bold text-slate-900 focus:outline-emerald-600"
+                        />
                       </div>
-                      <input
-                        type="number"
-                        min="0"
-                        value={votes}
-                        onChange={(e) => handlePartyVoteChange(party, parseInt(e.target.value, 10) || 0)}
-                        className="w-full bg-white border border-slate-300 rounded px-2 py-1 text-xs font-mono font-bold text-slate-900 focus:outline-emerald-600"
-                      />
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
 
