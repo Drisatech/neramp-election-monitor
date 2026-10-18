@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   Database,
   Play,
@@ -14,6 +15,10 @@ import {
   Sliders,
   CheckCircle,
   Trash2,
+  Sparkles,
+  UploadCloud,
+  FileSpreadsheet,
+  HardDrive,
 } from 'lucide-react';
 import {
   fetchIngestionStatus,
@@ -25,6 +30,8 @@ import {
   fetchSchedulerConfig,
   updateSchedulerConfig,
   purgeDemonstrationData,
+  triggerBatchOcrTranscription,
+  uploadAndTranscribeFormEc8a,
 } from '../services/api';
 import { DisclaimerBanner } from '../components/DisclaimerBanner';
 
@@ -41,6 +48,12 @@ export const AdminIngestionPage: React.FC = () => {
   const [maxWards, setMaxWards] = useState<number>(20);
   const [isPurging, setIsPurging] = useState(false);
   const [purgeSuccess, setPurgeSuccess] = useState<string | null>(null);
+
+  // Gemini Vision AI OCR states
+  const [isBatchOcrRunning, setIsBatchOcrRunning] = useState(false);
+  const [batchOcrNotice, setBatchOcrNotice] = useState<string | null>(null);
+  const [isUploadingSheet, setIsUploadingSheet] = useState(false);
+  const [uploadNotice, setUploadNotice] = useState<string | null>(null);
 
   // Manual Trigger options
   const [selectedAdapter, setSelectedAdapter] = useState<'InecApprovedSourceAdapter' | 'DevelopmentFixtureAdapter'>(
@@ -115,6 +128,52 @@ export const AdminIngestionPage: React.FC = () => {
     }
   };
 
+  const handleBatchOcr = async () => {
+    try {
+      setIsBatchOcrRunning(true);
+      setBatchOcrNotice(null);
+      const res = await triggerBatchOcrTranscription(selectedElection, 6);
+      setBatchOcrNotice(res.message);
+      await loadAll();
+    } catch (err: any) {
+      setBatchOcrNotice(`Batch OCR error: ${err.message}`);
+    } finally {
+      setIsBatchOcrRunning(false);
+    }
+  };
+
+  const handleDirectFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setIsUploadingSheet(true);
+      setUploadNotice(null);
+      const reader = new FileReader();
+      reader.onload = async () => {
+        try {
+          const base64 = (reader.result as string) || '';
+          const res = await uploadAndTranscribeFormEc8a({
+            imageBase64: base64,
+            mimeType: file.type || 'image/jpeg',
+            fileName: file.name,
+            electionId: selectedElection,
+          });
+          setUploadNotice(`✅ ${res.message}`);
+          await loadAll();
+        } catch (err: any) {
+          setUploadNotice(`❌ Upload transcription failed: ${err.message}`);
+        } finally {
+          setIsUploadingSheet(false);
+        }
+      };
+      reader.readAsDataURL(file);
+    } catch (err: any) {
+      setUploadNotice(`❌ Error reading file: ${err.message}`);
+      setIsUploadingSheet(false);
+    }
+  };
+
   const handleModeChange = async (newMode: string) => {
     try {
       await setDataSourceMode(newMode);
@@ -158,6 +217,13 @@ export const AdminIngestionPage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2">
+          <Link
+            to="/admin?tab=storage"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-800 hover:bg-emerald-900 text-white rounded text-xs font-semibold transition-colors shadow-2xs"
+          >
+            <HardDrive className="w-3.5 h-3.5" />
+            <span>Storage & Content Management</span>
+          </Link>
           <button
             onClick={handleTestConnection}
             disabled={isTestingConn}
@@ -363,6 +429,80 @@ export const AdminIngestionPage: React.FC = () => {
             ✅ {purgeSuccess}
           </div>
         )}
+      </div>
+
+      {/* Gemini Vision AI OCR Transcription Engine */}
+      <div className="bg-gradient-to-r from-emerald-900 to-slate-900 text-white p-5 rounded-lg border border-emerald-700 shadow-sm space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-emerald-800 pb-3">
+          <div className="flex items-center gap-2">
+            <div className="p-2 bg-emerald-800/80 rounded-lg">
+              <Sparkles className="w-5 h-5 text-amber-300" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-white tracking-wide flex items-center gap-2">
+                <span>Gemini Vision AI OCR Engine (INEC Form EC8A Transcription)</span>
+                <span className="text-[10px] font-mono bg-emerald-700/80 text-emerald-100 px-2 py-0.5 rounded border border-emerald-600">
+                  gemini-3.8-flash · Active
+                </span>
+              </h3>
+              <p className="text-xs text-emerald-200">
+                Machine reads handwritten votes in figures, words, and ballot accounting box (#1 to #8) from official Form EC8A scans.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              onClick={handleBatchOcr}
+              disabled={isBatchOcrRunning}
+              className="px-3.5 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded text-xs transition-colors flex items-center gap-1.5 shadow-xs disabled:opacity-50 cursor-pointer"
+            >
+              {isBatchOcrRunning ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+              <span>{isBatchOcrRunning ? 'Transcribing Batch...' : 'Run Batch Gemini AI OCR (6 Sheets)'}</span>
+            </button>
+
+            <label className="px-3.5 py-1.5 bg-white/10 hover:bg-white/20 text-white font-bold rounded text-xs transition-colors flex items-center gap-1.5 border border-white/20 shadow-xs cursor-pointer">
+              <UploadCloud className="w-3.5 h-3.5 text-teal-300" />
+              <span>{isUploadingSheet ? 'Processing Image...' : 'Upload & Transcribe Form EC8A'}</span>
+              <input
+                type="file"
+                accept="image/*,application/pdf"
+                className="hidden"
+                disabled={isUploadingSheet}
+                onChange={handleDirectFileUpload}
+              />
+            </label>
+          </div>
+        </div>
+
+        {batchOcrNotice && (
+          <div className="p-3 bg-emerald-800/60 border border-emerald-500 text-emerald-100 rounded text-xs font-semibold flex items-center justify-between">
+            <span>{batchOcrNotice}</span>
+            <button onClick={() => setBatchOcrNotice(null)} className="text-emerald-300 hover:text-white">×</button>
+          </div>
+        )}
+
+        {uploadNotice && (
+          <div className="p-3 bg-slate-800/90 border border-emerald-500 text-emerald-100 rounded text-xs font-semibold flex items-center justify-between">
+            <span>{uploadNotice}</span>
+            <button onClick={() => setUploadNotice(null)} className="text-emerald-300 hover:text-white">×</button>
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs text-slate-300">
+          <div className="p-2.5 bg-black/30 rounded border border-emerald-900/60">
+            <span className="text-[10px] text-emerald-400 uppercase font-bold block">1. Form Identification</span>
+            <span className="text-slate-200 block mt-0.5">Detects Form S/N, State, LGA, Ward, and PU code.</span>
+          </div>
+          <div className="p-2.5 bg-black/30 rounded border border-emerald-900/60">
+            <span className="text-[10px] text-emerald-400 uppercase font-bold block">2. Dual Column Cross-Verification</span>
+            <span className="text-slate-200 block mt-0.5">Validates "In Figures" vs "In Words" (e.g. 100 vs ONE HUNDRED).</span>
+          </div>
+          <div className="p-2.5 bg-black/30 rounded border border-emerald-900/60">
+            <span className="text-[10px] text-emerald-400 uppercase font-bold block">3. Arithmetic Verification</span>
+            <span className="text-slate-200 block mt-0.5">Enforces Valid + Rejected = Cast, and checks vs Accredited Voters.</span>
+          </div>
+        </div>
       </div>
 
       {/* Manual Ingestion Command for Authorized Administrators */}

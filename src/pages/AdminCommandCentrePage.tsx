@@ -31,11 +31,14 @@ import {
   Server,
   Cpu,
   BarChart2,
+  HardDrive,
 } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useElection } from '../context/ElectionContext';
 import { DisclaimerBanner } from '../components/DisclaimerBanner';
 import { RegisteredVotersImportModal } from '../components/RegisteredVotersImportModal';
+import { StorageContentManagementTab } from '../components/StorageContentManagementTab';
 import { OFFICIAL_INEC_PARTIES, getPartyInfo } from '../constants/parties';
 import {
   fetchCommandCenterMetrics,
@@ -77,13 +80,18 @@ type AdminTab =
   | 'supervision'
   | 'coordination'
   | 'configuration'
-  | 'audit';
+  | 'audit'
+  | 'storage';
 
 export const AdminCommandCentrePage: React.FC = () => {
+  const [searchParams] = useSearchParams();
+  const tabParam = searchParams.get('tab');
+  const initialTab: AdminTab = tabParam === 'storage' ? 'storage' : 'overview';
+
   const { role: activeUserRole, isSuperOrProjectAdmin } = useAuth();
   const { states } = useElection();
 
-  const [activeTab, setActiveTab] = useState<AdminTab>('overview');
+  const [activeTab, setActiveTab] = useState<AdminTab>(initialTab);
   const [isLoading, setIsLoading] = useState(true);
   const [metrics, setMetrics] = useState<CommandCenterMetrics | null>(null);
   const [users, setUsers] = useState<AdminUser[]>([]);
@@ -529,6 +537,18 @@ export const AdminCommandCentrePage: React.FC = () => {
         >
           <FileText className="w-4 h-4" />
           <span>Audit & Accountability</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('storage')}
+          className={`flex items-center gap-2 px-3 py-2 text-xs font-semibold rounded-md transition-colors whitespace-nowrap ${
+            activeTab === 'storage'
+              ? 'bg-emerald-800 text-white'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+          }`}
+        >
+          <HardDrive className="w-4 h-4" />
+          <span>Storage & Content Management</span>
         </button>
       </div>
 
@@ -1391,6 +1411,11 @@ export const AdminCommandCentrePage: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* ======================================================== */}
+      {/* TAB 8: STORAGE & CONTENT MANAGEMENT SYSTEM (CMS)          */}
+      {/* ======================================================== */}
+      {activeTab === 'storage' && <StorageContentManagementTab />}
 
       {/* ======================================================== */}
       {/* MODAL: CREATE USER                                        */}

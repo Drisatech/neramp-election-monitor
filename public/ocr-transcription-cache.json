@@ -1,0 +1,423 @@
+{
+  "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/613/7020/97258/42bdbaea-a996-459f-bab2-7c82d889720c.jpg": {
+    "votersOnRegister": 484,
+    "accreditedVoters": 195,
+    "rejectedBallots": 0,
+    "totalValidVotes": 195,
+    "partyScores": [
+      {
+        "partyCode": "A",
+        "votesInFigures": 100,
+        "votesInWords": "ONE HUNDRED"
+      },
+      {
+        "partyCode": "AA",
+        "votesInFigures": 1,
+        "votesInWords": "ONE"
+      },
+      {
+        "partyCode": "ADC",
+        "votesInFigures": 1,
+        "votesInWords": "ONE"
+      },
+      {
+        "partyCode": "APC",
+        "votesInFigures": 91,
+        "votesInWords": "NINETY ONE"
+      },
+      {
+        "partyCode": "APGA",
+        "votesInFigures": 2,
+        "votesInWords": "TWO"
+      }
+    ],
+    "ballotPapersIssued": 484,
+    "electionDateOnForm": "16TH OF AUGUST, 2026",
+    "lgaName": "IFE NORTH",
+    "ocrConfidence": 0.98,
+    "pollingUnitCode": "29/15/09/006",
+    "pollingUnitName": "R.C.M. SCHOOL, ONIBAMBU",
+    "presidingOfficerName": "IBRAHIM SAMUEL",
+    "serialNumber": "0001745",
+    "spoiledBallotPapers": 3,
+    "stateName": "OSUN",
+    "totalUsedBallotPapers": 198,
+    "unusedBallotPapers": 286,
+    "wardName": "OYERE I"
+  },
+  "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/613/7020/97253/79e5f6e7-8235-492c-b97f-c40629ab85d3.jpg": {
+    "votersOnRegister": 663,
+    "accreditedVoters": 199,
+    "rejectedBallots": 1,
+    "totalValidVotes": 198,
+    "partyScores": [
+      {
+        "partyCode": "A",
+        "votesInFigures": 120,
+        "votesInWords": "one hundred and twenty"
+      },
+      {
+        "partyCode": "AA",
+        "votesInFigures": 1,
+        "votesInWords": "one"
+      },
+      {
+        "partyCode": "AAC",
+        "votesInFigures": 0,
+        "votesInWords": ""
+      },
+      {
+        "partyCode": "ADC",
+        "votesInFigures": 0,
+        "votesInWords": ""
+      },
+      {
+        "partyCode": "ADP",
+        "votesInFigures": 0,
+        "votesInWords": ""
+      },
+      {
+        "partyCode": "APC",
+        "votesInFigures": 76,
+        "votesInWords": "Seventy-six"
+      },
+      {
+        "partyCode": "APGA",
+        "votesInFigures": 0,
+        "votesInWords": ""
+      },
+      {
+        "partyCode": "APM",
+        "votesInFigures": 0,
+        "votesInWords": ""
+      },
+      {
+        "partyCode": "APP",
+        "votesInFigures": 0,
+        "votesInWords": ""
+      },
+      {
+        "partyCode": "BP",
+        "votesInFigures": 0,
+        "votesInWords": ""
+      },
+      {
+        "partyCode": "NNPP",
+        "votesInFigures": 0,
+        "votesInWords": ""
+      },
+      {
+        "partyCode": "PRP",
+        "votesInFigures": 0,
+        "votesInWords": ""
+      },
+      {
+        "partyCode": "SDP",
+        "votesInFigures": 1,
+        "votesInWords": "one"
+      },
+      {
+        "partyCode": "YPP",
+        "votesInFigures": 0,
+        "votesInWords": ""
+      },
+      {
+        "partyCode": "ZLP",
+        "votesInFigures": 0,
+        "votesInWords": ""
+      }
+    ],
+    "ballotPapersIssued": 663,
+    "electionDateOnForm": "15/8/2026",
+    "lgaName": "IFE NORTH",
+    "ocrConfidence": 0.95,
+    "pollingUnitCode": "29/15/09/001",
+    "pollingUnitName": "ST. RAPHAEL'S SCHOOL, TORO",
+    "presidingOfficerName": "IJISIYAN ELIZABETH",
+    "serialNumber": "0001740",
+    "spoiledBallotPapers": 0,
+    "stateName": "OSUN",
+    "totalUsedBallotPapers": 199,
+    "unusedBallotPapers": 464,
+    "wardName": "OYERE I"
+  },
+  "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/613/7020/97255/1b264252-48b8-4c2e-9b0f-fe00626b5e4b.jpg": {
+    "votersOnRegister": 545,
+    "accreditedVoters": 250,
+    "rejectedBallots": 11,
+    "totalValidVotes": 239,
+    "partyScores": [
+      {
+        "partyCode": "A",
+        "votesInFigures": 135,
+        "votesInWords": "ONE HUNDRED AND THIRTY FIVE"
+      },
+      {
+        "partyCode": "AA",
+        "votesInFigures": 1,
+        "votesInWords": "ONE"
+      },
+      {
+        "partyCode": "AAC",
+        "votesInFigures": 0,
+        "votesInWords": "ZERO"
+      },
+      {
+        "partyCode": "ADC",
+        "votesInFigures": 4,
+        "votesInWords": "FOUR"
+      },
+      {
+        "partyCode": "ADP",
+        "votesInFigures": 0,
+        "votesInWords": "ZERO"
+      },
+      {
+        "partyCode": "APC",
+        "votesInFigures": 89,
+        "votesInWords": "EIGHTY NINE"
+      },
+      {
+        "partyCode": "APGA",
+        "votesInFigures": 0,
+        "votesInWords": "ZERO"
+      },
+      {
+        "partyCode": "APM",
+        "votesInFigures": 0,
+        "votesInWords": "ZERO"
+      },
+      {
+        "partyCode": "APP",
+        "votesInFigures": 0,
+        "votesInWords": "ZERO"
+      },
+      {
+        "partyCode": "BP",
+        "votesInFigures": 0,
+        "votesInWords": "ZERO"
+      },
+      {
+        "partyCode": "NNPP",
+        "votesInFigures": 1,
+        "votesInWords": "ONE"
+      },
+      {
+        "partyCode": "PRP",
+        "votesInFigures": 0,
+        "votesInWords": "ZERO"
+      },
+      {
+        "partyCode": "SDP",
+        "votesInFigures": 0,
+        "votesInWords": "ZERO"
+      },
+      {
+        "partyCode": "YPP",
+        "votesInFigures": 3,
+        "votesInWords": "THREE"
+      },
+      {
+        "partyCode": "ZLP",
+        "votesInFigures": 6,
+        "votesInWords": "SIX"
+      }
+    ],
+    "ballotPapersIssued": 545,
+    "electionDateOnForm": "15/08/2026",
+    "lgaName": "IFE NORTH",
+    "ocrConfidence": 0.98,
+    "pollingUnitCode": "29/15/09/003",
+    "pollingUnitName": "L.A. SCHOOL, ORI-OKUTA",
+    "presidingOfficerName": "JACOB AYODELE GABRIEL",
+    "serialNumber": "0001742",
+    "spoiledBallotPapers": 0,
+    "stateName": "OSUN",
+    "totalUsedBallotPapers": 250,
+    "unusedBallotPapers": 295,
+    "wardName": "OYERE I"
+  },
+  "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/613/7020/97257/0f0e9a96-ca52-41cc-8756-55171306b2a0.jpg": {
+    "votersOnRegister": 871,
+    "accreditedVoters": 272,
+    "rejectedBallots": 2,
+    "totalValidVotes": 270,
+    "partyScores": [
+      {
+        "partyCode": "A",
+        "votesInFigures": 132,
+        "votesInWords": "ONE HUNDRED AND THIRTY-TWO"
+      },
+      {
+        "partyCode": "AA",
+        "votesInFigures": 0,
+        "votesInWords": "ZERO"
+      },
+      {
+        "partyCode": "AAC",
+        "votesInFigures": 0,
+        "votesInWords": "ZERO"
+      },
+      {
+        "partyCode": "ADC",
+        "votesInFigures": 2,
+        "votesInWords": "TWO"
+      },
+      {
+        "partyCode": "ADP",
+        "votesInFigures": 0,
+        "votesInWords": "ZERO"
+      },
+      {
+        "partyCode": "APC",
+        "votesInFigures": 136,
+        "votesInWords": "ONE HUNDRED AND THIRTY-SIX"
+      },
+      {
+        "partyCode": "APGA",
+        "votesInFigures": 0,
+        "votesInWords": "ZERO"
+      },
+      {
+        "partyCode": "APM",
+        "votesInFigures": 0,
+        "votesInWords": "ZERO"
+      },
+      {
+        "partyCode": "APP",
+        "votesInFigures": 0,
+        "votesInWords": "ZERO"
+      },
+      {
+        "partyCode": "BP",
+        "votesInFigures": 0,
+        "votesInWords": "ZERO"
+      },
+      {
+        "partyCode": "NNPP",
+        "votesInFigures": 0,
+        "votesInWords": "ZERO"
+      },
+      {
+        "partyCode": "PRP",
+        "votesInFigures": 0,
+        "votesInWords": "ZERO"
+      },
+      {
+        "partyCode": "SDP",
+        "votesInFigures": 0,
+        "votesInWords": "ZERO"
+      },
+      {
+        "partyCode": "YPP",
+        "votesInFigures": 0,
+        "votesInWords": "ZERO"
+      },
+      {
+        "partyCode": "ZLP",
+        "votesInFigures": 0,
+        "votesInWords": "ZERO"
+      }
+    ],
+    "ballotPapersIssued": 871,
+    "electionDateOnForm": "15/08/2026",
+    "lgaName": "IFE NORTH",
+    "ocrConfidence": 0.98,
+    "pollingUnitCode": "29/15/09/005",
+    "pollingUnitName": "ST. PAUL'S SCHOOL, MOLODO",
+    "presidingOfficerName": "OKEYE LYDIA",
+    "serialNumber": "0001744",
+    "spoiledBallotPapers": 0,
+    "stateName": "OSUN",
+    "totalUsedBallotPapers": 272,
+    "unusedBallotPapers": 599,
+    "wardName": "OYERE I"
+  },
+  "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/613/7020/97256/14e64c62-91d3-48a7-b7e2-e5eccc11e2c4.jpg": {
+    "votersOnRegister": 549,
+    "accreditedVoters": 277,
+    "rejectedBallots": 0,
+    "totalValidVotes": 277,
+    "partyScores": [
+      {
+        "partyCode": "A",
+        "votesInFigures": 152,
+        "votesInWords": "ONE HUNDRED AND FIFTY TWO"
+      },
+      {
+        "partyCode": "ADC",
+        "votesInFigures": 3,
+        "votesInWords": "THREE"
+      },
+      {
+        "partyCode": "APC",
+        "votesInFigures": 121,
+        "votesInWords": "ONE HUNDRED AND TWENTY ONE"
+      },
+      {
+        "partyCode": "ZLP",
+        "votesInFigures": 1,
+        "votesInWords": "ONE"
+      }
+    ],
+    "ballotPapersIssued": 549,
+    "electionDateOnForm": "15/08/2026",
+    "lgaName": "IFE NORTH",
+    "ocrConfidence": 0.95,
+    "pollingUnitCode": "004",
+    "pollingUnitName": "OYOO ADUKESI",
+    "presidingOfficerName": "OKEDELE OLUWAFUNMILAYO RACHAEL",
+    "serialNumber": "0001743",
+    "spoiledBallotPapers": 0,
+    "stateName": "OSUN",
+    "totalUsedBallotPapers": 277,
+    "unusedBallotPapers": 272,
+    "wardName": "OYERE I"
+  },
+  "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/613/7020/97254/51920ca6-418d-4fdd-9b58-a8ede0a4b371.jpg": {
+    "votersOnRegister": 575,
+    "accreditedVoters": 235,
+    "rejectedBallots": 5,
+    "totalValidVotes": 230,
+    "partyScores": [
+      {
+        "partyCode": "A",
+        "votesInFigures": 195,
+        "votesInWords": "ONE HUNDRED AND NINETY FIVE"
+      },
+      {
+        "partyCode": "APC",
+        "votesInFigures": 35,
+        "votesInWords": "THIRTY FIVE"
+      },
+      {
+        "partyCode": "APGA",
+        "votesInFigures": 0,
+        "votesInWords": "ZERO"
+      },
+      {
+        "partyCode": "APP",
+        "votesInFigures": 0,
+        "votesInWords": "ZERO"
+      },
+      {
+        "partyCode": "BP",
+        "votesInFigures": 0,
+        "votesInWords": "ZERO"
+      }
+    ],
+    "ballotPapersIssued": 575,
+    "electionDateOnForm": "15-08-26",
+    "lgaName": "IFE NORTH",
+    "ocrConfidence": 0.95,
+    "pollingUnitCode": "29/15/09/002",
+    "pollingUnitName": "APOSTOLIC'S SCHOOL, IDI-ITA",
+    "presidingOfficerName": "OKANGA GOODLUCK ETE",
+    "serialNumber": "0001741",
+    "spoiledBallotPapers": 0,
+    "stateName": "OSUN",
+    "totalUsedBallotPapers": 235,
+    "unusedBallotPapers": 340,
+    "wardName": "OYERE I"
+  }
+}

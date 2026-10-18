@@ -164,11 +164,11 @@ export const InteractiveMapPage: React.FC = () => {
                       </div>
                       <div className="flex justify-between text-[11px]">
                         <span className="text-slate-500">LGA Registered Voters:</span>
-                        <strong className="font-mono text-slate-900">{activeLga.registeredVoters.toLocaleString()}</strong>
+                        <strong className="font-mono text-slate-900">{(activeLga.registeredVoters || 0).toLocaleString()}</strong>
                       </div>
                       <div className="flex justify-between text-[11px]">
                         <span className="text-slate-500">LGA PVCs Collected:</span>
-                        <strong className="font-mono text-emerald-800">{activeLga.pvcsCollected.toLocaleString()}</strong>
+                        <strong className="font-mono text-emerald-800">{(activeLga.pvcsCollected || 0).toLocaleString()}</strong>
                       </div>
 
                       <div>
@@ -197,7 +197,7 @@ export const InteractiveMapPage: React.FC = () => {
                           </div>
                           <div className="flex justify-between">
                             <span className="text-slate-500">Ward Registered Voters:</span>
-                            <strong className="font-mono text-slate-900">{activeWard.registeredVoters.toLocaleString()}</strong>
+                            <strong className="font-mono text-slate-900">{(activeWard.registeredVoters || 0).toLocaleString()}</strong>
                           </div>
                         </div>
                       )}

@@ -635,4 +635,96 @@ export async function importRegisteredVotersFile(payload: {
   return res.json();
 }
 
+export async function triggerOcrTranscription(resultSheetId: string, forceRefresh = true) {
+  const res = await fetch(`${API_BASE}/ocr/transcribe-sheet/${encodeURIComponent(resultSheetId)}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ forceRefresh }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Gemini AI OCR transcription failed');
+  }
+  return res.json();
+}
+
+export async function triggerBatchOcrTranscription(electionId = 'elec-2026-gov-osun', limit = 6) {
+  const res = await fetch(`${API_BASE}/ocr/transcribe-batch`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ electionId, limit }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Batch Gemini AI OCR failed');
+  }
+  return res.json();
+}
+
+export async function uploadAndTranscribeFormEc8a(payload: {
+  imageBase64: string;
+  mimeType?: string;
+  fileName?: string;
+  electionId?: string;
+}) {
+  const res = await fetch(`${API_BASE}/ocr/upload-and-transcribe`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Failed to transcribe uploaded Form EC8A');
+  }
+  return res.json();
+}
+
+export async function fetchStorageSummary() {
+  const res = await fetch(`${API_BASE}/admin/storage/summary`);
+  if (!res.ok) throw new Error('Failed to fetch storage summary');
+  return res.json();
+}
+
+export async function fetchStorageFiles(params?: {
+  search?: string;
+  type?: string;
+  status?: string;
+  limit?: number;
+  offset?: number;
+}) {
+  const q = new URLSearchParams();
+  if (params?.search) q.set('search', params.search);
+  if (params?.type) q.set('type', params.type);
+  if (params?.status) q.set('status', params.status);
+  if (params?.limit) q.set('limit', String(params.limit));
+  if (params?.offset) q.set('offset', String(params.offset));
+
+  const res = await fetch(`${API_BASE}/admin/storage/files?${q.toString()}`);
+  if (!res.ok) throw new Error('Failed to fetch storage files');
+  return res.json();
+}
+
+export async function deleteStorageFile(id: string) {
+  const res = await fetch(`${API_BASE}/admin/storage/files/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Failed to delete file from storage');
+  }
+  return res.json();
+}
+
+export async function editStorageFile(id: string, updates: any) {
+  const res = await fetch(`${API_BASE}/admin/storage/files/${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(updates),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Failed to update file metadata');
+  }
+  return res.json();
+}
 

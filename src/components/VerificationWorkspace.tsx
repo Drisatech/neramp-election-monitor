@@ -37,6 +37,14 @@ export const VerificationWorkspace: React.FC<Props> = ({ resultSheet, pollingUni
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [activeWorkspaceTab, setActiveWorkspaceTab] = useState<'transcribe' | 'history' | 'audit' | 'ballotStats'>('transcribe');
 
+  React.useEffect(() => {
+    setValidVotes(resultSheet.transcription.validVotes);
+    setRejectedVotes(resultSheet.transcription.rejectedVotes);
+    setTotalVotesCast(resultSheet.transcription.totalVotesCast);
+    setPartyVotes({ ...resultSheet.transcription.partyVotes });
+    setNotes(resultSheet.verifierNotes || '');
+  }, [resultSheet]);
+
   // Real-time arithmetic check
   const calculatedCast = Number(validVotes) + Number(rejectedVotes);
   const arithmeticMatches = calculatedCast === Number(totalVotesCast);
@@ -131,7 +139,7 @@ export const VerificationWorkspace: React.FC<Props> = ({ resultSheet, pollingUni
             NEVER MODIFIED OR ALTERED
           </span>
         </div>
-        <SourceDocumentViewer resultSheet={resultSheet} pollingUnitCode={pollingUnitCode} />
+        <SourceDocumentViewer resultSheet={resultSheet} pollingUnitCode={pollingUnitCode} onRefreshOcr={onUpdate} />
       </div>
 
       {/* Right Column: Transcription & Verification Form */}

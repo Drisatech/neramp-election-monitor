@@ -125,6 +125,10 @@ export interface ResultSheet {
     rejectedVotes: number;
     validVotes: number;
     totalVotesCast: number;
+    totalUsedBallots?: number;
+    serialNumber?: string;
+    presidingOfficerName?: string;
+    electionDateOnForm?: string;
   };
   versionHistory?: Array<{
     versionNumber: number;
@@ -272,6 +276,7 @@ export interface AnalyticsOverview {
   electionYear: number;
   electionType: string;
   geographicScope: string;
+  scope?: string;
   drilldownLevel?: 'NATIONAL' | 'STATE' | 'LGA' | 'WARD';
   totalStates?: number;
   totalLgas?: number;
