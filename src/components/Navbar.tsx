@@ -28,7 +28,14 @@ export const Navbar: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [roleMenuOpen, setRoleMenuOpen] = useState(false);
 
-  const navLinks = [
+  interface NavItem {
+    to: string;
+    label: string;
+    icon: any;
+    roles?: UserRole[];
+  }
+
+  const allNavLinks: NavItem[] = [
     { to: '/', label: 'Overview', icon: Vote },
     { to: '/analytics', label: 'Advanced Analytics', icon: BarChart3 },
     { to: '/results', label: 'Candidate Results', icon: Layers },
@@ -36,13 +43,43 @@ export const Navbar: React.FC = () => {
     { to: '/polling-units', label: 'Polling Units', icon: FileText },
     { to: '/discrepancies', label: 'Discrepancies', icon: AlertTriangle },
     { to: '/incidents', label: 'Incidents', icon: Shield },
-    { to: '/observer-portal', label: 'Observer Field Portal', icon: UserCheck },
-    { to: '/verification-queue', label: 'Result Verification', icon: CheckCircle2 },
-    { to: '/admin', label: 'Command Centre', icon: Shield },
-    { to: '/admin-ingestion', label: 'Ingestion & Status', icon: Database },
-    { to: '/readiness-testing', label: 'Readiness & Testing', icon: Activity },
+    {
+      to: '/observer-portal',
+      label: 'Observer Field Portal',
+      icon: UserCheck,
+      roles: ['REGISTERED_OBSERVER', 'STATE_COORDINATOR', 'LGA_COORDINATOR', 'MONITORING_COORDINATOR', 'SUPER_ADMIN', 'PROJECT_ADMIN'],
+    },
+    {
+      to: '/verification-queue',
+      label: 'Result Verification',
+      icon: CheckCircle2,
+      roles: ['RESULT_VERIFIER', 'ELECTION_ANALYST', 'STATE_COORDINATOR', 'LGA_COORDINATOR', 'MONITORING_COORDINATOR', 'SUPER_ADMIN', 'PROJECT_ADMIN'],
+    },
+    {
+      to: '/admin',
+      label: 'Command Centre',
+      icon: Shield,
+      roles: ['STATE_COORDINATOR', 'LGA_COORDINATOR', 'MONITORING_COORDINATOR', 'SUPER_ADMIN', 'PROJECT_ADMIN'],
+    },
+    {
+      to: '/admin-ingestion',
+      label: 'Ingestion & Status',
+      icon: Database,
+      roles: ['SUPER_ADMIN', 'PROJECT_ADMIN', 'ELECTION_ANALYST'],
+    },
+    {
+      to: '/readiness-testing',
+      label: 'Readiness & Testing',
+      icon: Activity,
+      roles: ['SUPER_ADMIN', 'PROJECT_ADMIN'],
+    },
     { to: '/methodology', label: 'Methodology', icon: Info },
   ];
+
+  const navLinks = allNavLinks.filter((item) => {
+    if (!item.roles) return true;
+    return item.roles.includes(role);
+  });
 
   const roles: { role: UserRole; label: string }[] = [
     { role: 'SUPER_ADMIN', label: 'System Administrator' },
