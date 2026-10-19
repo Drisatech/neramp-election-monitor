@@ -9,6 +9,12 @@ import {
   Filter,
   Download,
   ArrowRight,
+  Sparkles,
+  Trophy,
+  Award,
+  ChevronRight,
+  ShieldCheck,
+  Zap,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useElection } from '../context/ElectionContext';
@@ -24,6 +30,7 @@ import { DataExportModal } from '../components/DataExportModal';
 
 export const PublicDashboardPage: React.FC = () => {
   const {
+    elections,
     selectedElectionId,
     states,
     selectedStateCode,
@@ -64,6 +71,43 @@ export const PublicDashboardPage: React.FC = () => {
     loadData();
   }, [selectedElectionId, selectedStateCode, selectedLgaCode, selectedWardCode]);
 
+  const selectedElection = elections.find((e) => e.id === selectedElectionId);
+
+  // Formats the contest title exactly according to contest hierarchy:
+  // Presidential: "Presidential Election"
+  // Senate: "Senate Election - State Name - Senatorial District Name"
+  // House of Reps: "House of Representative Election - State Name - Constituency Name"
+  // Governorship: "Governorship - State Name"
+  // House of Assembly: "House of Assembly - State - Constituency Name"
+  const getContestDisplayTitle = (): string => {
+    if (!selectedElection) {
+      return summary?.electionTitle || 'Presidential Election';
+    }
+    const type = String(selectedElection.electionType || '').toUpperCase();
+    const stName = selectedElection.stateName || (selectedElection.stateCode ? `${selectedElection.stateCode} State` : 'State Name');
+    const senDist = selectedElection.senatorialDistrict || 'Senatorial District Name';
+    const constName = selectedElection.constituencyName || 'Constituency Name';
+
+    if (type === 'PRESIDENTIAL') {
+      return 'Presidential Election';
+    }
+    if (type === 'SENATE') {
+      return `Senate Election - ${stName} - ${senDist}`;
+    }
+    if (type === 'REPS' || type === 'HOUSE_OF_REPRESENTATIVES') {
+      return `House of Representative Election - ${stName} - ${constName}`;
+    }
+    if (type === 'GOVERNORSHIP') {
+      return `Governorship - ${stName}`;
+    }
+    if (type === 'ASSEMBLY' || type === 'HOUSE_OF_ASSEMBLY' || type === 'STATE_ASSEMBLY') {
+      return `House of Assembly - ${stName} - ${constName}`;
+    }
+    return selectedElection.title || 'Contest Election Result';
+  };
+
+  const contestTitle = getContestDisplayTitle();
+
   const expectedPus = summary?.totalExpectedPus ?? 3763;
   const totalLgas = summary?.totalLgas ?? 30;
   const totalWards = summary?.totalWards ?? 332;
@@ -73,27 +117,62 @@ export const PublicDashboardPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Platform Legal Disclaimer & Data Freshness */}
-      <DisclaimerBanner lastUpdated={summary?.lastSourceDataRetrieval} />
+      {/* Platform Legal Disclaimer */}
+      <DisclaimerBanner />
 
-      {/* Official Data Source & Freshness Metadata Banner */}
-      <div className="bg-slate-900 text-slate-100 px-4 py-3 rounded-lg border border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs">
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-1.5 font-bold text-emerald-400">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-            <span>DATA SOURCE:</span>
+      {/* Bold, Colourful, & Attractive Contest Election Result Banner */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-emerald-900 via-teal-900 to-amber-900 p-6 md:p-8 text-white shadow-xl border-2 border-amber-400">
+        {/* Decorative Ambient Radial Glows */}
+        <div className="absolute -right-10 -bottom-10 w-64 h-64 bg-amber-400/20 rounded-full blur-3xl pointer-events-none"></div>
+        <div className="absolute left-1/4 -top-12 w-64 h-64 bg-emerald-400/20 rounded-full blur-3xl pointer-events-none"></div>
+
+        <div className="relative z-10 flex flex-col gap-3.5 max-w-4xl">
+          {/* Top Eyebrow Badges */}
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-amber-400 to-amber-300 text-slate-950 font-black text-[11px] tracking-wider uppercase shadow-md animate-pulse">
+              <Sparkles className="w-3.5 h-3.5 text-slate-950" />
+              <span>OFFICIAL CONTEST RESULTS</span>
+            </span>
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/15 backdrop-blur-xs text-white border border-white/20 text-xs font-mono">
+              <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+              <span>{selectedElection?.status ? selectedElection.status.replace(/_/g, ' ') : 'ACTIVE MONITORING'}</span>
+            </span>
+            {selectedElection?.date && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/10 text-emerald-200 text-xs font-mono">
+                <span>Date: {selectedElection.date}</span>
+              </span>
+            )}
           </div>
-          <span className="text-slate-300 font-medium">
-            Official INEC Results Portal (IReV) — {summary?.electionTitle || 'Osun State Governorship Election'}
+
+          {/* Main Attractive Headline (Bold & Colourful) */}
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-white tracking-tight leading-tight drop-shadow-sm">
+            {contestTitle}
+          </h1>
+
+          <p className="text-xs sm:text-sm text-emerald-100/90 leading-relaxed max-w-2xl">
+            Live collation of polling unit returns, independent Form EC8A cryptographic checksum verification, and forensic arithmetic audits across all registered polling units.
+          </p>
+        </div>
+      </div>
+
+      {/* Official Data Source & Freshness Metadata Banner (Restored Previous Slate/Emerald Theme) */}
+      <div className="bg-slate-100 border border-slate-200 text-slate-800 px-4 py-2.5 rounded-lg flex flex-wrap items-center justify-between gap-3 text-xs shadow-2xs">
+        <div className="flex flex-wrap items-center gap-2.5">
+          <div className="flex items-center gap-1.5 font-bold text-emerald-800">
+            <span className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse"></span>
+            <span className="tracking-wide">DATA SOURCE:</span>
+          </div>
+          <span className="text-slate-700 font-medium">
+            Official INEC Results Portal (IReV) — {contestTitle}
           </span>
         </div>
 
-        <div className="flex items-center gap-4 text-[11px] font-mono text-slate-400">
+        <div className="flex items-center gap-3 text-[11px] font-mono text-slate-500">
           <div className="flex items-center gap-1.5">
-            <Clock className="w-3.5 h-3.5 text-emerald-400" />
+            <Clock className="w-3.5 h-3.5 text-emerald-700" />
             <span>
               Last Successful Retrieval:{' '}
-              <strong className="text-slate-200">
+              <strong className="text-slate-800">
                 {summary?.lastSourceDataRetrieval
                   ? new Date(summary.lastSourceDataRetrieval).toLocaleTimeString()
                   : '18:35:00'}{' '}
@@ -101,8 +180,8 @@ export const PublicDashboardPage: React.FC = () => {
               </strong>
             </span>
           </div>
-          <span className="hidden sm:inline text-slate-600">|</span>
-          <span className="hidden sm:inline text-emerald-300 font-semibold">EC8A Checksums Verified</span>
+          <span className="hidden sm:inline text-slate-300">|</span>
+          <span className="hidden sm:inline text-emerald-700 font-semibold">EC8A Checksums Verified</span>
         </div>
       </div>
 

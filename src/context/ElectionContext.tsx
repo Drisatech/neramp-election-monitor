@@ -66,7 +66,11 @@ export const ElectionProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const refreshElections = async () => {
     try {
       const elecRes = await fetchElections();
-      setElections(elecRes.data);
+      const updatedList = elecRes.data || [];
+      setElections(updatedList);
+      if (updatedList.length > 0 && !updatedList.some((e: any) => e.id === selectedElectionId)) {
+        setSelectedElectionId(updatedList[0].id);
+      }
     } catch (err) {
       console.error('Failed to refresh elections:', err);
     }

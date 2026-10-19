@@ -154,6 +154,56 @@ export async function submitIncidentReport(payload: {
   return res.json();
 }
 
+export async function fetchIncidentById(id: string): Promise<{ data: IncidentReport }> {
+  const res = await fetch(`${API_BASE}/observer/incidents/${encodeURIComponent(id)}`);
+  if (!res.ok) throw new Error('Failed to fetch incident report details');
+  return res.json();
+}
+
+export async function updateIncidentReport(
+  id: string,
+  payload: {
+    category?: string;
+    severity?: string;
+    stateCode?: string;
+    stateName?: string;
+    lgaCode?: string;
+    lgaName?: string;
+    pollingUnitCode?: string;
+    pollingUnitName?: string;
+    description?: string;
+    status?: string;
+    reopenedReason?: string;
+    evidenceKey?: string;
+    evidenceFilename?: string;
+    evidenceHash?: string;
+    evidenceUrl?: string;
+    evidenceCount?: number;
+  }
+): Promise<{ data: IncidentReport; message: string }> {
+  const res = await fetch(`${API_BASE}/observer/incidents/${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Failed to update incident report');
+  }
+  return res.json();
+}
+
+export async function deleteIncidentReport(id: string): Promise<{ message: string; deletedId: string }> {
+  const res = await fetch(`${API_BASE}/observer/incidents/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Failed to delete incident report');
+  }
+  return res.json();
+}
+
 export async function reviewVerificationRecord(resultSheetId: string, decision: 'APPROVED' | 'DISCREPANCY_FLAGGED', notes: string) {
   const res = await fetch(`${API_BASE}/verification/${resultSheetId}/review`, {
     method: 'POST',
@@ -528,7 +578,34 @@ export async function createConfigElection(data: any) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   });
-  if (!res.ok) throw new Error('Failed to save election configuration');
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Failed to save election configuration');
+  }
+  return res.json();
+}
+
+export async function updateConfigElection(id: string, data: any) {
+  const res = await fetch(`${API_BASE}/admin/config/elections/${encodeURIComponent(id)}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Failed to update election configuration');
+  }
+  return res.json();
+}
+
+export async function deleteConfigElection(id: string) {
+  const res = await fetch(`${API_BASE}/admin/config/elections/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Failed to delete election configuration');
+  }
   return res.json();
 }
 

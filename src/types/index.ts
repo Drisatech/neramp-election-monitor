@@ -5,8 +5,12 @@ export interface Election {
   title: string;
   electionType: ElectionType | string;
   stateCode?: string;
+  stateName?: string;
+  senatorialDistrict?: string;
+  constituencyName?: string;
   date: string;
   status: string;
+  hasBeenHeld?: boolean;
   sourceReference: string;
   isDemonstration: boolean;
 }
@@ -88,6 +92,7 @@ export interface ResultSheet {
   sourceUrl: string;
   fileHash: string; // SHA-256
   imageUrl: string;
+  imageDataUrl?: string;
   uploadTimestamp: string;
   retrievalTimestamp: string;
   ocrConfidence: number;
@@ -193,14 +198,21 @@ export interface IncidentReport {
   pollingUnitName?: string;
   reportedAt: string;
   description: string;
-  status: 'DRAFT' | 'SUBMITTED' | 'UNDER_REVIEW' | 'VERIFIED' | 'APPROVED_FOR_PUBLICATION' | 'REJECTED';
+  status: 'DRAFT' | 'SUBMITTED' | 'UNDER_REVIEW' | 'VERIFIED' | 'APPROVED_FOR_PUBLICATION' | 'REJECTED' | 'REOPENED' | string;
   severity: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
   isPublished: boolean;
   evidenceCount: number;
   evidenceKey?: string;
+  evidenceFilename?: string;
   evidenceHash?: string;
   evidenceUrl?: string;
+  evidenceSizeBytes?: number;
+  evidenceMimeType?: string;
   observerBadge: string;
+  reopenedAt?: string;
+  reopenedReason?: string;
+  updatedAt?: string;
+  updatedBy?: string;
 }
 
 export interface CandidateRanking {

@@ -54,6 +54,13 @@ export const AdminIngestionPage: React.FC = () => {
   const [batchOcrNotice, setBatchOcrNotice] = useState<string | null>(null);
   const [isUploadingSheet, setIsUploadingSheet] = useState(false);
   const [uploadNotice, setUploadNotice] = useState<string | null>(null);
+  const [uploadedResultData, setUploadedResultData] = useState<{
+    puId: string;
+    puCode: string;
+    puName: string;
+    validVotes: number;
+    verificationUrl: string;
+  } | null>(null);
 
   // Manual Trigger options
   const [selectedAdapter, setSelectedAdapter] = useState<'InecApprovedSourceAdapter' | 'DevelopmentFixtureAdapter'>(
@@ -149,6 +156,7 @@ export const AdminIngestionPage: React.FC = () => {
     try {
       setIsUploadingSheet(true);
       setUploadNotice(null);
+      setUploadedResultData(null);
       const reader = new FileReader();
       reader.onload = async () => {
         try {
@@ -160,6 +168,15 @@ export const AdminIngestionPage: React.FC = () => {
             electionId: selectedElection,
           });
           setUploadNotice(`✅ ${res.message}`);
+          if (res.data?.pollingUnit) {
+            setUploadedResultData({
+              puId: res.data.pollingUnit.id,
+              puCode: res.data.pollingUnit.code,
+              puName: res.data.pollingUnit.name,
+              validVotes: res.data.resultSheet?.transcription?.validVotes || 0,
+              verificationUrl: res.data.verificationUrl || `/polling-units/${res.data.pollingUnit.id}?tab=workspace`,
+            });
+          }
           await loadAll();
         } catch (err: any) {
           setUploadNotice(`❌ Upload transcription failed: ${err.message}`);
@@ -442,7 +459,7 @@ export const AdminIngestionPage: React.FC = () => {
               <h3 className="text-sm font-bold text-white tracking-wide flex items-center gap-2">
                 <span>Gemini Vision AI OCR Engine (INEC Form EC8A Transcription)</span>
                 <span className="text-[10px] font-mono bg-emerald-700/80 text-emerald-100 px-2 py-0.5 rounded border border-emerald-600">
-                  gemini-3-flash-preview · Active
+                  gemini-3.8-flash · Active
                 </span>
               </h3>
               <p className="text-xs text-emerald-200">
@@ -486,6 +503,30 @@ export const AdminIngestionPage: React.FC = () => {
           <div className="p-3 bg-slate-800/90 border border-emerald-500 text-emerald-100 rounded text-xs font-semibold flex items-center justify-between">
             <span>{uploadNotice}</span>
             <button onClick={() => setUploadNotice(null)} className="text-emerald-300 hover:text-white">×</button>
+          </div>
+        )}
+
+        {uploadedResultData && (
+          <div className="p-4 bg-emerald-950/90 border-2 border-emerald-400 rounded-lg text-xs space-y-2.5 shadow-md">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <CheckCircle className="w-5 h-5 text-emerald-400 shrink-0" />
+                <div>
+                  <span className="font-bold text-white text-sm">
+                    Result Sheet Ingested: {uploadedResultData.puName} ({uploadedResultData.puCode})
+                  </span>
+                  <span className="block text-[11px] text-emerald-200 mt-0.5">
+                    Total Valid Votes: {uploadedResultData.validVotes.toLocaleString()} · Status: Awaiting Verification Review
+                  </span>
+                </div>
+              </div>
+              <Link
+                to={uploadedResultData.verificationUrl}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-emerald-400 hover:bg-emerald-300 text-slate-950 font-black rounded text-xs shadow-md transition-all uppercase tracking-wide"
+              >
+                <span>Open Result Verification Page →</span>
+              </Link>
+            </div>
           </div>
         )}
 

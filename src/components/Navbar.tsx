@@ -22,8 +22,65 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { useElection } from '../context/ElectionContext';
 import { useThemeAccessibility } from '../context/ThemeAccessibilityContext';
-import { UserRole } from '../types';
+import { UserRole, Election } from '../types';
 import { NerampLogo } from './NerampLogo';
+
+export function formatMenuElectionTitle(elec: Election): string {
+  const type = String(elec.electionType || '').toUpperCase();
+  const id = elec.id || '';
+
+  // Clean state name (e.g. "Osun", "Ekiti", "Lagos")
+  const stateRaw = elec.stateName || (elec.stateCode ? `${elec.stateCode}` : '');
+  const stateClean = stateRaw ? stateRaw.replace(/\s+State/i, '').trim() : '';
+
+  // Elections that have been held (Osun and Ekiti Governorship) have the state name added and date attached
+  if (id === 'elec-2026-gov-osun' || (type === 'GOVERNORSHIP' && (elec.stateCode === 'OSUN' || stateClean.toUpperCase() === 'OSUN'))) {
+    return 'Governorship Election - Osun - 2026-08-15';
+  }
+  if (id === 'elec-2026-gov-ekiti' || (type === 'GOVERNORSHIP' && (elec.stateCode === 'EKITI' || stateClean.toUpperCase() === 'EKITI'))) {
+    return 'Governorship Election - Ekiti - 2026-06-20';
+  }
+
+  if (type === 'GOVERNORSHIP') {
+    const statePart = stateClean ? ` - ${stateClean}` : '';
+    const datePart = elec.date ? ` - ${elec.date}` : '';
+    return `Governorship Election${statePart}${datePart}`;
+  }
+
+  // Senate: with state name attached
+  if (type === 'SENATE') {
+    const statePart = stateClean ? ` - ${stateClean}` : '';
+    const district = elec.senatorialDistrict ? ` (${elec.senatorialDistrict})` : '';
+    const datePart = elec.date ? ` - ${elec.date}` : '';
+    return `Senate Election${statePart}${district}${datePart}`;
+  }
+
+  // House of Reps: with state name attached
+  if (type === 'REPS' || type === 'HOUSE_OF_REPRESENTATIVES') {
+    const statePart = stateClean ? ` - ${stateClean}` : '';
+    const constName = elec.constituencyName ? ` (${elec.constituencyName})` : '';
+    const datePart = elec.date ? ` - ${elec.date}` : '';
+    return `House of Representative Election${statePart}${constName}${datePart}`;
+  }
+
+  // House of Assembly: with state name attached
+  if (type === 'ASSEMBLY' || type === 'HOUSE_OF_ASSEMBLY' || type === 'STATE_ASSEMBLY') {
+    const statePart = stateClean ? ` - ${stateClean}` : '';
+    const constName = elec.constituencyName ? ` (${elec.constituencyName})` : '';
+    const datePart = elec.date ? ` - ${elec.date}` : '';
+    return `House of Assembly${statePart}${constName}${datePart}`;
+  }
+
+  if (type === 'PRESIDENTIAL' || id.includes('presidential')) {
+    // Only year since election has not held yet
+    const yearPart = elec.date ? elec.date.slice(0, 4) : '2027';
+    return `Presidential Election - ${yearPart}`;
+  }
+
+  const statePart = stateClean ? ` - ${stateClean}` : '';
+  const datePart = elec.date ? ` - ${elec.date}` : '';
+  return `${elec.title || 'Election'}${statePart}${datePart}`;
+}
 
 export const Navbar: React.FC = () => {
   const location = useLocation();
@@ -32,6 +89,19 @@ export const Navbar: React.FC = () => {
   const { theme, toggleTheme, activePwdFeaturesCount } = useThemeAccessibility();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [roleMenuOpen, setRoleMenuOpen] = useState(false);
+
+  // Contest Switcher: strictly only elections that have been held (e.g. Osun & Ekiti, or concluded)
+  const heldElections = elections.filter((elec) => {
+    const status = String(elec.status || '').toUpperCase();
+    return (
+      status === 'CONCLUDED' ||
+      status === 'COMPLETED' ||
+      elec.hasBeenHeld === true ||
+      elec.id === 'elec-2026-gov-osun' ||
+      elec.id === 'elec-2026-gov-ekiti'
+    );
+  });
+  const contestSwitcherElections = heldElections.length > 0 ? heldElections : elections;
 
   interface NavItem {
     to: string;
@@ -150,9 +220,9 @@ export const Navbar: React.FC = () => {
                 onChange={(e) => setSelectedElectionId(e.target.value)}
                 className="bg-slate-50 border border-slate-300 text-slate-900 font-medium text-xs rounded-md px-2.5 py-1.5 focus:outline-emerald-600 cursor-pointer max-w-[240px] truncate"
               >
-                {elections.map((elec) => (
+                {contestSwitcherElections.map((elec) => (
                   <option key={elec.id} value={elec.id}>
-                    {elec.title}
+                    {formatMenuElectionTitle(elec)}
                   </option>
                 ))}
               </select>
@@ -332,9 +402,9 @@ export const Navbar: React.FC = () => {
               onChange={(e) => setSelectedElectionId(e.target.value)}
               className="w-full bg-slate-50 border border-slate-300 text-slate-900 font-medium text-xs rounded-md p-2"
             >
-              {elections.map((elec) => (
+              {contestSwitcherElections.map((elec) => (
                 <option key={elec.id} value={elec.id}>
-                  {elec.title}
+                  {formatMenuElectionTitle(elec)}
                 </option>
               ))}
             </select>

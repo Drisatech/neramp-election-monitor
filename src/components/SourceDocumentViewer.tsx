@@ -49,9 +49,19 @@ export const SourceDocumentViewer: React.FC<Props> = ({ resultSheet, pollingUnit
     }
   };
 
-  const displayImgUrl = resultSheet.imageUrl?.startsWith('http')
-    ? `/api/v1/proxy-ec8a-image?url=${encodeURIComponent(resultSheet.imageUrl)}`
-    : resultSheet.imageUrl;
+  const [hasImgError, setHasImgError] = useState(false);
+
+  // Prioritize direct base64 data URL if available, then local API endpoint, then proxy
+  const displayImgUrl = (() => {
+    if (resultSheet.imageDataUrl) return resultSheet.imageDataUrl;
+    if (!resultSheet.imageUrl) return `/api/v1/result-sheets/${resultSheet.id}/image`;
+    if (resultSheet.imageUrl.startsWith('data:')) return resultSheet.imageUrl;
+    if (resultSheet.imageUrl.startsWith('/api/')) return resultSheet.imageUrl;
+    if (resultSheet.imageUrl.startsWith('http')) {
+      return `/api/v1/proxy-ec8a-image?url=${encodeURIComponent(resultSheet.imageUrl)}`;
+    }
+    return `/api/v1/result-sheets/${resultSheet.id}/image`;
+  })();
 
   const isPdf = resultSheet.imageUrl?.toLowerCase().includes('.pdf') || resultSheet.sourceUrl?.toLowerCase().includes('.pdf');
   const bStats = resultSheet.ballotStatistics;
@@ -87,7 +97,7 @@ export const SourceDocumentViewer: React.FC<Props> = ({ resultSheet, pollingUnit
           <button
             onClick={handleRunOcr}
             disabled={isTranscribing}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-gradient-to-r from-emerald-700 to-teal-800 hover:from-emerald-800 hover:to-teal-900 text-white rounded text-xs font-bold transition-all shadow-2xs disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-gradient-to-r from-emerald-700 to-teal-800 hover:from-emerald-800 hover:to-teal-900 text-white rounded text-xs font-bold transition-all shadow-2xs disabled:opacity-50 cursor-pointer"
             title="Transcribe handwritten numbers and party scores with Gemini Vision AI OCR"
           >
             {isTranscribing ? (
@@ -102,21 +112,21 @@ export const SourceDocumentViewer: React.FC<Props> = ({ resultSheet, pollingUnit
           <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-md p-1">
             <button
               onClick={() => setZoom((z) => Math.min(z + 0.25, 2.5))}
-              className="p-1 hover:bg-slate-100 rounded text-slate-700"
+              className="p-1 hover:bg-slate-100 rounded text-slate-700 cursor-pointer"
               title="Zoom In"
             >
               <ZoomIn className="w-4 h-4" />
             </button>
             <button
               onClick={() => setZoom((z) => Math.max(z - 0.25, 0.75))}
-              className="p-1 hover:bg-slate-100 rounded text-slate-700"
+              className="p-1 hover:bg-slate-100 rounded text-slate-700 cursor-pointer"
               title="Zoom Out"
             >
               <ZoomOut className="w-4 h-4" />
             </button>
             <button
               onClick={() => setRotation((r) => (r + 90) % 360)}
-              className="p-1 hover:bg-slate-100 rounded text-slate-700"
+              className="p-1 hover:bg-slate-100 rounded text-slate-700 cursor-pointer"
               title="Rotate 90deg"
             >
               <RotateCw className="w-4 h-4" />
@@ -126,7 +136,7 @@ export const SourceDocumentViewer: React.FC<Props> = ({ resultSheet, pollingUnit
                 setZoom(1);
                 setRotation(0);
               }}
-              className="px-2 py-0.5 text-[11px] font-semibold text-slate-600 hover:bg-slate-100 rounded"
+              className="px-2 py-0.5 text-[11px] font-semibold text-slate-600 hover:bg-slate-100 rounded cursor-pointer"
             >
               Reset
             </button>
@@ -140,37 +150,36 @@ export const SourceDocumentViewer: React.FC<Props> = ({ resultSheet, pollingUnit
           ocrMessage.includes('error') ? 'bg-rose-50 text-rose-800 border-b border-rose-200' : 'bg-emerald-50 text-emerald-800 border-b border-emerald-200'
         }`}>
           <span>{ocrMessage}</span>
-          <button onClick={() => setOcrMessage(null)} className="text-slate-400 hover:text-slate-600 text-sm">×</button>
+          <button onClick={() => setOcrMessage(null)} className="text-slate-400 hover:text-slate-600 text-sm cursor-pointer">×</button>
         </div>
       )}
 
       {/* Document View Canvas */}
-      <div className="relative bg-slate-900 overflow-hidden min-h-[460px] h-[500px] flex items-center justify-center p-3 select-none">
-        {resultSheet.imageUrl ? (
-          isPdf ? (
-            <iframe
-              src={displayImgUrl}
-              title={`PDF Result Sheet ${pollingUnitCode}`}
-              className="w-full h-full rounded border border-slate-700 bg-white"
-            />
-          ) : (
-            <div
-              className="transition-transform duration-200 origin-center cursor-grab active:cursor-grabbing max-h-full max-w-full flex items-center justify-center"
-              style={{
-                transform: `scale(${zoom}) rotate(${rotation}deg)`,
-              }}
-            >
-              <img
-                src={displayImgUrl}
-                alt={`EC8A Result Sheet for PU ${pollingUnitCode}`}
-                className="max-h-[460px] max-w-full object-contain rounded shadow-lg border border-slate-700"
-                loading="eager"
-              />
-            </div>
-          )
+      <div className="relative bg-slate-900 overflow-hidden min-h-[460px] h-[520px] flex items-center justify-center p-3 select-none">
+        {isPdf ? (
+          <iframe
+            src={displayImgUrl}
+            title={`PDF Result Sheet ${pollingUnitCode}`}
+            className="w-full h-full rounded border border-slate-700 bg-white"
+          />
         ) : (
-          <div className="text-slate-400 text-sm text-center">
-            Source document image not loaded.
+          <div
+            className="transition-transform duration-200 origin-center cursor-grab active:cursor-grabbing max-h-full max-w-full flex items-center justify-center"
+            style={{
+              transform: `scale(${zoom}) rotate(${rotation}deg)`,
+            }}
+          >
+            <img
+              src={hasImgError ? `/api/v1/result-sheets/${resultSheet.id}/image` : displayImgUrl}
+              alt={`EC8A Result Sheet for PU ${pollingUnitCode}`}
+              className="max-h-[480px] max-w-full object-contain rounded shadow-lg border border-slate-700"
+              loading="eager"
+              onError={() => {
+                if (!hasImgError) {
+                  setHasImgError(true);
+                }
+              }}
+            />
           </div>
         )}
 

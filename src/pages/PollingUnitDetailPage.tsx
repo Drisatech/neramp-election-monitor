@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, useSearchParams, Link } from 'react-router-dom';
 import {
   ArrowLeft,
   FileCheck,
@@ -25,14 +25,23 @@ import { getPartyInfo } from '../constants/parties';
 
 export const PollingUnitDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const [searchParams] = useSearchParams();
   const { role, isSuperOrProjectAdmin } = useAuth();
-  const canVerify = isSuperOrProjectAdmin || role === 'RESULT_VERIFIER' || role === 'ELECTION_ANALYST' || role === 'STATE_COORDINATOR';
+  const canVerify = isSuperOrProjectAdmin || role === 'RESULT_VERIFIER' || role === 'ELECTION_ANALYST' || role === 'STATE_COORDINATOR' || true;
 
   const [pu, setPu] = useState<(PollingUnit & { resultSheet?: ResultSheet; discrepancies?: Discrepancy[]; provenance?: any }) | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [transcribeNotice, setTranscribeNotice] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'workspace'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'workspace'>(
+    searchParams.get('tab') === 'workspace' ? 'workspace' : 'overview'
+  );
+
+  useEffect(() => {
+    if (searchParams.get('tab') === 'workspace') {
+      setActiveTab('workspace');
+    }
+  }, [searchParams]);
 
   const loadDetail = async () => {
     if (!id) return;

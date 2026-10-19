@@ -60,6 +60,8 @@ import {
   fetchIngestionJobs,
   fetchConfigElections,
   createConfigElection,
+  updateConfigElection,
+  deleteConfigElection,
   fetchConfigCandidates,
   createConfigCandidate,
   fetchConfigParties,
@@ -130,16 +132,26 @@ export const AdminCommandCentrePage: React.FC = () => {
     badge: '',
   });
 
-  // New Election Form State
+  // Election Management States (Create, Update, Delete)
   const [showCreateElectionModal, setShowCreateElectionModal] = useState(false);
   const [isCreatingElection, setIsCreatingElection] = useState(false);
   const [newElectionForm, setNewElectionForm] = useState({
     title: '',
     electionType: 'GOVERNORSHIP',
     stateCode: 'OSUN',
+    stateName: 'Osun State',
+    senatorialDistrict: '',
+    constituencyName: '',
     date: '2026-08-15',
+    status: 'CONCLUDED',
+    hasBeenHeld: true,
     sourceReference: 'INEC Official Election Timetable',
   });
+
+  const [editingElection, setEditingElection] = useState<any | null>(null);
+  const [isUpdatingElection, setIsUpdatingElection] = useState(false);
+  const [deletingElection, setDeletingElection] = useState<any | null>(null);
+  const [isDeletingElection, setIsDeletingElection] = useState(false);
 
   // Load all initial data
   const loadAllData = async () => {
@@ -208,9 +220,12 @@ export const AdminCommandCentrePage: React.FC = () => {
     }
     try {
       setIsCreatingElection(true);
+      const matchedState = states.find((s) => s.code === newElectionForm.stateCode);
+      const isPres = newElectionForm.electionType === 'PRESIDENTIAL';
       const payload = {
         ...newElectionForm,
-        stateCode: newElectionForm.electionType === 'PRESIDENTIAL' ? '' : newElectionForm.stateCode,
+        stateCode: isPres ? '' : newElectionForm.stateCode,
+        stateName: isPres ? '' : (matchedState ? matchedState.name : (newElectionForm.stateCode ? `${newElectionForm.stateCode} State` : '')),
       };
       const res = await createConfigElection(payload);
       await refreshElections();
@@ -224,13 +239,62 @@ export const AdminCommandCentrePage: React.FC = () => {
         title: '',
         electionType: 'GOVERNORSHIP',
         stateCode: 'OSUN',
+        stateName: 'Osun State',
+        senatorialDistrict: '',
+        constituencyName: '',
         date: '2026-08-15',
+        status: 'CONCLUDED',
+        hasBeenHeld: true,
         sourceReference: 'INEC Official Election Timetable',
       });
     } catch (err: any) {
       showNotification('error', err.message || 'Failed to configure new contest');
     } finally {
       setIsCreatingElection(false);
+    }
+  };
+
+  const handleUpdateElection = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingElection) return;
+    if (!editingElection.title.trim()) {
+      showNotification('error', 'Please enter an election contest title.');
+      return;
+    }
+    try {
+      setIsUpdatingElection(true);
+      const matchedState = states.find((s) => s.code === editingElection.stateCode);
+      const isPres = editingElection.electionType === 'PRESIDENTIAL';
+      const payload = {
+        ...editingElection,
+        stateCode: isPres ? '' : editingElection.stateCode,
+        stateName: isPres ? '' : (matchedState ? matchedState.name : (editingElection.stateCode ? `${editingElection.stateCode} State` : '')),
+      };
+      await updateConfigElection(editingElection.id, payload);
+      await refreshElections();
+      await loadAllData();
+      showNotification('success', `Contest "${editingElection.title}" updated successfully.`);
+      setEditingElection(null);
+    } catch (err: any) {
+      showNotification('error', err.message || 'Failed to update contest election');
+    } finally {
+      setIsUpdatingElection(false);
+    }
+  };
+
+  const handleDeleteElection = async () => {
+    if (!deletingElection) return;
+    try {
+      setIsDeletingElection(true);
+      await deleteConfigElection(deletingElection.id);
+      await refreshElections();
+      await loadAllData();
+      showNotification('success', `Contest "${deletingElection.title}" deleted.`);
+      setDeletingElection(null);
+    } catch (err: any) {
+      showNotification('error', err.message || 'Failed to delete contest');
+    } finally {
+      setIsDeletingElection(false);
     }
   };
 
@@ -594,7 +658,24 @@ export const AdminCommandCentrePage: React.FC = () => {
       {activeTab === 'overview' && metrics && (
         <div className="space-y-6">
           {/* Key Metric Highlights */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <div
+              onClick={() => setActiveTab('configuration')}
+              className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs cursor-pointer hover:border-emerald-500 hover:bg-emerald-50/20 transition-all col-span-2 sm:col-span-1"
+            >
+              <div className="flex items-center justify-between text-slate-500 text-xs font-medium">
+                <span>Election Contests</span>
+                <Layers className="w-4 h-4 text-emerald-700" />
+              </div>
+              <div className="mt-2 text-2xl font-black text-slate-900 font-mono">
+                {elections.length} <span className="text-xs font-normal text-emerald-700">({elections.filter((e: any) => e.status === 'CONCLUDED' || e.hasBeenHeld).length} Held)</span>
+              </div>
+              <div className="mt-1 text-[11px] text-emerald-700 font-bold flex items-center justify-between">
+                <span>Manage Contests</span>
+                <span>&rarr;</span>
+              </div>
+            </div>
+
             <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
               <div className="flex items-center justify-between text-slate-500 text-xs font-medium">
                 <span>Active Users</span>
@@ -636,7 +717,7 @@ export const AdminCommandCentrePage: React.FC = () => {
               </div>
             </div>
 
-            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
+            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs col-span-2 sm:col-span-1">
               <div className="flex items-center justify-between text-slate-500 text-xs font-medium">
                 <span>Unresolved Items</span>
                 <AlertTriangle className="w-4 h-4 text-amber-600" />
@@ -1345,32 +1426,48 @@ export const AdminCommandCentrePage: React.FC = () => {
             <div className="divide-y divide-slate-100">
               {elections.map((elec: any) => {
                 const isSelected = elec.id === selectedElectionId;
+                const isHeld = elec.status === 'CONCLUDED' || elec.status === 'COMPLETED' || elec.hasBeenHeld === true;
                 return (
                   <div
                     key={elec.id}
-                    className={`p-3.5 flex flex-wrap items-center justify-between gap-3 text-xs ${
-                      isSelected ? 'bg-emerald-50/60' : 'hover:bg-slate-50'
+                    className={`p-3.5 flex flex-wrap items-center justify-between gap-3 text-xs transition-colors ${
+                      isSelected ? 'bg-emerald-50/70 border-l-4 border-emerald-600' : 'hover:bg-slate-50'
                     }`}
                   >
-                    <div className="space-y-0.5">
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-slate-900">{elec.title}</span>
-                        <span className="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200 font-semibold">
+                    <div className="space-y-1 max-w-xl">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-bold text-slate-900 text-sm">{elec.title}</span>
+                        <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200 font-semibold">
                           {elec.electionType || 'GOVERNORSHIP'}
                         </span>
                         {elec.stateCode && (
-                          <span className="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold">
+                          <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold">
                             {elec.stateCode}
+                          </span>
+                        )}
+                        {isHeld ? (
+                          <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-300 font-bold">
+                            Held / Concluded
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-300 font-medium">
+                            Not Held / Upcoming
                           </span>
                         )}
                       </div>
                       <div className="text-[11px] text-slate-500 font-mono">
-                        ID: {elec.id} · Date: {elec.date} · Status: {elec.status || 'CONCLUDED'}
+                        ID: {elec.id} · Date: {elec.date || 'TBD'} · Status: {elec.status || 'CONCLUDED'}
                       </div>
+                      {elec.sourceReference && (
+                        <div className="text-[10px] text-slate-400 truncate max-w-lg">
+                          Source: {elec.sourceReference}
+                        </div>
+                      )}
                     </div>
+
                     <div className="flex items-center gap-2">
                       {isSelected ? (
-                        <span className="px-2.5 py-1 rounded bg-emerald-800 text-white text-[11px] font-bold">
+                        <span className="px-2.5 py-1 rounded bg-emerald-800 text-white text-[11px] font-bold shadow-2xs">
                           Active Contest
                         </span>
                       ) : (
@@ -1384,6 +1481,31 @@ export const AdminCommandCentrePage: React.FC = () => {
                           Switch to Contest
                         </button>
                       )}
+
+                      <button
+                        onClick={() => {
+                          setEditingElection({
+                            ...elec,
+                            hasBeenHeld: isHeld,
+                            status: elec.status || (isHeld ? 'CONCLUDED' : 'ACTIVE_MONITORING'),
+                          });
+                        }}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded border border-slate-300 hover:bg-slate-100 text-slate-700 text-[11px] font-medium cursor-pointer"
+                        title="Edit Contest Election"
+                      >
+                        <Edit className="w-3 h-3 text-slate-600" />
+                        <span>Edit</span>
+                      </button>
+
+                      <button
+                        onClick={() => setDeletingElection(elec)}
+                        disabled={elections.length <= 1}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded border border-rose-200 hover:bg-rose-50 text-rose-700 text-[11px] font-medium cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                        title={elections.length <= 1 ? 'Cannot delete the only contest' : 'Delete Contest Election'}
+                      >
+                        <Trash2 className="w-3 h-3 text-rose-600" />
+                        <span>Delete</span>
+                      </button>
                     </div>
                   </div>
                 );
@@ -1825,14 +1947,17 @@ export const AdminCommandCentrePage: React.FC = () => {
       {/* ======================================================== */}
       {/* MODAL: CONFIGURE NEW ELECTION CONTEST                     */}
       {/* ======================================================== */}
+      {/* ======================================================== */}
+      {/* MODAL: CONFIGURE NEW ELECTION CONTEST                     */}
+      {/* ======================================================== */}
       {showCreateElectionModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-lg w-full p-6 space-y-4 border border-slate-200">
+          <div className="bg-white rounded-xl shadow-xl max-w-lg w-full p-6 space-y-4 border border-slate-200 animate-in fade-in zoom-in-95 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b pb-3">
               <div>
                 <h3 className="text-base font-bold text-slate-900">Configure New Election Contest</h3>
                 <p className="text-xs text-slate-500">
-                  Register a new INEC election contest for real-time result collation and public dashboard monitoring.
+                  Register a new INEC election contest for result collation, monitoring, and audit verification.
                 </p>
               </div>
               <button
@@ -1849,7 +1974,7 @@ export const AdminCommandCentrePage: React.FC = () => {
                 <input
                   type="text"
                   required
-                  placeholder="e.g. 2026 Ondo State Governorship Election or 2027 Presidential Election"
+                  placeholder="e.g. Governorship Election - Ondo - 2026-11-21"
                   value={newElectionForm.title}
                   onChange={(e) => setNewElectionForm({ ...newElectionForm, title: e.target.value })}
                   className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded focus:outline-emerald-600 font-medium"
@@ -1864,11 +1989,11 @@ export const AdminCommandCentrePage: React.FC = () => {
                     onChange={(e) => setNewElectionForm({ ...newElectionForm, electionType: e.target.value })}
                     className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded focus:outline-emerald-600 font-semibold"
                   >
-                    <option value="PRESIDENTIAL">Presidential Election (National)</option>
                     <option value="GOVERNORSHIP">Governorship Election (State)</option>
-                    <option value="SENATORIAL">Senatorial District Election</option>
-                    <option value="HOUSE_OF_REPS">House of Representatives</option>
-                    <option value="STATE_ASSEMBLY">State House of Assembly</option>
+                    <option value="PRESIDENTIAL">Presidential Election (National)</option>
+                    <option value="SENATE">Senate Election (Senatorial District)</option>
+                    <option value="REPS">House of Representatives (Federal Constituency)</option>
+                    <option value="ASSEMBLY">State House of Assembly (Constituency)</option>
                   </select>
                 </div>
 
@@ -1889,7 +2014,14 @@ export const AdminCommandCentrePage: React.FC = () => {
                   <label className="block font-semibold text-slate-700 mb-1">Target State Jurisdiction</label>
                   <select
                     value={newElectionForm.stateCode}
-                    onChange={(e) => setNewElectionForm({ ...newElectionForm, stateCode: e.target.value })}
+                    onChange={(e) => {
+                      const st = states.find((s) => s.code === e.target.value);
+                      setNewElectionForm({
+                        ...newElectionForm,
+                        stateCode: e.target.value,
+                        stateName: st ? st.name : `${e.target.value} State`,
+                      });
+                    }}
                     className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded focus:outline-emerald-600 font-semibold"
                   >
                     {states.map((st) => (
@@ -1900,6 +2032,77 @@ export const AdminCommandCentrePage: React.FC = () => {
                   </select>
                 </div>
               )}
+
+              {newElectionForm.electionType === 'SENATE' && (
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">Senatorial District</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Osun Central Senatorial District"
+                    value={newElectionForm.senatorialDistrict}
+                    onChange={(e) => setNewElectionForm({ ...newElectionForm, senatorialDistrict: e.target.value })}
+                    className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded focus:outline-emerald-600 font-medium"
+                  />
+                </div>
+              )}
+
+              {(newElectionForm.electionType === 'REPS' || newElectionForm.electionType === 'ASSEMBLY') && (
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">Constituency Name</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Osogbo Federal Constituency"
+                    value={newElectionForm.constituencyName}
+                    onChange={(e) => setNewElectionForm({ ...newElectionForm, constituencyName: e.target.value })}
+                    className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded focus:outline-emerald-600 font-medium"
+                  />
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">Has This Election Been Held?</label>
+                  <select
+                    value={newElectionForm.hasBeenHeld ? 'true' : 'false'}
+                    onChange={(e) => {
+                      const isHeld = e.target.value === 'true';
+                      setNewElectionForm({
+                        ...newElectionForm,
+                        hasBeenHeld: isHeld,
+                        status: isHeld ? 'CONCLUDED' : 'ACTIVE_MONITORING',
+                      });
+                    }}
+                    className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded focus:outline-emerald-600 font-semibold"
+                  >
+                    <option value="true">Yes — Election Has Been Held (Concluded)</option>
+                    <option value="false">No — Election Has Not Held Yet (Upcoming / Monitoring)</option>
+                  </select>
+                  <p className="text-[10px] text-slate-500 mt-0.5">
+                    Note: Elections that have been held appear in the global Contest Switcher.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">Status Code</label>
+                  <select
+                    value={newElectionForm.status}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setNewElectionForm({
+                        ...newElectionForm,
+                        status: val,
+                        hasBeenHeld: val === 'CONCLUDED' || val === 'COMPLETED',
+                      });
+                    }}
+                    className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded focus:outline-emerald-600 font-mono"
+                  >
+                    <option value="CONCLUDED">CONCLUDED</option>
+                    <option value="COMPLETED">COMPLETED</option>
+                    <option value="ACTIVE_MONITORING">ACTIVE_MONITORING</option>
+                    <option value="UPCOMING">UPCOMING</option>
+                  </select>
+                </div>
+              </div>
 
               <div>
                 <label className="block font-semibold text-slate-700 mb-1">Official Source Reference</label>
@@ -1923,12 +2126,239 @@ export const AdminCommandCentrePage: React.FC = () => {
                 <button
                   type="submit"
                   disabled={isCreatingElection}
-                  className="px-4 py-2 rounded bg-emerald-800 text-white font-bold hover:bg-emerald-700 disabled:opacity-50 cursor-pointer"
+                  className="px-4 py-2 rounded bg-emerald-800 text-white font-bold hover:bg-emerald-700 disabled:opacity-50 cursor-pointer shadow-xs"
                 >
                   {isCreatingElection ? 'Saving Contest...' : 'Create & Activate Contest'}
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ======================================================== */}
+      {/* MODAL: EDIT / UPDATE ELECTION CONTEST                     */}
+      {/* ======================================================== */}
+      {editingElection && (
+        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-lg w-full p-6 space-y-4 border border-slate-200 animate-in fade-in zoom-in-95 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b pb-3">
+              <div>
+                <h3 className="text-base font-bold text-slate-900">Update Contest Election</h3>
+                <p className="text-xs text-slate-500 font-mono">
+                  ID: {editingElection.id}
+                </p>
+              </div>
+              <button
+                onClick={() => setEditingElection(null)}
+                className="text-slate-400 hover:text-slate-600 cursor-pointer"
+              >
+                <XCircle className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleUpdateElection} className="space-y-3.5 text-xs">
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">Contest Title</label>
+                <input
+                  type="text"
+                  required
+                  value={editingElection.title || ''}
+                  onChange={(e) => setEditingElection({ ...editingElection, title: e.target.value })}
+                  className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded focus:outline-emerald-600 font-medium"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">Contest Type</label>
+                  <select
+                    value={editingElection.electionType || 'GOVERNORSHIP'}
+                    onChange={(e) => setEditingElection({ ...editingElection, electionType: e.target.value })}
+                    className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded focus:outline-emerald-600 font-semibold"
+                  >
+                    <option value="GOVERNORSHIP">Governorship Election (State)</option>
+                    <option value="PRESIDENTIAL">Presidential Election (National)</option>
+                    <option value="SENATE">Senate Election (Senatorial District)</option>
+                    <option value="REPS">House of Representatives (Federal Constituency)</option>
+                    <option value="ASSEMBLY">State House of Assembly (Constituency)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">Election Date</label>
+                  <input
+                    type="date"
+                    required
+                    value={editingElection.date || ''}
+                    onChange={(e) => setEditingElection({ ...editingElection, date: e.target.value })}
+                    className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded focus:outline-emerald-600 font-mono"
+                  />
+                </div>
+              </div>
+
+              {editingElection.electionType !== 'PRESIDENTIAL' && (
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">Target State Jurisdiction</label>
+                  <select
+                    value={editingElection.stateCode || ''}
+                    onChange={(e) => {
+                      const st = states.find((s) => s.code === e.target.value);
+                      setEditingElection({
+                        ...editingElection,
+                        stateCode: e.target.value,
+                        stateName: st ? st.name : `${e.target.value} State`,
+                      });
+                    }}
+                    className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded focus:outline-emerald-600 font-semibold"
+                  >
+                    <option value="">Select State</option>
+                    {states.map((st) => (
+                      <option key={st.code} value={st.code}>
+                        {st.name} ({st.code})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {editingElection.electionType === 'SENATE' && (
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">Senatorial District</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Osun Central Senatorial District"
+                    value={editingElection.senatorialDistrict || ''}
+                    onChange={(e) => setEditingElection({ ...editingElection, senatorialDistrict: e.target.value })}
+                    className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded focus:outline-emerald-600 font-medium"
+                  />
+                </div>
+              )}
+
+              {(editingElection.electionType === 'REPS' || editingElection.electionType === 'ASSEMBLY') && (
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">Constituency Name</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Osogbo Federal Constituency"
+                    value={editingElection.constituencyName || ''}
+                    onChange={(e) => setEditingElection({ ...editingElection, constituencyName: e.target.value })}
+                    className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded focus:outline-emerald-600 font-medium"
+                  />
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">Has This Election Been Held?</label>
+                  <select
+                    value={editingElection.hasBeenHeld ? 'true' : 'false'}
+                    onChange={(e) => {
+                      const isHeld = e.target.value === 'true';
+                      setEditingElection({
+                        ...editingElection,
+                        hasBeenHeld: isHeld,
+                        status: isHeld ? 'CONCLUDED' : (editingElection.status === 'CONCLUDED' ? 'ACTIVE_MONITORING' : editingElection.status),
+                      });
+                    }}
+                    className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded focus:outline-emerald-600 font-semibold"
+                  >
+                    <option value="true">Yes — Election Has Been Held (Concluded)</option>
+                    <option value="false">No — Election Has Not Held Yet (Upcoming)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">Status</label>
+                  <select
+                    value={editingElection.status || 'CONCLUDED'}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setEditingElection({
+                        ...editingElection,
+                        status: val,
+                        hasBeenHeld: val === 'CONCLUDED' || val === 'COMPLETED',
+                      });
+                    }}
+                    className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded focus:outline-emerald-600 font-mono"
+                  >
+                    <option value="CONCLUDED">CONCLUDED</option>
+                    <option value="COMPLETED">COMPLETED</option>
+                    <option value="ACTIVE_MONITORING">ACTIVE_MONITORING</option>
+                    <option value="UPCOMING">UPCOMING</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">Official Source Reference</label>
+                <input
+                  type="text"
+                  required
+                  value={editingElection.sourceReference || ''}
+                  onChange={(e) => setEditingElection({ ...editingElection, sourceReference: e.target.value })}
+                  className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded focus:outline-emerald-600"
+                />
+              </div>
+
+              <div className="pt-3 border-t flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setEditingElection(null)}
+                  className="px-3.5 py-2 rounded border border-slate-300 text-slate-700 font-semibold hover:bg-slate-50 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isUpdatingElection}
+                  className="px-4 py-2 rounded bg-emerald-800 text-white font-bold hover:bg-emerald-700 disabled:opacity-50 cursor-pointer shadow-xs"
+                >
+                  {isUpdatingElection ? 'Saving Changes...' : 'Save Changes'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ======================================================== */}
+      {/* MODAL: DELETE ELECTION CONTEST CONFIRMATION              */}
+      {/* ======================================================== */}
+      {deletingElection && (
+        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 space-y-4 border border-rose-200 animate-in fade-in zoom-in-95">
+            <div className="flex items-center gap-3 text-rose-700">
+              <div className="w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center shrink-0">
+                <Trash2 className="w-5 h-5 text-rose-700" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-slate-900">Delete Election Contest</h3>
+                <p className="text-xs text-rose-600 font-medium">Permanent Platform Action</p>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-600 leading-relaxed">
+              Are you sure you want to remove the contest <strong className="text-slate-900">"{deletingElection.title}"</strong> (ID: {deletingElection.id})? This will delete the contest from the active platform register.
+            </p>
+
+            <div className="pt-3 border-t border-slate-100 flex justify-end gap-2 text-xs">
+              <button
+                type="button"
+                onClick={() => setDeletingElection(null)}
+                className="px-3.5 py-2 rounded border border-slate-300 text-slate-700 font-semibold hover:bg-slate-50 cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteElection}
+                disabled={isDeletingElection}
+                className="px-4 py-2 rounded bg-rose-700 text-white font-bold hover:bg-rose-800 disabled:opacity-50 cursor-pointer shadow-xs"
+              >
+                {isDeletingElection ? 'Deleting...' : 'Confirm Delete Contest'}
+              </button>
+            </div>
           </div>
         </div>
       )}
