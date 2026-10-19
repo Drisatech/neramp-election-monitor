@@ -128,12 +128,22 @@ export async function fetchPublishedIncidents(electionId: string): Promise<{ dat
 }
 
 export async function submitIncidentReport(payload: {
+  electionId?: string;
   category: string;
+  stateCode?: string;
   stateName: string;
+  lgaCode?: string;
   lgaName: string;
   pollingUnitCode?: string;
+  pollingUnitName?: string;
   description: string;
   severity: string;
+  observerBadge?: string;
+  evidenceCount?: number;
+  evidenceKey?: string;
+  evidenceFilename?: string;
+  evidenceHash?: string;
+  evidenceUrl?: string;
 }) {
   const res = await fetch(`${API_BASE}/observer/incidents`, {
     method: 'POST',

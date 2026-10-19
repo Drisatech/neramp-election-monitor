@@ -1,7 +1,8 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { ZoomIn, ZoomOut, RotateCcw, MapPin } from 'lucide-react';
-import { State } from '../types';
+import { State, ElectionSummary } from '../types';
 import { useElection } from '../context/ElectionContext';
+import { fetchElectionSummary } from '../services/api';
 
 interface Props {
   states: State[];
@@ -103,9 +104,10 @@ function pointsToSvgPath(pts: [number, number][], close = true): string {
 }
 
 export const InteractiveElectionMap: React.FC<Props> = ({ states, selectedStateCode, onSelectState }) => {
-  const { states: allCanonicalStates } = useElection();
+  const { states: allCanonicalStates, selectedElectionId } = useElection();
   const [hoveredStateCode, setHoveredStateCode] = useState<string | null>(null);
   const [zoom, setZoom] = useState<number>(1);
+  const [stateSummary, setStateSummary] = useState<ElectionSummary | null>(null);
 
   // Always use all 37 states of Nigeria to construct the complete Nigeria map,
   // while highlighting the subset passed in `states` if a zone filter is active
@@ -167,6 +169,28 @@ export const InteractiveElectionMap: React.FC<Props> = ({ states, selectedStateC
     fullStates.find((s) => s.code === hoveredStateCode) ||
     null;
 
+  useEffect(() => {
+    if (!activeState || !selectedElectionId) {
+      setStateSummary(null);
+      return;
+    }
+    let isMounted = true;
+    fetchElectionSummary(selectedElectionId, activeState.code)
+      .then((res) => {
+        if (isMounted) setStateSummary(res.data);
+      })
+      .catch(() => {
+        if (isMounted) setStateSummary(null);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, [activeState?.code, selectedElectionId]);
+
+  const activePartyBreakdown = useMemo(() => {
+    return (stateSummary?.candidateRankings || []).filter((p) => p.votes > 0);
+  }, [stateSummary]);
+
   // Dynamic viewBox centered on selected state when zoomed in, or full Nigeria frame
   const viewBox = useMemo(() => {
     const selectedGeom = stateGeometries.find((g) => g.state.code === selectedStateCode);
@@ -187,10 +211,10 @@ export const InteractiveElectionMap: React.FC<Props> = ({ states, selectedStateC
       <div className="p-3 border-b border-slate-200 bg-slate-50 flex flex-wrap items-center justify-between gap-2">
         <div>
           <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wide">
-            Electoral Geographic Coverage (Nigeria - 36 States & FCT)
+            Electoral Geographic Coverage (Nigeria - 36 States &amp; FCT)
           </h3>
           <p className="text-[11px] text-slate-500">
-            Click on any state jurisdiction inside Nigeria to inspect local polling unit progress and filter the platform.
+            Click on any state jurisdiction inside Nigeria to inspect local polling unit progress and party votes.
           </p>
         </div>
 
@@ -397,7 +421,7 @@ export const InteractiveElectionMap: React.FC<Props> = ({ states, selectedStateC
 
         {/* Active / Hovered State Detail Card (Top Right inside frame) */}
         {activeState && (
-          <div className="absolute top-2.5 right-2.5 bg-white/95 backdrop-blur-xs border border-slate-200 rounded-md p-3 shadow-md w-60 text-xs">
+          <div className="absolute top-2.5 right-2.5 bg-white/95 backdrop-blur-xs border border-slate-200 rounded-md p-3 shadow-md w-68 max-h-[415px] overflow-y-auto text-xs">
             <div className="flex items-center justify-between border-b border-slate-100 pb-1.5 mb-1.5">
               <span className="font-bold text-slate-900 text-sm flex items-center gap-1">
                 <MapPin className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
@@ -425,6 +449,12 @@ export const InteractiveElectionMap: React.FC<Props> = ({ states, selectedStateC
                 <strong className="text-emerald-900 font-mono">{activeState.totalPus.toLocaleString()}</strong>
               </div>
               <div className="flex justify-between">
+                <span>Sheets Uploaded:</span>
+                <strong className="text-emerald-700 font-mono">
+                  {(stateSummary?.pusUploaded ?? 0).toLocaleString()} ({stateSummary?.uploadCompletionPercentage ?? 0}%)
+                </strong>
+              </div>
+              <div className="flex justify-between">
                 <span>Registered Voters:</span>
                 <strong className="text-slate-900 font-mono">{activeState.registeredVoters.toLocaleString()}</strong>
               </div>
@@ -435,9 +465,52 @@ export const InteractiveElectionMap: React.FC<Props> = ({ states, selectedStateC
                 </strong>
               </div>
             </div>
+
+            {/* Party Vote Breakdown in Selected State for Contest Election */}
+            <div className="mt-2.5 pt-2 border-t border-slate-200">
+              <div className="flex items-center justify-between text-[10px] font-bold uppercase text-slate-700 mb-1.5">
+                <span>Party Votes ({activeState.name})</span>
+                <span className="font-mono text-emerald-800">
+                  {(stateSummary?.totalValidVotes ?? 0).toLocaleString()} Valid
+                </span>
+              </div>
+              {activePartyBreakdown.length === 0 ? (
+                <p className="text-[10px] text-slate-400 italic">
+                  No party votes uploaded for {activeState.name} in this contest yet.
+                </p>
+              ) : (
+                <div className="space-y-1.5 max-h-36 overflow-y-auto pr-0.5">
+                  {activePartyBreakdown.map((pty) => (
+                    <div key={pty.partyCode} className="text-[11px]">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span
+                            className="px-1.5 py-0.2 rounded text-[9px] font-bold text-white shrink-0"
+                            style={{ backgroundColor: pty.color }}
+                          >
+                            {pty.partyCode}
+                          </span>
+                          <span className="text-slate-700 truncate font-medium">{pty.partyName}</span>
+                        </div>
+                        <span className="font-mono font-bold text-slate-900 ml-1 shrink-0">
+                          {pty.votes.toLocaleString()} ({pty.percentage}%)
+                        </span>
+                      </div>
+                      <div className="w-full bg-slate-100 h-1 rounded-full overflow-hidden mt-0.5">
+                        <div
+                          className="h-full rounded-full"
+                          style={{ width: `${Math.max(pty.percentage, 2)}%`, backgroundColor: pty.color }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>
     </div>
   );
 };
+

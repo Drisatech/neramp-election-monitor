@@ -3,7 +3,8 @@ export type ElectionType = 'PRESIDENTIAL' | 'GOVERNORSHIP' | 'SENATE' | 'REPS' |
 export interface Election {
   id: string;
   title: string;
-  electionType: ElectionType;
+  electionType: ElectionType | string;
+  stateCode?: string;
   date: string;
   status: string;
   sourceReference: string;
@@ -32,6 +33,7 @@ export interface LGA {
   name: string;
   stateCode: string;
   stateName?: string;
+  senatorialZone?: string;
   totalWards: number;
   totalPus: number;
   registeredVoters?: number;
@@ -169,17 +171,35 @@ export interface Discrepancy {
 export interface IncidentReport {
   id: string;
   electionId: string;
-  category: 'DELAYED_OPENING' | 'BVAS_MALFUNCTION' | 'RESULT_SHEET_UNAVAILABLE' | 'BALLOT_DISRUPTION' | 'SECURITY_INCIDENT' | 'VOTER_INTIMIDATION';
+  category:
+    | 'DELAYED_OPENING'
+    | 'LATE_OPENING'
+    | 'BVAS_MALFUNCTION'
+    | 'RESULT_SHEET_UNAVAILABLE'
+    | 'LOGISTICS_ISSUE'
+    | 'BALLOT_DISRUPTION'
+    | 'COLLATION_DISRUPTION'
+    | 'SECURITY_INCIDENT'
+    | 'VOTER_INTIMIDATION'
+    | 'INTIMIDATION'
+    | 'VOTE_BUYING'
+    | string;
+  stateCode?: string;
   stateName: string;
+  lgaCode?: string;
   lgaName: string;
   wardName?: string;
   pollingUnitCode?: string;
+  pollingUnitName?: string;
   reportedAt: string;
   description: string;
   status: 'DRAFT' | 'SUBMITTED' | 'UNDER_REVIEW' | 'VERIFIED' | 'APPROVED_FOR_PUBLICATION' | 'REJECTED';
   severity: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
   isPublished: boolean;
   evidenceCount: number;
+  evidenceKey?: string;
+  evidenceHash?: string;
+  evidenceUrl?: string;
   observerBadge: string;
 }
 
@@ -312,12 +332,15 @@ export interface CandidateComparison {
   validVoteShare: number;
   voteMargin: number;
   statesWon: number;
+  lgasWon?: number;
   isLeading: boolean;
 }
 
 export interface CandidateComparisonData {
   electionId: string;
   electionTitle: string;
+  electionType?: string;
+  isPresidential?: boolean;
   level: string;
   filterValue?: string;
   totalValidVotes: number;

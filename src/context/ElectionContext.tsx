@@ -23,16 +23,37 @@ interface ElectionContextType {
   setSearchQuery: (query: string) => void;
   resetFilters: () => void;
   refreshGeography: () => Promise<void>;
+  refreshElections: () => Promise<void>;
   isLoading: boolean;
 }
 
 const ElectionContext = createContext<ElectionContextType | undefined>(undefined);
 
+export function getContestDefaultStateCode(
+  electionId: string,
+  electionsList: Election[],
+  statesList: State[]
+): string {
+  if (electionId === 'elec-2026-gov-osun') return 'OSUN';
+  if (electionId === 'elec-2026-gov-ekiti') return 'EKITI';
+  const elec = electionsList.find((e) => e.id === electionId) as any;
+  if (!elec) return '';
+  if (elec.stateCode) return String(elec.stateCode);
+  if (elec.electionType === 'PRESIDENTIAL') return '';
+  const titleUpper = (elec.title || '').toUpperCase();
+  for (const st of statesList) {
+    if (titleUpper.includes(st.name.toUpperCase()) || titleUpper.includes(st.code.toUpperCase())) {
+      return st.code;
+    }
+  }
+  return '';
+}
+
 export const ElectionProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [elections, setElections] = useState<Election[]>([]);
   const [selectedElectionId, setSelectedElectionId] = useState<string>('elec-2026-gov-osun');
   const [states, setStates] = useState<State[]>([]);
-  const [selectedStateCode, setSelectedStateCode] = useState<string>('');
+  const [selectedStateCode, setSelectedStateCode] = useState<string>('OSUN');
   const [lgas, setLgas] = useState<LGA[]>([]);
   const [selectedLgaCode, setSelectedLgaCode] = useState<string>('');
   const [wards, setWards] = useState<Ward[]>([]);
@@ -41,6 +62,15 @@ export const ElectionProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [verificationStatusFilter, setVerificationStatusFilter] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  const refreshElections = async () => {
+    try {
+      const elecRes = await fetchElections();
+      setElections(elecRes.data);
+    } catch (err) {
+      console.error('Failed to refresh elections:', err);
+    }
+  };
 
   const refreshGeography = async () => {
     try {
@@ -66,9 +96,10 @@ export const ElectionProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         const [elecRes, statesRes] = await Promise.all([fetchElections(), fetchStates()]);
         setElections(elecRes.data);
         setStates(statesRes.data);
-        if (elecRes.data.length > 0) {
-          setSelectedElectionId(elecRes.data[0].id);
-        }
+        const defaultElecId = elecRes.data.length > 0 ? elecRes.data[0].id : 'elec-2026-gov-osun';
+        setSelectedElectionId(defaultElecId);
+        const defaultState = getContestDefaultStateCode(defaultElecId, elecRes.data, statesRes.data);
+        setSelectedStateCode(defaultState);
       } catch (err) {
         console.error('Failed to initialize election context:', err);
       } finally {
@@ -77,6 +108,15 @@ export const ElectionProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
     init();
   }, []);
+
+  // Whenever the selected contest election changes, automatically scope to its default state (e.g. OSUN for Osun Governorship, EKITI for Ekiti Governorship, '' for Presidential)
+  useEffect(() => {
+    if (elections.length === 0 && states.length === 0) return;
+    const defaultState = getContestDefaultStateCode(selectedElectionId, elections, states);
+    setSelectedStateCode(defaultState);
+    setSelectedLgaCode('');
+    setSelectedWardCode('');
+  }, [selectedElectionId]);
 
   useEffect(() => {
     async function loadLgas() {
@@ -115,7 +155,8 @@ export const ElectionProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   }, [selectedLgaCode]);
 
   const resetFilters = () => {
-    setSelectedStateCode('');
+    const defaultState = getContestDefaultStateCode(selectedElectionId, elections, states);
+    setSelectedStateCode(defaultState);
     setSelectedLgaCode('');
     setSelectedWardCode('');
     setUploadStatusFilter('');
@@ -146,6 +187,7 @@ export const ElectionProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         setSearchQuery,
         resetFilters,
         refreshGeography,
+        refreshElections,
         isLoading,
       }}
     >
@@ -159,3 +201,4 @@ export const useElection = () => {
   if (!context) throw new Error('useElection must be used within ElectionProvider');
   return context;
 };
+

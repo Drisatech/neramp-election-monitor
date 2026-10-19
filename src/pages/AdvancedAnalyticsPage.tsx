@@ -59,6 +59,7 @@ type AnalyticsTab =
 
 export const AdvancedAnalyticsPage: React.FC = () => {
   const {
+    elections,
     selectedElectionId,
     states,
     selectedStateCode,
@@ -748,78 +749,94 @@ export const AdvancedAnalyticsPage: React.FC = () => {
                     <th className="py-3 px-3 text-right">Votes Tallied</th>
                     <th className="py-3 px-3 text-right">Valid Vote Share</th>
                     <th className="py-3 px-3 text-right">Vote Margin</th>
-                    <th className="py-3 px-3 text-center">States Won</th>
+                    <th className="py-3 px-3 text-center">
+                      {elections.find((e) => e.id === selectedElectionId)?.electionType === 'PRESIDENTIAL' ||
+                      (comparisons as any)?.isPresidential
+                        ? 'States Won'
+                        : 'LGAs Won'}
+                    </th>
                     <th className="py-3 px-4 text-center">Status</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 font-medium">
-                  {(comparisons?.candidates || []).map((party, idx) => {
-                    const partyInfo = getPartyInfo(party.partyCode);
-                    const logoUrl = party.logoUrl || partyInfo?.logoUrl;
-                    return (
-                      <tr key={party.partyCode} className="hover:bg-slate-50/80">
-                        <td className="py-3 px-4 font-mono font-bold text-slate-500">#{idx + 1}</td>
-                        <td className="py-3 px-4">
-                          <div className="flex items-center gap-3">
-                            {logoUrl ? (
-                              <img
-                                src={logoUrl}
-                                alt={`${party.partyName} logo`}
-                                className="w-8 h-8 object-contain rounded bg-white p-0.5 border border-slate-200 shrink-0"
-                              />
-                            ) : null}
-                            <div>
-                              <div className="font-bold text-slate-900">{party.partyName}</div>
-                              {partyInfo?.chairman && (
-                                <div className="text-[10px] text-slate-400">
-                                  Chairman: {partyInfo.chairman}
+                  {(comparisons?.candidates || []).filter((p) => p.totalVotes > 0).length === 0 ? (
+                    <tr>
+                      <td colSpan={8} className="py-8 text-center text-slate-400">
+                        No political party has recorded votes greater than zero for this contest yet.
+                      </td>
+                    </tr>
+                  ) : (
+                    (comparisons?.candidates || [])
+                      .filter((p) => p.totalVotes > 0)
+                      .map((party, idx) => {
+                        const partyInfo = getPartyInfo(party.partyCode);
+                        const logoUrl = party.logoUrl || partyInfo?.logoUrl;
+                        const isPresidential =
+                          elections.find((e) => e.id === selectedElectionId)?.electionType === 'PRESIDENTIAL' ||
+                          (comparisons as any)?.isPresidential;
+                        return (
+                          <tr key={party.partyCode} className="hover:bg-slate-50/80">
+                            <td className="py-3 px-4 font-mono font-bold text-slate-500">#{idx + 1}</td>
+                            <td className="py-3 px-4">
+                              <div className="flex items-center gap-3">
+                                {logoUrl ? (
+                                  <img
+                                    src={logoUrl}
+                                    alt={`${party.partyName} logo`}
+                                    className="w-8 h-8 object-contain rounded bg-white p-0.5 border border-slate-200 shrink-0"
+                                  />
+                                ) : null}
+                                <div>
+                                  <div className="font-bold text-slate-900">{party.partyName}</div>
+                                  {partyInfo?.chairman && (
+                                    <div className="text-[10px] text-slate-400">
+                                      Chairman: {partyInfo.chairman}
+                                    </div>
+                                  )}
                                 </div>
+                              </div>
+                            </td>
+                            <td className="py-3 px-3">
+                              <span
+                                className="inline-block px-2 py-0.5 rounded text-[11px] font-bold text-white"
+                                style={{ backgroundColor: party.partyColor }}
+                              >
+                                {party.partyCode}
+                              </span>
+                            </td>
+                            <td className="py-3 px-3 text-right font-mono font-bold text-slate-900">
+                              {party.totalVotes.toLocaleString()}
+                            </td>
+                            <td className="py-3 px-3 text-right font-mono text-slate-700">
+                              {party.validVoteShare}%
+                            </td>
+                            <td className="py-3 px-3 text-right font-mono">
+                              {party.isLeading ? (
+                                <span className="text-emerald-700 font-bold">
+                                  +{party.voteMargin.toLocaleString()} (Lead)
+                                </span>
+                              ) : (
+                                <span className="text-slate-500">
+                                  {party.voteMargin.toLocaleString()}
+                                </span>
                               )}
-                            </div>
-                          </div>
-                        </td>
-                        <td className="py-3 px-3">
-                          <span
-                            className="inline-block px-2 py-0.5 rounded text-[11px] font-bold text-white"
-                            style={{ backgroundColor: party.partyColor }}
-                          >
-                            {party.partyCode}
-                          </span>
-                        </td>
-                        <td className="py-3 px-3 text-right font-mono font-bold text-slate-900">
-                          {party.totalVotes.toLocaleString()}
-                        </td>
-                        <td className="py-3 px-3 text-right font-mono text-slate-700">
-                          {party.validVoteShare}%
-                        </td>
-                        <td className="py-3 px-3 text-right font-mono">
-                          {party.isLeading ? (
-                            <span className="text-emerald-700 font-bold">
-                              +{party.voteMargin.toLocaleString()} (Lead)
-                            </span>
-                          ) : (
-                            <span className="text-slate-500">
-                              {party.voteMargin.toLocaleString()}
-                            </span>
-                          )}
-                        </td>
-                        <td className="py-3 px-3 text-center font-mono font-bold text-slate-800">
-                          {party.statesWon}
-                        </td>
-                        <td className="py-3 px-4 text-center">
-                          {party.isLeading ? (
-                            <span className="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded text-[11px] font-bold">
-                              Leading
-                            </span>
-                          ) : party.totalVotes > 0 ? (
-                            <span className="text-slate-500 text-[11px]">Trailing</span>
-                          ) : (
-                            <span className="text-slate-400 text-[11px]">0 Votes</span>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
+                            </td>
+                            <td className="py-3 px-3 text-center font-mono font-bold text-slate-800">
+                              {isPresidential ? party.statesWon : ((party as any).lgasWon ?? party.statesWon)}
+                            </td>
+                            <td className="py-3 px-4 text-center">
+                              {party.isLeading ? (
+                                <span className="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded text-[11px] font-bold">
+                                  Leading
+                                </span>
+                              ) : (
+                                <span className="text-slate-500 text-[11px]">Trailing</span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })
+                  )}
                 </tbody>
               </table>
             </div>

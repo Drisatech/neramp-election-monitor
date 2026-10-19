@@ -1,12 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useElection } from '../context/ElectionContext';
 import { InteractiveElectionMap } from '../components/InteractiveElectionMap';
 import { DisclaimerBanner } from '../components/DisclaimerBanner';
+import { fetchElectionSummary } from '../services/api';
+import { ElectionSummary } from '../types';
 import { MapPin, ArrowRight } from 'lucide-react';
 
 export const InteractiveMapPage: React.FC = () => {
   const {
+    selectedElectionId,
     states,
     selectedStateCode,
     setSelectedStateCode,
@@ -18,6 +21,7 @@ export const InteractiveMapPage: React.FC = () => {
     setSelectedWardCode,
   } = useElection();
   const [selectedZone, setSelectedZone] = useState<string>('');
+  const [stateSummary, setStateSummary] = useState<ElectionSummary | null>(null);
 
   const zones = ['North Central', 'North East', 'North West', 'South East', 'South South', 'South West'];
 
@@ -29,6 +33,33 @@ export const InteractiveMapPage: React.FC = () => {
   const activeLga = lgas.find((l) => l.code === selectedLgaCode);
   const activeWard = wards.find((w) => w.code === selectedWardCode);
 
+  useEffect(() => {
+    if (!selectedStateCode || !selectedElectionId) {
+      setStateSummary(null);
+      return;
+    }
+    let isMounted = true;
+    fetchElectionSummary(
+      selectedElectionId,
+      selectedStateCode,
+      selectedLgaCode || undefined,
+      selectedWardCode || undefined
+    )
+      .then((res) => {
+        if (isMounted) setStateSummary(res.data);
+      })
+      .catch(() => {
+        if (isMounted) setStateSummary(null);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedElectionId, selectedStateCode, selectedLgaCode, selectedWardCode]);
+
+  const activeParties = useMemo(() => {
+    return (stateSummary?.candidateRankings || []).filter((p) => p.votes > 0);
+  }, [stateSummary]);
+
   return (
     <div className="space-y-6">
       <DisclaimerBanner />
@@ -39,7 +70,7 @@ export const InteractiveMapPage: React.FC = () => {
             Interactive Electoral Map Explorer
           </h1>
           <p className="text-xs text-slate-500">
-            Geographic inspection across Nigeria's 6 geopolitical zones, 36 states & FCT (774 LGAs · 8,809 Wards · 176,846 Polling Units).
+            Geographic inspection across Nigeria's 6 geopolitical zones, 36 states &amp; FCT (774 LGAs · 8,809 Wards · 176,846 Polling Units).
           </p>
         </div>
 
@@ -136,6 +167,53 @@ export const InteractiveMapPage: React.FC = () => {
                   </div>
                 </div>
 
+                {/* Party Votes Gotten / Uploaded in Selected State */}
+                <div className="pt-3 border-t border-slate-200 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold text-slate-700 uppercase">
+                      Party Votes Uploaded ({activeWard ? activeWard.name : activeLga ? activeLga.name : activeState.name})
+                    </span>
+                    <span className="text-[11px] font-mono font-bold text-emerald-800">
+                      {(stateSummary?.pusUploaded ?? 0).toLocaleString()} Sheets • {(stateSummary?.totalValidVotes ?? 0).toLocaleString()} Votes
+                    </span>
+                  </div>
+
+                  {activeParties.length === 0 ? (
+                    <div className="p-2.5 rounded bg-slate-50 border border-slate-200 text-[11px] text-slate-500 text-center">
+                      No party votes uploaded for {activeState.name} in the selected contest election yet.
+                    </div>
+                  ) : (
+                    <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200 space-y-2 max-h-56 overflow-y-auto">
+                      {activeParties.map((pty, idx) => (
+                        <div key={pty.partyCode} className="space-y-1">
+                          <div className="flex items-center justify-between text-[11px]">
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              <span className="font-mono text-[10px] text-slate-400 font-bold">#{idx + 1}</span>
+                              <span
+                                className="px-1.5 py-0.5 rounded text-[10px] font-bold text-white shrink-0"
+                                style={{ backgroundColor: pty.color }}
+                              >
+                                {pty.partyCode}
+                              </span>
+                              <span className="font-semibold text-slate-800 truncate">{pty.partyName}</span>
+                            </div>
+                            <div className="font-mono font-bold text-slate-900 shrink-0 ml-2">
+                              {pty.votes.toLocaleString()}{' '}
+                              <span className="text-[10px] text-emerald-700">({pty.percentage}%)</span>
+                            </div>
+                          </div>
+                          <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
+                            <div
+                              className="h-full rounded-full"
+                              style={{ width: `${Math.max(pty.percentage, 2)}%`, backgroundColor: pty.color }}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
                 {/* Drill-Down into LGAs & Electoral Wards */}
                 <div className="pt-3 border-t border-slate-200 space-y-2.5">
                   <div>
@@ -217,14 +295,14 @@ export const InteractiveMapPage: React.FC = () => {
               <div className="space-y-3 text-xs">
                 <div className="text-center py-4 text-slate-500">
                   <MapPin className="w-6 h-6 text-emerald-600 mx-auto mb-1.5" />
-                  <p className="font-semibold text-slate-800">National Summary (36 States & FCT)</p>
+                  <p className="font-semibold text-slate-800">National Summary (36 States &amp; FCT)</p>
                   <p className="text-[11px] text-slate-500 mt-0.5">
-                    Click any state on the Nigeria map to drill down into LGAs, Electoral Wards, and Polling Units.
+                    Click any state on the Nigeria map to drill down into LGAs, Electoral Wards, and Party Votes.
                   </p>
                 </div>
                 <div className="bg-slate-50 p-3 rounded border border-slate-200 space-y-1.5 font-mono text-[11px]">
                   <div className="flex justify-between">
-                    <span className="font-sans text-slate-500">Total States & FCT:</span>
+                    <span className="font-sans text-slate-500">Total States &amp; FCT:</span>
                     <strong className="text-slate-900">37 (36 + FCT)</strong>
                   </div>
                   <div className="flex justify-between">
@@ -244,16 +322,16 @@ export const InteractiveMapPage: React.FC = () => {
                     <strong className="text-slate-900">
                       {(states.length > 0
                         ? states.reduce((acc, s) => acc + (s.registeredVoters || 0), 0)
-                        : 103428715
+                        : 93469008
                       ).toLocaleString()}
                     </strong>
                   </div>
                   <div className="flex justify-between">
-                    <span className="font-sans text-slate-500">Total PVCs Collected (93.31%):</span>
+                    <span className="font-sans text-slate-500">Total PVCs Collected:</span>
                     <strong className="text-emerald-800">
                       {(states.length > 0
                         ? states.reduce((acc, s) => acc + (s.pvcsCollected || 0), 0)
-                        : 96506605
+                        : 87209007
                       ).toLocaleString()}
                     </strong>
                   </div>
@@ -266,4 +344,5 @@ export const InteractiveMapPage: React.FC = () => {
     </div>
   );
 };
+
 

@@ -442,7 +442,7 @@ export const AdminIngestionPage: React.FC = () => {
               <h3 className="text-sm font-bold text-white tracking-wide flex items-center gap-2">
                 <span>Gemini Vision AI OCR Engine (INEC Form EC8A Transcription)</span>
                 <span className="text-[10px] font-mono bg-emerald-700/80 text-emerald-100 px-2 py-0.5 rounded border border-emerald-600">
-                  gemini-3.8-flash · Active
+                  gemini-3-flash-preview · Active
                 </span>
               </h3>
               <p className="text-xs text-emerald-200">

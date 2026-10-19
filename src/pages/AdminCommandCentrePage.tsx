@@ -89,7 +89,7 @@ export const AdminCommandCentrePage: React.FC = () => {
   const initialTab: AdminTab = tabParam === 'storage' ? 'storage' : 'overview';
 
   const { role: activeUserRole, isSuperOrProjectAdmin } = useAuth();
-  const { states } = useElection();
+  const { states, elections, selectedElectionId, setSelectedElectionId, refreshElections } = useElection();
 
   const [activeTab, setActiveTab] = useState<AdminTab>(initialTab);
   const [isLoading, setIsLoading] = useState(true);
@@ -132,10 +132,12 @@ export const AdminCommandCentrePage: React.FC = () => {
 
   // New Election Form State
   const [showCreateElectionModal, setShowCreateElectionModal] = useState(false);
+  const [isCreatingElection, setIsCreatingElection] = useState(false);
   const [newElectionForm, setNewElectionForm] = useState({
     title: '',
-    electionType: 'PRESIDENTIAL',
-    date: '2027-02-27',
+    electionType: 'GOVERNORSHIP',
+    stateCode: 'OSUN',
+    date: '2026-08-15',
     sourceReference: 'INEC Official Election Timetable',
   });
 
@@ -195,6 +197,40 @@ export const AdminCommandCentrePage: React.FC = () => {
       setUsers(updated.data);
     } catch (err: any) {
       showNotification('error', err.message || 'Failed to create user');
+    }
+  };
+
+  const handleCreateElection = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newElectionForm.title.trim()) {
+      showNotification('error', 'Please enter an election contest title.');
+      return;
+    }
+    try {
+      setIsCreatingElection(true);
+      const payload = {
+        ...newElectionForm,
+        stateCode: newElectionForm.electionType === 'PRESIDENTIAL' ? '' : newElectionForm.stateCode,
+      };
+      const res = await createConfigElection(payload);
+      await refreshElections();
+      await loadAllData();
+      if (res?.data?.id) {
+        setSelectedElectionId(res.data.id);
+      }
+      showNotification('success', `Contest "${newElectionForm.title}" configured and added to the platform.`);
+      setShowCreateElectionModal(false);
+      setNewElectionForm({
+        title: '',
+        electionType: 'GOVERNORSHIP',
+        stateCode: 'OSUN',
+        date: '2026-08-15',
+        sourceReference: 'INEC Official Election Timetable',
+      });
+    } catch (err: any) {
+      showNotification('error', err.message || 'Failed to configure new contest');
+    } finally {
+      setIsCreatingElection(false);
     }
   };
 
@@ -1287,6 +1323,74 @@ export const AdminCommandCentrePage: React.FC = () => {
             </div>
           </div>
 
+          {/* Configured Election Contests */}
+          <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
+            <div className="p-3.5 border-b border-slate-200 bg-slate-50 flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h3 className="text-xs font-bold text-slate-900 uppercase">
+                  Configured Election Contests ({elections.length})
+                </h3>
+                <p className="text-[11px] text-slate-500 mt-0.5">
+                  Active and scheduled INEC election contests available in the global contest selector.
+                </p>
+              </div>
+              <button
+                onClick={() => setShowCreateElectionModal(true)}
+                className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-bold text-emerald-900 bg-emerald-100 hover:bg-emerald-200 border border-emerald-300 rounded cursor-pointer"
+              >
+                <Plus className="w-3 h-3" />
+                <span>Add Contest</span>
+              </button>
+            </div>
+            <div className="divide-y divide-slate-100">
+              {elections.map((elec: any) => {
+                const isSelected = elec.id === selectedElectionId;
+                return (
+                  <div
+                    key={elec.id}
+                    className={`p-3.5 flex flex-wrap items-center justify-between gap-3 text-xs ${
+                      isSelected ? 'bg-emerald-50/60' : 'hover:bg-slate-50'
+                    }`}
+                  >
+                    <div className="space-y-0.5">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-slate-900">{elec.title}</span>
+                        <span className="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200 font-semibold">
+                          {elec.electionType || 'GOVERNORSHIP'}
+                        </span>
+                        {elec.stateCode && (
+                          <span className="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold">
+                            {elec.stateCode}
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-[11px] text-slate-500 font-mono">
+                        ID: {elec.id} · Date: {elec.date} · Status: {elec.status || 'CONCLUDED'}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {isSelected ? (
+                        <span className="px-2.5 py-1 rounded bg-emerald-800 text-white text-[11px] font-bold">
+                          Active Contest
+                        </span>
+                      ) : (
+                        <button
+                          onClick={() => {
+                            setSelectedElectionId(elec.id);
+                            showNotification('success', `Switched active platform contest to "${elec.title}".`);
+                          }}
+                          className="px-2.5 py-1 rounded border border-slate-300 hover:bg-slate-100 text-slate-700 text-[11px] font-semibold cursor-pointer"
+                        >
+                          Switch to Contest
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
           {/* Registered Political Parties */}
           <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
             <div className="p-3.5 border-b border-slate-200 bg-slate-50 flex flex-wrap items-center justify-between gap-2">
@@ -1711,6 +1815,117 @@ export const AdminCommandCentrePage: React.FC = () => {
                 </button>
                 <button type="submit" className="px-4 py-1.5 rounded bg-emerald-800 text-white font-semibold">
                   Confirm Reassignment
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ======================================================== */}
+      {/* MODAL: CONFIGURE NEW ELECTION CONTEST                     */}
+      {/* ======================================================== */}
+      {showCreateElectionModal && (
+        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-lg w-full p-6 space-y-4 border border-slate-200">
+            <div className="flex items-center justify-between border-b pb-3">
+              <div>
+                <h3 className="text-base font-bold text-slate-900">Configure New Election Contest</h3>
+                <p className="text-xs text-slate-500">
+                  Register a new INEC election contest for real-time result collation and public dashboard monitoring.
+                </p>
+              </div>
+              <button
+                onClick={() => setShowCreateElectionModal(false)}
+                className="text-slate-400 hover:text-slate-600 cursor-pointer"
+              >
+                <XCircle className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateElection} className="space-y-3.5 text-xs">
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">Contest Title</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. 2026 Ondo State Governorship Election or 2027 Presidential Election"
+                  value={newElectionForm.title}
+                  onChange={(e) => setNewElectionForm({ ...newElectionForm, title: e.target.value })}
+                  className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded focus:outline-emerald-600 font-medium"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">Contest Type</label>
+                  <select
+                    value={newElectionForm.electionType}
+                    onChange={(e) => setNewElectionForm({ ...newElectionForm, electionType: e.target.value })}
+                    className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded focus:outline-emerald-600 font-semibold"
+                  >
+                    <option value="PRESIDENTIAL">Presidential Election (National)</option>
+                    <option value="GOVERNORSHIP">Governorship Election (State)</option>
+                    <option value="SENATORIAL">Senatorial District Election</option>
+                    <option value="HOUSE_OF_REPS">House of Representatives</option>
+                    <option value="STATE_ASSEMBLY">State House of Assembly</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">Election Date</label>
+                  <input
+                    type="date"
+                    required
+                    value={newElectionForm.date}
+                    onChange={(e) => setNewElectionForm({ ...newElectionForm, date: e.target.value })}
+                    className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded focus:outline-emerald-600 font-mono"
+                  />
+                </div>
+              </div>
+
+              {newElectionForm.electionType !== 'PRESIDENTIAL' && (
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">Target State Jurisdiction</label>
+                  <select
+                    value={newElectionForm.stateCode}
+                    onChange={(e) => setNewElectionForm({ ...newElectionForm, stateCode: e.target.value })}
+                    className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded focus:outline-emerald-600 font-semibold"
+                  >
+                    {states.map((st) => (
+                      <option key={st.code} value={st.code}>
+                        {st.name} ({st.code})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">Official Source Reference</label>
+                <input
+                  type="text"
+                  required
+                  value={newElectionForm.sourceReference}
+                  onChange={(e) => setNewElectionForm({ ...newElectionForm, sourceReference: e.target.value })}
+                  className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded focus:outline-emerald-600"
+                />
+              </div>
+
+              <div className="pt-3 border-t flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowCreateElectionModal(false)}
+                  className="px-3.5 py-2 rounded border border-slate-300 text-slate-700 font-semibold hover:bg-slate-50 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isCreatingElection}
+                  className="px-4 py-2 rounded bg-emerald-800 text-white font-bold hover:bg-emerald-700 disabled:opacity-50 cursor-pointer"
+                >
+                  {isCreatingElection ? 'Saving Contest...' : 'Create & Activate Contest'}
                 </button>
               </div>
             </form>

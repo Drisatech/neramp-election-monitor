@@ -64,12 +64,12 @@ export const PublicDashboardPage: React.FC = () => {
     loadData();
   }, [selectedElectionId, selectedStateCode, selectedLgaCode, selectedWardCode]);
 
-  const expectedPus = summary?.totalExpectedPus ?? 176846;
-  const totalLgas = summary?.totalLgas ?? 774;
-  const totalWards = summary?.totalWards ?? 8809;
-  const registeredVoters = summary?.registeredVoters ?? 103428715;
-  const pvcsCollected = summary?.pvcsCollected ?? 96506605;
-  const pvcCollectionRate = summary?.pvcCollectionRate ?? 93.31;
+  const expectedPus = summary?.totalExpectedPus ?? 3763;
+  const totalLgas = summary?.totalLgas ?? 30;
+  const totalWards = summary?.totalWards ?? 332;
+  const registeredVoters = summary?.registeredVoters ?? 1954869;
+  const pvcsCollected = summary?.pvcsCollected ?? 1360658;
+  const pvcCollectionRate = summary?.pvcCollectionRate ?? 69.6;
 
   return (
     <div className="space-y-6">
@@ -84,7 +84,7 @@ export const PublicDashboardPage: React.FC = () => {
             <span>DATA SOURCE:</span>
           </div>
           <span className="text-slate-300 font-medium">
-            Official INEC Results Portal (IReV)
+            Official INEC Results Portal (IReV) — {summary?.electionTitle || 'Osun State Governorship Election'}
           </span>
         </div>
 
@@ -106,7 +106,7 @@ export const PublicDashboardPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Filter Toolbar: Hierarchical Drill-Down (National -> State -> LGA -> Ward) */}
+      {/* Filter Toolbar: Hierarchical Drill-Down (Contest Scope -> State -> LGA -> Ward) */}
       <div className="bg-white p-4 rounded-lg border border-slate-200 shadow-2xs space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2">
@@ -121,7 +121,7 @@ export const PublicDashboardPage: React.FC = () => {
               onChange={(e) => setSelectedStateCode(e.target.value)}
               className="bg-slate-50 border border-slate-300 text-slate-900 text-xs rounded-md px-2.5 py-1.5 focus:outline-emerald-600 font-medium"
             >
-              <option value="">National: All 36 States & FCT (176,846 PUs)</option>
+              <option value="">Contest Default Scope ({summary?.scope || 'State: Osun'})</option>
               {states.map((st) => (
                 <option key={st.code} value={st.code}>
                   {st.name} ({st.totalLgas} LGAs · {st.totalWards ?? 0} Wards · {st.totalPus.toLocaleString()} PUs)
@@ -161,12 +161,12 @@ export const PublicDashboardPage: React.FC = () => {
               </select>
             )}
 
-            {(selectedStateCode || selectedLgaCode || selectedWardCode) && (
+            {(selectedLgaCode || selectedWardCode) && (
               <button
                 onClick={resetFilters}
                 className="text-xs text-rose-700 hover:text-rose-900 font-semibold underline px-1"
               >
-                Reset to National
+                Reset Contest Scope
               </button>
             )}
           </div>
@@ -186,8 +186,8 @@ export const PublicDashboardPage: React.FC = () => {
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 pt-2.5 border-t border-slate-100 text-xs">
           <div className="bg-slate-50 px-3 py-2 rounded border border-slate-200">
             <span className="text-[10px] font-bold text-slate-400 uppercase block">Active Scope</span>
-            <span className="font-bold text-slate-900 truncate block mt-0.5" title={summary?.scope || 'National'}>
-              {summary?.scope || 'National (36 States & FCT)'}
+            <span className="font-bold text-slate-900 truncate block mt-0.5" title={summary?.scope || 'State: Osun'}>
+              {summary?.scope || 'State: Osun'}
             </span>
           </div>
           <div className="bg-slate-50 px-3 py-2 rounded border border-slate-200">
