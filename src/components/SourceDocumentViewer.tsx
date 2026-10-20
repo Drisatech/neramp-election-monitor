@@ -43,7 +43,8 @@ export const SourceDocumentViewer: React.FC<Props> = ({ resultSheet, pollingUnit
       setOcrMessage('Transcribed successfully via Gemini Vision AI OCR!');
       if (onRefreshOcr) onRefreshOcr();
     } catch (err: any) {
-      setOcrMessage(`OCR error: ${err.message}`);
+      const msg = err.message || 'OCR transcription failed';
+      setOcrMessage(msg.startsWith('OCR') || msg.startsWith('Gemini') ? msg : `OCR error: ${msg}`);
     } finally {
       setIsTranscribing(false);
     }

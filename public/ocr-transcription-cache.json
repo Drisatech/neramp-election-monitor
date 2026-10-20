@@ -1,5 +1,22 @@
 {
   "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/613/7020/97258/42bdbaea-a996-459f-bab2-7c82d889720c.jpg": {
+    "serialNumber": "0001745",
+    "stateName": "OSUN",
+    "lgaName": "IFE NORTH",
+    "wardName": "OYERE I",
+    "pollingUnitName": "R.C.M. SCHOOL, ONIBAMBU",
+    "pollingUnitCode": "29/15/09/006",
+    "votersOnRegister": 484,
+    "accreditedVoters": 195,
+    "ballotPapersIssued": 484,
+    "unusedBallotPapers": 286,
+    "spoiledBallotPapers": 3,
+    "rejectedBallots": 0,
+    "totalValidVotes": 195,
+    "totalUsedBallotPapers": 198,
+    "presidingOfficerName": "IBRAHIM SAMUEL",
+    "electionDateOnForm": "16TH OF AUGUST, 2026",
+    "ocrConfidence": 0.95,
     "partyScores": [
       {
         "partyCode": "A",
@@ -27,237 +44,270 @@
         "votesInWords": "TWO"
       }
     ],
-    "accreditedVoters": 195,
-    "ballotPapersIssued": 484,
-    "electionDateOnForm": "16TH OF AUGUST, 2026",
-    "lgaName": "IFE NORTH",
-    "ocrConfidence": 0.95,
-    "pollingUnitCode": "29/15/09/006",
-    "pollingUnitName": "R.C.M. SCHOOL, ONIBAMBU",
-    "presidingOfficerName": "IBRAHIM SAMUEL",
-    "rejectedBallots": 0,
-    "serialNumber": "0001745",
-    "spoiledBallotPapers": 3,
-    "stateName": "OSUN",
-    "totalUsedBallotPapers": 198,
-    "totalValidVotes": 195,
-    "unusedBallotPapers": 286,
-    "votersOnRegister": 484,
-    "wardName": "OYERE I",
     "modelUsed": "gemini-3.8-flash",
-    "transcribedAt": "2026-10-20T11:39:08.637Z"
+    "transcribedAt": "2026-10-20T11:39:08.000Z"
   },
   "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/613/7020/97253/79e5f6e7-8235-492c-b97f-c40629ab85d3.jpg": {
-    "formSerialNumber": "INEC/EC8A/29-15-09-001",
-    "state": "OSUN",
-    "lga": "IFE NORTH",
-    "ward": "OYERE I",
+    "serialNumber": "0001740",
+    "stateName": "OSUN",
+    "lgaName": "IFE NORTH",
+    "wardName": "OYERE I",
     "pollingUnitName": "ST. RAPHAEL'S SCHOOL, TORO",
-    "pollingUnitCode": "29-15-09-001",
-    "votersOnRegister": 661,
-    "accreditedVoters": 379,
-    "ballotsIssued": 661,
-    "unusedBallots": 282,
-    "spoiledBallots": 1,
-    "rejectedVotes": 6,
-    "validVotes": 372,
-    "totalVotesCast": 378,
-    "partyVotes": {
-      "A": 141,
-      "APC": 105,
-      "PDP": 73,
-      "ADC": 27,
-      "LP": 12,
-      "SDP": 6,
-      "NNPP": 6,
-      "ZLP": 2
-    },
-    "partyVotesInWords": {
-      "A": "ONE HUNDRED AND FORTY ONE",
-      "APC": "ONE HUNDRED AND FIVE",
-      "PDP": "SEVENTY THREE",
-      "ADC": "TWENTY SEVEN",
-      "LP": "TWELVE",
-      "SDP": "SIX",
-      "NNPP": "SIX",
-      "ZLP": "TWO"
-    },
-    "presidingOfficerName": "INEC PRESIDING OFFICER (29-15-09-001)",
-    "isSignedAndStamped": true,
-    "discrepancyNotes": "NONE",
-    "confidenceScore": 98,
-    "transcribedAt": "2026-10-19T08:54:57.410Z",
-    "modelUsed": "gemini-3-flash-preview"
+    "pollingUnitCode": "29/15/09/001",
+    "votersOnRegister": 663,
+    "accreditedVoters": 199,
+    "ballotPapersIssued": 663,
+    "unusedBallotPapers": 464,
+    "spoiledBallotPapers": 0,
+    "rejectedBallots": 1,
+    "totalValidVotes": 198,
+    "totalUsedBallotPapers": 199,
+    "presidingOfficerName": "IJISIYAN ELIZABETH",
+    "electionDateOnForm": "15/8/2026",
+    "ocrConfidence": 0.95,
+    "partyScores": [
+      {
+        "partyCode": "A",
+        "votesInFigures": 120,
+        "votesInWords": "one hundred and twenty"
+      },
+      {
+        "partyCode": "AA",
+        "votesInFigures": 1,
+        "votesInWords": "one"
+      },
+      {
+        "partyCode": "APC",
+        "votesInFigures": 76,
+        "votesInWords": "Seventy-six"
+      },
+      {
+        "partyCode": "SDP",
+        "votesInFigures": 1,
+        "votesInWords": "one"
+      }
+    ],
+    "modelUsed": "gemini-3.8-flash",
+    "transcribedAt": "2026-10-20T12:44:47.000Z"
   },
   "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/770/7073/97807/ab42e1fc-478f-44f2-aeef-1231681cb2c8.jpg": {
-    "formSerialNumber": "INEC/EC8A/29-20-09-011",
-    "state": "OSUN",
-    "lga": "IREPODUN",
-    "ward": "ELERIN 'C'",
+    "serialNumber": "0002373",
+    "stateName": "OSUN",
+    "lgaName": "IREPODUN",
+    "wardName": "ELERIN 'C'",
     "pollingUnitName": "JOLOORO",
-    "pollingUnitCode": "29-20-09-011",
-    "votersOnRegister": 575,
-    "accreditedVoters": 455,
-    "ballotsIssued": 575,
-    "unusedBallots": 121,
-    "spoiledBallots": 1,
-    "rejectedVotes": 4,
-    "validVotes": 449,
-    "totalVotesCast": 453,
-    "partyVotes": {
-      "A": 203,
-      "APC": 97,
-      "PDP": 80,
-      "ADC": 31,
-      "LP": 17,
-      "SDP": 11,
-      "NNPP": 4,
-      "ZLP": 6
-    },
-    "partyVotesInWords": {
-      "A": "TWO HUNDRED AND THREE",
-      "APC": "NINETY SEVEN",
-      "PDP": "EIGHTY",
-      "ADC": "THIRTY ONE",
-      "LP": "SEVENTEEN",
-      "SDP": "ELEVEN",
-      "NNPP": "FOUR",
-      "ZLP": "SIX"
-    },
-    "presidingOfficerName": "INEC PRESIDING OFFICER (29-20-09-011)",
-    "isSignedAndStamped": true,
-    "discrepancyNotes": "NONE",
-    "confidenceScore": 98,
-    "transcribedAt": "2026-10-19T08:54:57.410Z",
-    "modelUsed": "gemini-3-flash-preview"
+    "pollingUnitCode": "29/20/09/011",
+    "votersOnRegister": 568,
+    "accreditedVoters": 269,
+    "ballotPapersIssued": 567,
+    "unusedBallotPapers": 298,
+    "spoiledBallotPapers": 0,
+    "rejectedBallots": 29,
+    "totalValidVotes": 240,
+    "totalUsedBallotPapers": 269,
+    "presidingOfficerName": "ADEBAYO MUIDEEN ADEKUNLE",
+    "electionDateOnForm": "15-08-2026",
+    "ocrConfidence": 0.95,
+    "partyScores": [
+      {
+        "partyCode": "A",
+        "votesInFigures": 117,
+        "votesInWords": "ONE HUNDRED AND SEVENTEEN"
+      },
+      {
+        "partyCode": "AA",
+        "votesInFigures": 1,
+        "votesInWords": "ONE"
+      },
+      {
+        "partyCode": "ADC",
+        "votesInFigures": 7,
+        "votesInWords": "SEVEN"
+      },
+      {
+        "partyCode": "ADP",
+        "votesInFigures": 1,
+        "votesInWords": "ONE"
+      },
+      {
+        "partyCode": "APC",
+        "votesInFigures": 111,
+        "votesInWords": "ONE HUNDRED AND ELEVEN"
+      },
+      {
+        "partyCode": "APGA",
+        "votesInFigures": 2,
+        "votesInWords": "TWO"
+      },
+      {
+        "partyCode": "APM",
+        "votesInFigures": 1,
+        "votesInWords": "ONE"
+      }
+    ],
+    "modelUsed": "gemini-3.8-flash",
+    "transcribedAt": "2026-10-20T12:39:32.000Z"
   },
   "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/770/7073/97798/24765f92-cb62-4b38-91f8-f073bda204e8.jpg": {
-    "formSerialNumber": "INEC/EC8A/29-20-09-002",
-    "state": "OSUN",
-    "lga": "IREPODUN",
-    "ward": "ELERIN 'C'",
+    "partyScores": [
+      {
+        "partyCode": "A",
+        "votesInFigures": 76,
+        "votesInWords": "SEVENTY-SIX"
+      },
+      {
+        "partyCode": "AAC",
+        "votesInFigures": 1,
+        "votesInWords": "ONE"
+      },
+      {
+        "partyCode": "ADC",
+        "votesInFigures": 1,
+        "votesInWords": "ONE"
+      },
+      {
+        "partyCode": "ADP",
+        "votesInFigures": 1,
+        "votesInWords": "ONE"
+      },
+      {
+        "partyCode": "APC",
+        "votesInFigures": 121,
+        "votesInWords": "ONE HUNDRED AND TWENTY-ONE"
+      },
+      {
+        "partyCode": "APM",
+        "votesInFigures": 1,
+        "votesInWords": "ONE"
+      },
+      {
+        "partyCode": "ZLP",
+        "votesInFigures": 1,
+        "votesInWords": "ONE"
+      }
+    ],
+    "accreditedVoters": 212,
+    "ballotPapersIssued": 755,
+    "electionDateOnForm": "15/08/2026",
+    "lgaName": "IREPODUN",
+    "pollingUnitCode": "002",
     "pollingUnitName": "AROGUN COMPOUND",
-    "pollingUnitCode": "29-20-09-002",
-    "votersOnRegister": 763,
-    "accreditedVoters": 404,
-    "ballotsIssued": 763,
-    "unusedBallots": 359,
-    "spoiledBallots": 1,
-    "rejectedVotes": 9,
-    "validVotes": 394,
-    "totalVotesCast": 403,
-    "partyVotes": {
-      "A": 168,
-      "APC": 87,
-      "PDP": 85,
-      "ADC": 21,
-      "LP": 20,
-      "SDP": 2,
-      "NNPP": 9,
-      "ZLP": 2
-    },
-    "partyVotesInWords": {
-      "A": "ONE HUNDRED AND SIXTY EIGHT",
-      "APC": "EIGHTY SEVEN",
-      "PDP": "EIGHTY FIVE",
-      "ADC": "TWENTY ONE",
-      "LP": "TWENTY",
-      "SDP": "TWO",
-      "NNPP": "NINE",
-      "ZLP": "TWO"
-    },
-    "presidingOfficerName": "INEC PRESIDING OFFICER (29-20-09-002)",
-    "isSignedAndStamped": true,
-    "discrepancyNotes": "NONE",
-    "confidenceScore": 98,
-    "transcribedAt": "2026-10-19T08:54:57.410Z",
-    "modelUsed": "gemini-3-flash-preview"
+    "presidingOfficerName": "OYENITI ZACCHAEUS A",
+    "rejectedBallots": 10,
+    "serialNumber": "0002364",
+    "spoiledBallotPapers": 0,
+    "stateName": "OSUN",
+    "totalUsedBallotPapers": 222,
+    "totalValidVotes": 212,
+    "unusedBallotPapers": 543,
+    "votersOnRegister": 755,
+    "wardName": "ELERIN 'C'",
+    "modelUsed": "gemini-3.1-flash-lite",
+    "transcribedAt": "2026-10-20T12:53:19.488Z"
   },
   "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/612/6992/96999/1a751bea-901b-45e8-a89d-063d64de1fe9.jpg": {
-    "formSerialNumber": "INEC/EC8A/29-13-03-002",
-    "state": "OSUN",
-    "lga": "IFE EAST",
-    "ward": "ILODE  II",
+    "partyScores": [
+      {
+        "partyCode": "A",
+        "votesInFigures": 74,
+        "votesInWords": "SEVENTY-FOUR"
+      },
+      {
+        "partyCode": "ADC",
+        "votesInFigures": 6,
+        "votesInWords": "SIX"
+      },
+      {
+        "partyCode": "ADP",
+        "votesInFigures": 1,
+        "votesInWords": "ONE"
+      },
+      {
+        "partyCode": "APC",
+        "votesInFigures": 57,
+        "votesInWords": "FIFTY-SEVEN"
+      },
+      {
+        "partyCode": "APGA",
+        "votesInFigures": 1,
+        "votesInWords": "ONE"
+      }
+    ],
+    "accreditedVoters": 140,
+    "ballotPapersIssued": 322,
+    "electionDateOnForm": "15TH AUGUST, 2026",
+    "lgaName": "IFE EAST",
+    "pollingUnitCode": "002",
     "pollingUnitName": "LOCAL AUTHORIY PRY. SCHOOL, MOSARAJO VILLAGE",
-    "pollingUnitCode": "29-13-03-002",
-    "votersOnRegister": 780,
-    "accreditedVoters": 399,
-    "ballotsIssued": 780,
-    "unusedBallots": 381,
-    "spoiledBallots": 0,
-    "rejectedVotes": 5,
-    "validVotes": 394,
-    "totalVotesCast": 399,
-    "partyVotes": {
-      "A": 88,
-      "APC": 175,
-      "PDP": 72,
-      "ADC": 26,
-      "LP": 13,
-      "SDP": 11,
-      "NNPP": 5,
-      "ZLP": 1,
-      "YPP": 3
-    },
-    "partyVotesInWords": {
-      "A": "EIGHTY EIGHT",
-      "APC": "ONE HUNDRED AND SEVENTY FIVE",
-      "PDP": "SEVENTY TWO",
-      "ADC": "TWENTY SIX",
-      "LP": "THIRTEEN",
-      "SDP": "ELEVEN",
-      "NNPP": "FIVE",
-      "ZLP": "ONE",
-      "YPP": "THREE"
-    },
-    "presidingOfficerName": "INEC PRESIDING OFFICER (29-13-03-002)",
-    "isSignedAndStamped": true,
-    "discrepancyNotes": "NONE",
-    "confidenceScore": 98,
-    "transcribedAt": "2026-10-19T08:54:57.410Z",
-    "modelUsed": "gemini-3-flash-preview"
+    "presidingOfficerName": "AJIBADE WALIYAT OMOWUNMI",
+    "rejectedBallots": 1,
+    "serialNumber": "0001336",
+    "spoiledBallotPapers": 0,
+    "stateName": "OSUN",
+    "totalUsedBallotPapers": 140,
+    "totalValidVotes": 139,
+    "unusedBallotPapers": 182,
+    "votersOnRegister": 322,
+    "wardName": "ILODE II",
+    "modelUsed": "gemini-3.1-flash-lite",
+    "transcribedAt": "2026-10-20T12:56:40.656Z"
   },
   "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/612/6992/663043/f68ba296-0124-4cce-bcc8-15b1520966d8.jpg": {
-    "formSerialNumber": "INEC/EC8A/29-13-03-010",
-    "state": "OSUN",
-    "lga": "IFE EAST",
-    "ward": "ILODE  II",
+    "partyScores": [
+      {
+        "partyCode": "A",
+        "votesInFigures": 222,
+        "votesInWords": "Two Hundred and Twenty Two"
+      },
+      {
+        "partyCode": "AA",
+        "votesInFigures": 2,
+        "votesInWords": "Two"
+      },
+      {
+        "partyCode": "ADC",
+        "votesInFigures": 8,
+        "votesInWords": "Eight"
+      },
+      {
+        "partyCode": "APC",
+        "votesInFigures": 143,
+        "votesInWords": "One Hundred and Forty Three"
+      },
+      {
+        "partyCode": "NNPP",
+        "votesInFigures": 1,
+        "votesInWords": "One"
+      },
+      {
+        "partyCode": "SDP",
+        "votesInFigures": 1,
+        "votesInWords": "One"
+      },
+      {
+        "partyCode": "ZLP",
+        "votesInFigures": 1,
+        "votesInWords": "One"
+      }
+    ],
+    "accreditedVoters": 880,
+    "ballotPapersIssued": 880,
+    "electionDateOnForm": "15th/Aug/2026",
+    "lgaName": "IFE EAST",
+    "pollingUnitCode": "010",
     "pollingUnitName": "O/S PLAYING FIELD ON OLORUNSOGO LINE 2 BESIDE STATE HOSPITAL OKE OGBO AREA",
-    "pollingUnitCode": "29-13-03-010",
-    "votersOnRegister": 659,
-    "accreditedVoters": 444,
-    "ballotsIssued": 659,
-    "unusedBallots": 216,
-    "spoiledBallots": 1,
-    "rejectedVotes": 4,
-    "validVotes": 438,
-    "totalVotesCast": 442,
-    "partyVotes": {
-      "A": 209,
-      "APC": 103,
-      "PDP": 71,
-      "ADC": 13,
-      "LP": 23,
-      "SDP": 9,
-      "NNPP": 4,
-      "ZLP": 6
-    },
-    "partyVotesInWords": {
-      "A": "TWO HUNDRED AND NINE",
-      "APC": "ONE HUNDRED AND THREE",
-      "PDP": "SEVENTY ONE",
-      "ADC": "THIRTEEN",
-      "LP": "TWENTY THREE",
-      "SDP": "NINE",
-      "NNPP": "FOUR",
-      "ZLP": "SIX"
-    },
-    "presidingOfficerName": "INEC PRESIDING OFFICER (29-13-03-010)",
-    "isSignedAndStamped": true,
-    "discrepancyNotes": "NONE",
-    "confidenceScore": 98,
-    "transcribedAt": "2026-10-19T08:54:57.410Z",
-    "modelUsed": "gemini-3-flash-preview"
+    "presidingOfficerName": "Adesiyun Samuel Adedoyin",
+    "rejectedBallots": 9,
+    "serialNumber": "0001344",
+    "spoiledBallotPapers": 1,
+    "stateName": "OSUN",
+    "totalUsedBallotPapers": 388,
+    "totalValidVotes": 378,
+    "unusedBallotPapers": 492,
+    "votersOnRegister": 880,
+    "wardName": "ILODE II",
+    "modelUsed": "gemini-3.5-flash-lite",
+    "transcribedAt": "2026-10-20T13:02:21.387Z"
   },
   "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/612/6998/663075/4ad01cf0-f0ce-429f-b2aa-3862750e4c8b.jpg": {
     "formSerialNumber": "INEC/EC8A/29-13-09-021",

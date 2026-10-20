@@ -179,7 +179,7 @@ export const AiOcrSettingsModal: React.FC<AiOcrSettingsModalProps> = ({
             <div className="bg-white p-2.5 rounded border border-slate-200">
               <span className="text-slate-500 block text-[11px]">Primary Model</span>
               <span className="font-mono font-bold text-slate-900 text-sm">
-                gemini-3.8-flash
+                {quotaData?.primaryModel || quotaData?.activeModel || 'gemini-3.5-flash-lite'}
               </span>
             </div>
             <div className="bg-white p-2.5 rounded border border-slate-200">
@@ -202,7 +202,15 @@ export const AiOcrSettingsModal: React.FC<AiOcrSettingsModalProps> = ({
 
           {/* Fallback tier info */}
           <div className="text-[11px] text-slate-500 flex items-center justify-between pt-1 border-t border-slate-200">
-            <span>Fallback Tier: <strong>gemini-flash-latest</strong> &rarr; <strong>gemini-3.1-flash-lite</strong></span>
+            <span>
+              Fallback Tier:{' '}
+              {(quotaData?.fallbackModels || ['gemini-3.1-flash-lite', 'gemini-3.8-flash']).map((m: string, i: number, arr: string[]) => (
+                <React.Fragment key={m}>
+                  <strong className="font-mono text-slate-700">{m}</strong>
+                  {i < arr.length - 1 && ' → '}
+                </React.Fragment>
+              ))}
+            </span>
             <span className="text-emerald-700 font-semibold flex items-center gap-1">
               <CheckCircle2 className="w-3 h-3" /> Ready
             </span>

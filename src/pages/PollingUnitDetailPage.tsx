@@ -69,7 +69,8 @@ export const PollingUnitDetailPage: React.FC = () => {
       setTranscribeNotice('Form EC8A successfully transcribed by Gemini Vision AI OCR!');
       await loadDetail();
     } catch (err: any) {
-      setTranscribeNotice(`AI OCR failed: ${err.message}`);
+      const msg = err.message || 'AI OCR transcription failed';
+      setTranscribeNotice(msg.startsWith('AI OCR') || msg.startsWith('Gemini') ? msg : `AI OCR: ${msg}`);
     } finally {
       setIsTranscribing(false);
     }

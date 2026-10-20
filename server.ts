@@ -3440,12 +3440,18 @@ async function normalizeBufferForGeminiOcr(
 }
 
 // Multi-Tier Model Selection & Quota Circuit Breaker for Gemini Vision AI OCR
-const OCR_MODELS = ['gemini-3.8-flash', 'gemini-flash-latest', 'gemini-3.1-flash-lite'] as const;
+const OCR_MODELS = [
+  'gemini-3.5-flash-lite',
+  'gemini-3.1-flash-lite',
+  'gemini-3.8-flash',
+  'gemini-flash-latest',
+] as const;
 
 let modelQuotaStatus: Record<string, { isExhausted: boolean; exhaustedUntil: number; reason?: string }> = {
+  'gemini-3.5-flash-lite': { isExhausted: false, exhaustedUntil: 0 },
+  'gemini-3.1-flash-lite': { isExhausted: false, exhaustedUntil: 0 },
   'gemini-3.8-flash': { isExhausted: false, exhaustedUntil: 0 },
   'gemini-flash-latest': { isExhausted: false, exhaustedUntil: 0 },
-  'gemini-3.1-flash-lite': { isExhausted: false, exhaustedUntil: 0 },
 };
 
 async function transcribeFormEc8aWithGemini(params: {
@@ -3462,8 +3468,8 @@ async function transcribeFormEc8aWithGemini(params: {
 
   const ai = getGeminiClient();
   if (!ai) {
-    console.warn('[GEMINI OCR] GEMINI_API_KEY is not configured; skipping live AI OCR.');
-    return null;
+    console.warn('[GEMINI OCR] GEMINI_API_KEY is not configured; cannot run live AI OCR.');
+    throw new Error('Gemini API key is not configured. Please open AI OCR Settings and attach an API key.');
   }
 
   let finalBase64 = '';
@@ -3671,11 +3677,12 @@ async function transcribeFormEc8aWithGemini(params: {
       lastError = err;
       const errMsg = err?.message || '';
       const is429 = errMsg.includes('429') || err?.status === 429 || errMsg.includes('RESOURCE_EXHAUSTED') || errMsg.includes('quota');
-      if (is429) {
-        console.warn(`[GEMINI OCR] Model ${model} quota limit reached. Switching to fallback model...`);
+      const is503 = errMsg.includes('503') || err?.status === 503 || errMsg.includes('UNAVAILABLE') || errMsg.includes('high demand');
+      if (is429 || is503) {
+        console.warn(`[GEMINI OCR] Model ${model} ${is429 ? 'quota limit reached' : 'high demand (503)'}. Switching to fallback model...`);
         modelQuotaStatus[model] = {
           isExhausted: true,
-          exhaustedUntil: Date.now() + 60 * 1000,
+          exhaustedUntil: Date.now() + (is429 ? 60 * 1000 : 30 * 1000),
           reason: errMsg,
         };
       } else {
@@ -3685,6 +3692,10 @@ async function transcribeFormEc8aWithGemini(params: {
   }
 
   if (!extracted) {
+    if (imageUrl && OCR_CACHE[imageUrl]) {
+      console.log(`[GEMINI OCR] Live OCR models temporarily unavailable; recovering cached Form EC8A record for ${imageUrl}`);
+      return OCR_CACHE[imageUrl];
+    }
     const errorMsg = lastError?.message || 'Gemini Vision AI models could not produce valid Form EC8A extraction JSON.';
     console.warn('[GEMINI OCR] OCR extraction could not complete:', errorMsg);
     throw new Error(errorMsg);
@@ -4304,8 +4315,10 @@ app.get('/api/v1/ocr/quota-status', (_req: Request, res: Response) => {
   const activeKey = customGeminiApiKey || process.env.GEMINI_API_KEY || '';
   res.json({
     data: {
-      activeModel: availableModels[0] || 'NONE_EXHAUSTED',
+      primaryModel: OCR_MODELS[0],
+      activeModel: availableModels[0] || OCR_MODELS[0],
       allModels: OCR_MODELS,
+      fallbackModels: OCR_MODELS.slice(1),
       quotaStatus: modelQuotaStatus,
       hasAvailableModel: availableModels.length > 0,
       apiKeyConfigured: Boolean(activeKey),
@@ -4347,29 +4360,38 @@ app.post('/api/v1/ocr/test-connection', async (_req: Request, res: Response) => 
     return;
   }
   const t0 = Date.now();
-  try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-3.8-flash',
-      contents: 'Ping: Reply with "OK: Gemini Vision AI OCR is active and ready"',
-    });
-    res.json({
-      success: true,
-      message: (response.text || 'Gemini Vision AI OCR is active and responding.').trim(),
-      latencyMs: Date.now() - t0,
-      activeModel: 'gemini-3.8-flash',
-      keySource: customGeminiApiKey ? 'custom_user_key' : 'environment_built_in',
-    });
-  } catch (err: any) {
-    const errMsg = err?.message || 'Connection failed';
-    const is429 = errMsg.includes('429') || errMsg.includes('RESOURCE_EXHAUSTED');
-    res.status(is429 ? 429 : 502).json({
-      success: false,
-      error: is429
-        ? 'Gemini API Free Tier quota or rate limit exceeded. Consider attaching a paid API key.'
-        : `Gemini ping failed: ${errMsg}`,
-      latencyMs: Date.now() - t0,
-    });
+  let lastErr: any = null;
+
+  for (const model of OCR_MODELS) {
+    try {
+      const response = await ai.models.generateContent({
+        model,
+        contents: 'Ping: Reply with "OK: Gemini Vision AI OCR is active and ready"',
+      });
+      res.json({
+        success: true,
+        message: (response.text || 'Gemini Vision AI OCR is active and responding.').trim(),
+        latencyMs: Date.now() - t0,
+        activeModel: model,
+        keySource: customGeminiApiKey ? 'custom_user_key' : 'environment_built_in',
+      });
+      return;
+    } catch (err: any) {
+      lastErr = err;
+      const errMsg = err?.message || '';
+      console.warn(`[GEMINI OCR] Test ping for ${model} notice:`, errMsg);
+    }
   }
+
+  const errMsg = lastErr?.message || 'Connection failed';
+  const is429 = errMsg.includes('429') || errMsg.includes('RESOURCE_EXHAUSTED');
+  res.status(is429 ? 429 : 502).json({
+    success: false,
+    error: is429
+      ? 'Gemini API Free Tier quota or rate limit exceeded. You can attach a paid API key.'
+      : `Gemini ping failed: ${errMsg}`,
+    latencyMs: Date.now() - t0,
+  });
 });
 
 // Trigger Live Gemini Vision AI OCR on a Specific Result Sheet
@@ -4394,16 +4416,17 @@ app.post('/api/v1/ocr/transcribe-sheet/:resultSheetId', async (req: Request, res
       },
     });
   } catch (err: any) {
-    const errMsg = err?.message || 'Unknown OCR error';
-    const is429 = errMsg.includes('429') || errMsg.includes('RESOURCE_EXHAUSTED') || errMsg.includes('quota');
-    const is503 = errMsg.includes('503') || errMsg.includes('UNAVAILABLE');
+    const rawMsg = err?.message || 'Unknown OCR error';
+    const cleanMsg = rawMsg.replace(/^(AI OCR failed:\s*|Gemini AI OCR failed:\s*)+/i, '');
+    const is429 = cleanMsg.includes('429') || cleanMsg.includes('RESOURCE_EXHAUSTED') || cleanMsg.includes('quota');
+    const is503 = cleanMsg.includes('503') || cleanMsg.includes('UNAVAILABLE');
 
     res.status(is429 ? 429 : is503 ? 503 : 500).json({
       error: is429
         ? 'Gemini Vision AI OCR rate limit reached on Free Tier. Please wait 20-30 seconds or attach a paid Gemini API Key in Settings.'
         : is503
         ? 'Google Gemini Vision AI models are temporarily busy (503 Service Unavailable). Please retry in a few moments.'
-        : `Gemini AI OCR failed: ${errMsg}`,
+        : cleanMsg,
       quotaExhausted: is429,
     });
   }
