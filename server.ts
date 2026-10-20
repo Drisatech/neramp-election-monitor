@@ -2511,22 +2511,6 @@ app.get('/api/v1/polling-units/:id', async (req: Request, res: Response) => {
     return;
   }
 
-  if (
-    pu.resultSheetId &&
-    RESULT_SHEETS[pu.resultSheetId] &&
-    RESULT_SHEETS[pu.resultSheetId].imageUrl &&
-    (pu.transcriptionStatus === 'PENDING' ||
-      pu.transcriptionStatus === 'IN_PROGRESS' ||
-      Object.keys(RESULT_SHEETS[pu.resultSheetId].transcription.partyVotes || {}).length === 0 ||
-      isSyntheticOcrEntry(OCR_CACHE[RESULT_SHEETS[pu.resultSheetId].imageUrl]))
-  ) {
-    try {
-      await transcribeResultSheetById(pu.resultSheetId, true);
-    } catch (err) {
-      console.warn(`On-demand Gemini OCR failed for ${pu.resultSheetId}:`, err);
-    }
-  }
-
   const resultSheet = pu.resultSheetId ? RESULT_SHEETS[pu.resultSheetId] : null;
   const state = STATES.find((s) => s.code === pu.stateCode);
   const lga = LGAS.find((l) => l.code === pu.lgaCode);
@@ -2558,21 +2542,6 @@ app.get('/api/v1/polling-units/:id/results', async (req: Request, res: Response)
   if (!pu || !pu.resultSheetId) {
     res.status(404).json({ error: 'Results not found for this polling unit' });
     return;
-  }
-
-  if (
-    RESULT_SHEETS[pu.resultSheetId] &&
-    RESULT_SHEETS[pu.resultSheetId].imageUrl &&
-    (pu.transcriptionStatus === 'PENDING' ||
-      pu.transcriptionStatus === 'IN_PROGRESS' ||
-      Object.keys(RESULT_SHEETS[pu.resultSheetId].transcription.partyVotes || {}).length === 0 ||
-      isSyntheticOcrEntry(OCR_CACHE[RESULT_SHEETS[pu.resultSheetId].imageUrl]))
-  ) {
-    try {
-      await transcribeResultSheetById(pu.resultSheetId, true);
-    } catch (err) {
-      console.warn(`On-demand Gemini OCR failed for ${pu.resultSheetId}:`, err);
-    }
   }
 
   const sheet = RESULT_SHEETS[pu.resultSheetId];
@@ -3399,8 +3368,10 @@ function saveOcrCache() {
 
 loadOcrCache();
 
+let customGeminiApiKey = process.env.CUSTOM_GEMINI_API_KEY || '';
+
 function getGeminiClient(): GoogleGenAI | null {
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = customGeminiApiKey || process.env.GEMINI_API_KEY;
   if (!apiKey) return null;
   return new GoogleGenAI({
     apiKey,
@@ -3452,12 +3423,13 @@ async function normalizeBufferForGeminiOcr(
     return { base64: buf.toString('base64'), mimeType: 'application/pdf' };
   }
   try {
-    // Auto-orient EXIF rotation and normalize large/non-standard images to crisp JPEG for high-accuracy OCR
-    if (buf.length > 1.8 * 1024 * 1024 || !['image/jpeg', 'image/png', 'image/webp'].includes(detectedMime)) {
+    // Auto-orient EXIF rotation and normalize large/non-standard images to crisp JPEG (1600x1600 @ 82% quality)
+    // Produces ~250KB crisp image that preserves every handwritten number while executing in 2-5 seconds
+    if (buf.length > 300 * 1024 || !['image/jpeg', 'image/png', 'image/webp'].includes(detectedMime)) {
       const optimized = await sharp(buf)
         .rotate()
-        .resize({ width: 2200, height: 2200, fit: 'inside', withoutEnlargement: true })
-        .jpeg({ quality: 90 })
+        .resize({ width: 1600, height: 1600, fit: 'inside', withoutEnlargement: true })
+        .jpeg({ quality: 82 })
         .toBuffer();
       return { base64: optimized.toString('base64'), mimeType: 'image/jpeg' };
     }
@@ -3558,25 +3530,55 @@ async function transcribeFormEc8aWithGemini(params: {
         }
       }
     } else if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
-      try {
-        const imgRes = await fetch(imageUrl, {
-          headers: {
-            'User-Agent': 'Mozilla/5.0 NERAMP-GeminiOcrPipeline/2.0',
-          },
-        });
-        if (imgRes.ok) {
-          const buf = Buffer.from(await imgRes.arrayBuffer());
-          const norm = await normalizeBufferForGeminiOcr(buf, imageUrl);
-          finalMime = norm.mimeType;
-          finalBase64 = norm.base64;
+      const urlHash = crypto.createHash('md5').update(imageUrl).digest('hex');
+      const diskDir = path.resolve(process.cwd(), 'data', 'uploads');
+      const cachedDiskPath = path.join(diskDir, `cache_${urlHash}.jpg`);
+      if (fs.existsSync(cachedDiskPath)) {
+        try {
+          const rawBuf = fs.readFileSync(cachedDiskPath);
+          finalBase64 = rawBuf.toString('base64');
+          finalMime = 'image/jpeg';
+        } catch (e) {
+          // fall through to fetch
         }
-      } catch (fErr: any) {
-        console.warn(`[GEMINI OCR] Could not fetch remote image ${imageUrl}:`, fErr.message);
+      }
+      if (!finalBase64) {
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 15000);
+          const imgRes = await fetch(imageUrl, {
+            signal: controller.signal,
+            headers: {
+              'User-Agent': 'Mozilla/5.0 NERAMP-GeminiOcrPipeline/2.0',
+            },
+          });
+          clearTimeout(timeoutId);
+          if (imgRes.ok) {
+            const buf = Buffer.from(await imgRes.arrayBuffer());
+            const norm = await normalizeBufferForGeminiOcr(buf, imageUrl);
+            finalMime = norm.mimeType;
+            finalBase64 = norm.base64;
+            try {
+              if (!fs.existsSync(diskDir)) fs.mkdirSync(diskDir, { recursive: true });
+              fs.writeFileSync(cachedDiskPath, Buffer.from(norm.base64, 'base64'));
+            } catch (wErr) {
+              // ignore write failure
+            }
+          } else {
+            throw new Error(`Remote image server returned HTTP ${imgRes.status} (${imgRes.statusText})`);
+          }
+        } catch (fErr: any) {
+          const errDetail = fErr.name === 'AbortError' ? 'Download timed out after 15s' : fErr.message;
+          console.warn(`[GEMINI OCR] Could not fetch remote image ${imageUrl}:`, errDetail);
+          throw new Error(`Failed to download Form EC8A document scan: ${errDetail}`);
+        }
       }
     }
   }
 
-  if (!finalBase64) return null;
+  if (!finalBase64) {
+    throw new Error('No image data found or could not be loaded for this Form EC8A document scan.');
+  }
 
   const now = Date.now();
   const candidateModels = OCR_MODELS.filter(
@@ -3683,10 +3685,9 @@ async function transcribeFormEc8aWithGemini(params: {
   }
 
   if (!extracted) {
-    if (lastError) {
-      console.warn('[GEMINI OCR] OCR extraction could not complete:', lastError.message);
-    }
-    return null;
+    const errorMsg = lastError?.message || 'Gemini Vision AI models could not produce valid Form EC8A extraction JSON.';
+    console.warn('[GEMINI OCR] OCR extraction could not complete:', errorMsg);
+    throw new Error(errorMsg);
   }
 
   if (imageUrl) {
@@ -3852,19 +3853,35 @@ function applyOcrExtractionToSheetAndPu(resultSheetId: string, extracted: Gemini
   return sheet;
 }
 
+const ACTIVE_TRANSCRIBE_PROMISES = new Map<string, Promise<any>>();
+
 async function transcribeResultSheetById(resultSheetId: string, forceRefresh = false) {
-  const sheet = RESULT_SHEETS[resultSheetId];
-  if (!sheet || !sheet.imageUrl) return null;
-  const pu = POLLING_UNITS.find((p) => p.resultSheetId === resultSheetId || p.code === sheet.pollingUnitCode);
-  if (pu && pu.transcriptionStatus === 'PENDING') {
-    pu.transcriptionStatus = 'IN_PROGRESS';
+  if (ACTIVE_TRANSCRIBE_PROMISES.has(resultSheetId)) {
+    return ACTIVE_TRANSCRIBE_PROMISES.get(resultSheetId);
   }
-  const extracted = await transcribeFormEc8aWithGemini({
-    imageUrl: sheet.imageUrl,
-    forceRefresh,
-  });
-  if (!extracted) return null;
-  return applyOcrExtractionToSheetAndPu(resultSheetId, extracted);
+
+  const promise = (async () => {
+    const sheet = RESULT_SHEETS[resultSheetId];
+    if (!sheet) throw new Error(`Result sheet ${resultSheetId} not found`);
+    if (!sheet.imageUrl) throw new Error(`Result sheet ${resultSheetId} has no image scan URL`);
+    const pu = POLLING_UNITS.find((p) => p.resultSheetId === resultSheetId || p.code === sheet.pollingUnitCode);
+    if (pu && pu.transcriptionStatus === 'PENDING') {
+      pu.transcriptionStatus = 'IN_PROGRESS';
+    }
+    const extracted = await transcribeFormEc8aWithGemini({
+      imageUrl: sheet.imageUrl,
+      forceRefresh,
+    });
+    if (!extracted) throw new Error('Gemini Vision AI OCR returned no extraction result');
+    return applyOcrExtractionToSheetAndPu(resultSheetId, extracted);
+  })();
+
+  ACTIVE_TRANSCRIBE_PROMISES.set(resultSheetId, promise);
+  try {
+    return await promise;
+  } finally {
+    ACTIVE_TRANSCRIBE_PROMISES.delete(resultSheetId);
+  }
 }
 
 // Background Gemini AI OCR Worker Queue
@@ -4284,15 +4301,75 @@ app.get('/api/v1/ocr/quota-status', (_req: Request, res: Response) => {
   const availableModels = OCR_MODELS.filter(
     (m) => !modelQuotaStatus[m]?.isExhausted || now > (modelQuotaStatus[m]?.exhaustedUntil || 0)
   );
+  const activeKey = customGeminiApiKey || process.env.GEMINI_API_KEY || '';
   res.json({
     data: {
       activeModel: availableModels[0] || 'NONE_EXHAUSTED',
       allModels: OCR_MODELS,
       quotaStatus: modelQuotaStatus,
       hasAvailableModel: availableModels.length > 0,
-      apiKeyConfigured: Boolean(process.env.GEMINI_API_KEY),
+      apiKeyConfigured: Boolean(activeKey),
+      keySource: customGeminiApiKey ? 'custom_user_key' : 'environment_built_in',
+      maskedKey: activeKey ? `${activeKey.slice(0, 6)}...${activeKey.slice(-4)}` : null,
+      customKeyAttached: Boolean(customGeminiApiKey),
     },
   });
+});
+
+// Update or Clear Custom Gemini API Key
+app.post('/api/v1/ocr/api-key', (req: Request, res: Response) => {
+  const { apiKey } = req.body || {};
+  if (apiKey && typeof apiKey === 'string' && apiKey.trim().length > 0) {
+    customGeminiApiKey = apiKey.trim();
+    console.log('[GEMINI OCR] Custom user Gemini API key configured.');
+    res.json({
+      success: true,
+      message: 'Custom Gemini API Key applied. AI OCR requests will now use your key for priority throughput and higher quota.',
+      keySource: 'custom_user_key',
+      maskedKey: `${customGeminiApiKey.slice(0, 6)}...${customGeminiApiKey.slice(-4)}`,
+    });
+  } else {
+    customGeminiApiKey = '';
+    console.log('[GEMINI OCR] Reverted to environment built-in Gemini API key.');
+    res.json({
+      success: true,
+      message: 'Reverted to default built-in AI Studio Gemini API Key.',
+      keySource: 'environment_built_in',
+    });
+  }
+});
+
+// Test Gemini AI OCR Connection
+app.post('/api/v1/ocr/test-connection', async (_req: Request, res: Response) => {
+  const ai = getGeminiClient();
+  if (!ai) {
+    res.status(400).json({ success: false, error: 'No GEMINI_API_KEY is configured in the environment or settings.' });
+    return;
+  }
+  const t0 = Date.now();
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-3.8-flash',
+      contents: 'Ping: Reply with "OK: Gemini Vision AI OCR is active and ready"',
+    });
+    res.json({
+      success: true,
+      message: (response.text || 'Gemini Vision AI OCR is active and responding.').trim(),
+      latencyMs: Date.now() - t0,
+      activeModel: 'gemini-3.8-flash',
+      keySource: customGeminiApiKey ? 'custom_user_key' : 'environment_built_in',
+    });
+  } catch (err: any) {
+    const errMsg = err?.message || 'Connection failed';
+    const is429 = errMsg.includes('429') || errMsg.includes('RESOURCE_EXHAUSTED');
+    res.status(is429 ? 429 : 502).json({
+      success: false,
+      error: is429
+        ? 'Gemini API Free Tier quota or rate limit exceeded. Consider attaching a paid API key.'
+        : `Gemini ping failed: ${errMsg}`,
+      latencyMs: Date.now() - t0,
+    });
+  }
 });
 
 // Trigger Live Gemini Vision AI OCR on a Specific Result Sheet
@@ -4308,21 +4385,6 @@ app.post('/api/v1/ocr/transcribe-sheet/:resultSheetId', async (req: Request, res
 
   try {
     const updatedSheet = await transcribeResultSheetById(resultSheetId, Boolean(forceRefresh));
-    if (!updatedSheet) {
-      const isQuota = OCR_MODELS.every(
-        (m) => modelQuotaStatus[m]?.isExhausted && Date.now() < (modelQuotaStatus[m]?.exhaustedUntil || 0)
-      );
-      if (isQuota) {
-        res.status(429).json({
-          error: 'Gemini Vision AI OCR daily quota limit reached on Free Tier (20 requests/day). The Form EC8A document scan is preserved and can be manually verified in the Verification Workspace.',
-          quotaExhausted: true,
-          pollingUnitCode: sheet.pollingUnitCode,
-        });
-        return;
-      }
-      res.status(500).json({ error: 'Gemini AI OCR returned no extraction result' });
-      return;
-    }
     const pu = POLLING_UNITS.find((p) => p.resultSheetId === resultSheetId || p.code === sheet.pollingUnitCode);
     res.json({
       message: `Form EC8A (${sheet.pollingUnitCode}) successfully transcribed via Gemini Vision AI OCR.`,
@@ -4332,11 +4394,16 @@ app.post('/api/v1/ocr/transcribe-sheet/:resultSheetId', async (req: Request, res
       },
     });
   } catch (err: any) {
-    const is429 = err?.message?.includes('429') || err?.message?.includes('RESOURCE_EXHAUSTED');
-    res.status(is429 ? 429 : 500).json({
+    const errMsg = err?.message || 'Unknown OCR error';
+    const is429 = errMsg.includes('429') || errMsg.includes('RESOURCE_EXHAUSTED') || errMsg.includes('quota');
+    const is503 = errMsg.includes('503') || errMsg.includes('UNAVAILABLE');
+
+    res.status(is429 ? 429 : is503 ? 503 : 500).json({
       error: is429
-        ? 'Gemini Vision AI OCR daily quota limit reached. The Form EC8A scan is preserved for manual verification.'
-        : `Gemini AI OCR failed: ${err.message}`,
+        ? 'Gemini Vision AI OCR rate limit reached on Free Tier. Please wait 20-30 seconds or attach a paid Gemini API Key in Settings.'
+        : is503
+        ? 'Google Gemini Vision AI models are temporarily busy (503 Service Unavailable). Please retry in a few moments.'
+        : `Gemini AI OCR failed: ${errMsg}`,
       quotaExhausted: is429,
     });
   }

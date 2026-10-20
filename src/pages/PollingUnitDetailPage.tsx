@@ -174,11 +174,24 @@ export const PollingUnitDetailPage: React.FC = () => {
       </div>
 
       {transcribeNotice && (
-        <div className={`p-3 rounded-md text-xs font-semibold flex items-center justify-between ${
-          transcribeNotice.includes('failed') ? 'bg-rose-50 text-rose-800 border border-rose-200' : 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+        <div className={`p-3 rounded-md text-xs font-semibold flex flex-wrap items-center justify-between gap-2 ${
+          transcribeNotice.includes('failed') || transcribeNotice.includes('limit') || transcribeNotice.includes('quota')
+            ? 'bg-rose-50 text-rose-800 border border-rose-200'
+            : 'bg-emerald-50 text-emerald-800 border border-emerald-200'
         }`}>
-          <span>{transcribeNotice}</span>
-          <button onClick={() => setTranscribeNotice(null)} className="text-slate-400 hover:text-slate-600">×</button>
+          <div className="flex items-center gap-2 flex-wrap">
+            <span>{transcribeNotice}</span>
+            {(transcribeNotice.includes('failed') || transcribeNotice.includes('limit') || transcribeNotice.includes('quota')) && (
+              <button
+                type="button"
+                onClick={() => window.dispatchEvent(new CustomEvent('open-ai-ocr-settings'))}
+                className="underline font-bold text-rose-900 hover:text-rose-950 ml-1 cursor-pointer"
+              >
+                Configure AI OCR / API Key &rarr;
+              </button>
+            )}
+          </div>
+          <button onClick={() => setTranscribeNotice(null)} className="text-slate-400 hover:text-slate-600 cursor-pointer">×</button>
         </div>
       )}
 

@@ -832,3 +832,27 @@ export async function fetchOcrQuotaStatus() {
   return res.json();
 }
 
+export async function setCustomGeminiApiKey(apiKey: string) {
+  const res = await fetch(`${API_BASE}/ocr/api-key`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ apiKey }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Failed to update custom Gemini API key');
+  }
+  return res.json();
+}
+
+export async function testGeminiOcrConnection() {
+  const res = await fetch(`${API_BASE}/ocr/test-connection`, {
+    method: 'POST',
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Gemini OCR connection test failed');
+  }
+  return res.json();
+}
+

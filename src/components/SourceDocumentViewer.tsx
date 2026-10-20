@@ -146,10 +146,23 @@ export const SourceDocumentViewer: React.FC<Props> = ({ resultSheet, pollingUnit
 
       {/* OCR Status Notification Banner if triggered */}
       {ocrMessage && (
-        <div className={`p-2 px-3 text-xs font-semibold flex items-center justify-between ${
-          ocrMessage.includes('error') ? 'bg-rose-50 text-rose-800 border-b border-rose-200' : 'bg-emerald-50 text-emerald-800 border-b border-emerald-200'
+        <div className={`p-2 px-3 text-xs font-semibold flex flex-wrap items-center justify-between gap-2 ${
+          ocrMessage.includes('error') || ocrMessage.includes('limit') || ocrMessage.includes('quota')
+            ? 'bg-rose-50 text-rose-800 border-b border-rose-200'
+            : 'bg-emerald-50 text-emerald-800 border-b border-emerald-200'
         }`}>
-          <span>{ocrMessage}</span>
+          <div className="flex items-center gap-2 flex-wrap">
+            <span>{ocrMessage}</span>
+            {(ocrMessage.includes('error') || ocrMessage.includes('limit') || ocrMessage.includes('quota')) && (
+              <button
+                type="button"
+                onClick={() => window.dispatchEvent(new CustomEvent('open-ai-ocr-settings'))}
+                className="underline font-bold text-rose-900 hover:text-rose-950 ml-1 cursor-pointer"
+              >
+                Configure OCR / API Key &rarr;
+              </button>
+            )}
+          </div>
           <button onClick={() => setOcrMessage(null)} className="text-slate-400 hover:text-slate-600 text-sm cursor-pointer">×</button>
         </div>
       )}

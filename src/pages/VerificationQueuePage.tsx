@@ -95,6 +95,16 @@ export const VerificationQueuePage: React.FC = () => {
             <span>{isBatchOcrRunning ? 'Running OCR...' : 'Batch Transcribe with Gemini AI'}</span>
           </button>
 
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new CustomEvent('open-ai-ocr-settings'))}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 rounded text-xs font-semibold transition-colors cursor-pointer"
+            title="Configure Gemini Models and attach custom Paid API Key"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-emerald-700" />
+            <span>AI OCR Settings</span>
+          </button>
+
           {/* Filter Segmented Buttons */}
           <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-md text-xs font-semibold">
             <button

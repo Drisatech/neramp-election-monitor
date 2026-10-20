@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   Vote,
@@ -18,12 +18,14 @@ import {
   Sun,
   Moon,
   Accessibility,
+  Sparkles,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useElection } from '../context/ElectionContext';
 import { useThemeAccessibility } from '../context/ThemeAccessibilityContext';
 import { UserRole, Election } from '../types';
 import { NerampLogo } from './NerampLogo';
+import { AiOcrSettingsModal } from './AiOcrSettingsModal';
 
 export function formatMenuElectionTitle(elec: Election): string {
   const type = String(elec.electionType || '').toUpperCase();
@@ -89,6 +91,13 @@ export const Navbar: React.FC = () => {
   const { theme, toggleTheme, activePwdFeaturesCount } = useThemeAccessibility();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [roleMenuOpen, setRoleMenuOpen] = useState(false);
+  const [isOcrModalOpen, setIsOcrModalOpen] = useState(false);
+
+  useEffect(() => {
+    const handleOpenOcr = () => setIsOcrModalOpen(true);
+    window.addEventListener('open-ai-ocr-settings', handleOpenOcr);
+    return () => window.removeEventListener('open-ai-ocr-settings', handleOpenOcr);
+  }, []);
 
   // Contest Switcher: strictly only elections that have been held (e.g. Osun & Ekiti, or concluded)
   const heldElections = elections.filter((elec) => {
@@ -264,6 +273,17 @@ export const Navbar: React.FC = () => {
                     {activePwdFeaturesCount}
                   </span>
                 )}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIsOcrModalOpen(true)}
+                aria-label="Open AI OCR Configuration & Status"
+                title="Gemini Vision AI OCR Engine, Status & API Key Configuration"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-teal-200 bg-teal-50 hover:bg-teal-100 text-teal-900 text-xs font-bold transition-colors cursor-pointer"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-teal-700" />
+                <span>AI OCR</span>
               </button>
             </div>
 
@@ -479,6 +499,11 @@ export const Navbar: React.FC = () => {
           )}
         </div>
       )}
+
+      <AiOcrSettingsModal
+        isOpen={isOcrModalOpen}
+        onClose={() => setIsOcrModalOpen(false)}
+      />
     </header>
   );
 };
