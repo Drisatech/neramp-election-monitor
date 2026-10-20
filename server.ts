@@ -5,6 +5,7 @@ import { fileURLToPath } from 'url';
 import crypto from 'crypto';
 import https from 'https';
 import * as XLSX from 'xlsx';
+import sharp from 'sharp';
 import { GoogleGenAI, Type } from '@google/genai';
 import { Storage } from '@google-cloud/storage';
 import {
@@ -32,12 +33,12 @@ try {
   console.warn('[GCS] Google Cloud Storage SDK note:', err.message);
 }
 
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-// Production HTTP Security Headers
+// Production HTTP Security Headers (iframe-compatible for AI Studio preview)
 app.use((_req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
-  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
   res.setHeader('X-XSS-Protection', '1; mode=block');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
   res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(self)');
@@ -2516,10 +2517,11 @@ app.get('/api/v1/polling-units/:id', async (req: Request, res: Response) => {
     RESULT_SHEETS[pu.resultSheetId].imageUrl &&
     (pu.transcriptionStatus === 'PENDING' ||
       pu.transcriptionStatus === 'IN_PROGRESS' ||
-      Object.keys(RESULT_SHEETS[pu.resultSheetId].transcription.partyVotes || {}).length === 0)
+      Object.keys(RESULT_SHEETS[pu.resultSheetId].transcription.partyVotes || {}).length === 0 ||
+      isSyntheticOcrEntry(OCR_CACHE[RESULT_SHEETS[pu.resultSheetId].imageUrl]))
   ) {
     try {
-      await transcribeResultSheetById(pu.resultSheetId, false);
+      await transcribeResultSheetById(pu.resultSheetId, true);
     } catch (err) {
       console.warn(`On-demand Gemini OCR failed for ${pu.resultSheetId}:`, err);
     }
@@ -2563,10 +2565,11 @@ app.get('/api/v1/polling-units/:id/results', async (req: Request, res: Response)
     RESULT_SHEETS[pu.resultSheetId].imageUrl &&
     (pu.transcriptionStatus === 'PENDING' ||
       pu.transcriptionStatus === 'IN_PROGRESS' ||
-      Object.keys(RESULT_SHEETS[pu.resultSheetId].transcription.partyVotes || {}).length === 0)
+      Object.keys(RESULT_SHEETS[pu.resultSheetId].transcription.partyVotes || {}).length === 0 ||
+      isSyntheticOcrEntry(OCR_CACHE[RESULT_SHEETS[pu.resultSheetId].imageUrl]))
   ) {
     try {
-      await transcribeResultSheetById(pu.resultSheetId, false);
+      await transcribeResultSheetById(pu.resultSheetId, true);
     } catch (err) {
       console.warn(`On-demand Gemini OCR failed for ${pu.resultSheetId}:`, err);
     }
@@ -3303,6 +3306,69 @@ const RUNTIME_OCR_CACHE_FILE = path.join(__dirname, 'data', 'ocr-transcription-c
 
 let OCR_CACHE: Record<string, GeminiFormEc8aExtraction> = {};
 
+function isSyntheticOcrEntry(entry: any): boolean {
+  if (!entry || typeof entry !== 'object') return true;
+  const po = String(entry.presidingOfficerName || '').toUpperCase();
+  if (po.startsWith('INEC PRESIDING OFFICER (')) return true;
+  if (entry.modelUsed === 'gemini-3-flash-preview') return true;
+  if (!Array.isArray(entry.partyScores) && (!entry.partyVotes || Object.keys(entry.partyVotes).length === 0)) {
+    return true;
+  }
+  return false;
+}
+
+function normalizePollingUnitCode(raw?: string): string {
+  if (!raw) return '';
+  const match = String(raw).match(/(\d{2})\s*[-/.\s]\s*(\d{2})\s*[-/.\s]\s*(\d{2})\s*[-/.\s]\s*(\d{3,4})/);
+  if (match) {
+    return `${match[1]}-${match[2]}-${match[3]}-${match[4].padStart(3, '0')}`;
+  }
+  return String(raw).replace(/\//g, '-').replace(/[^0-9A-Za-z-]+/g, '-').replace(/^-+|-+$/g, '').trim();
+}
+
+const PARTY_NAME_ALIAS_MAP: Record<string, string> = {
+  ACCORD: 'A',
+  'ACTION ALLIANCE': 'AA',
+  'AFRICAN ACTION CONGRESS': 'AAC',
+  'AFRICAN DEMOCRATIC CONGRESS': 'ADC',
+  'ACTION DEMOCRATIC PARTY': 'ADP',
+  'ALL PROGRESSIVES CONGRESS': 'APC',
+  'ALL PROGRESSIVES GRAND ALLIANCE': 'APGA',
+  'ALLIED PEOPLES MOVEMENT': 'APM',
+  'ACTION PEOPLES PARTY': 'APP',
+  'BOOT PARTY': 'BP',
+  'DEMOCRATIC LEADERSHIP ALLIANCE': 'DLA',
+  'LABOUR PARTY': 'LP',
+  'NIGERIA DEMOCRATIC CONGRESS': 'NDC',
+  'NATIONAL DEMOCRATIC PARTY': 'NDP',
+  'NEW NIGERIA PEOPLES PARTY': 'NNPP',
+  'NATIONAL RESCUE MOVEMENT': 'NRM',
+  'PEOPLES DEMOCRATIC PARTY': 'PDP',
+  'PEOPLES REDEMPTION PARTY': 'PRP',
+  'SOCIAL DEMOCRATIC PARTY': 'SDP',
+  'YOUTH PARTY': 'YP',
+  'YOUNG PROGRESSIVES PARTY': 'YPP',
+  'ZENITH LABOUR PARTY': 'ZLP',
+};
+
+function normalizePartyCode(rawCode?: string): string {
+  if (!rawCode) return '';
+  const cleaned = String(rawCode).trim().toUpperCase();
+  if (PARTY_NAME_ALIAS_MAP[cleaned]) return PARTY_NAME_ALIAS_MAP[cleaned];
+  const parenMatch = cleaned.match(/\(([A-Z]{1,4})\)/);
+  if (parenMatch && PARTIES.some((p) => p.code === parenMatch[1])) {
+    return parenMatch[1];
+  }
+  const token = cleaned.split(/[\s()-]+/)[0] || '';
+  if (PARTIES.some((p) => p.code === token)) {
+    return token;
+  }
+  for (const [fullName, acronym] of Object.entries(PARTY_NAME_ALIAS_MAP)) {
+    if (cleaned.includes(fullName)) return acronym;
+  }
+  return token || cleaned;
+}
+
 function loadOcrCache() {
   for (const filePath of [PUBLIC_OCR_CACHE_FILE, RUNTIME_OCR_CACHE_FILE]) {
     try {
@@ -3325,6 +3391,7 @@ function saveOcrCache() {
       fs.mkdirSync(dataDir, { recursive: true });
     }
     fs.writeFileSync(RUNTIME_OCR_CACHE_FILE, JSON.stringify(OCR_CACHE, null, 2));
+    fs.writeFileSync(PUBLIC_OCR_CACHE_FILE, JSON.stringify(OCR_CACHE, null, 2));
   } catch (err) {
     console.warn('Could not write runtime OCR cache:', err);
   }
@@ -3353,18 +3420,60 @@ function detectMimeTypeFromBuffer(buf: Buffer, urlOrName: string = ''): string {
   if (buf.length >= 4 && buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4e && buf[3] === 0x47) {
     return 'image/png';
   }
+  if (
+    buf.length >= 12 &&
+    buf[0] === 0x52 &&
+    buf[1] === 0x49 &&
+    buf[2] === 0x46 &&
+    buf[3] === 0x46 &&
+    buf[8] === 0x57 &&
+    buf[9] === 0x45 &&
+    buf[10] === 0x42 &&
+    buf[11] === 0x50
+  ) {
+    return 'image/webp';
+  }
+  if (buf.length >= 3 && buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff) {
+    return 'image/jpeg';
+  }
   if (lower.endsWith('.pdf')) return 'application/pdf';
   if (lower.endsWith('.png')) return 'image/png';
   if (lower.endsWith('.webp')) return 'image/webp';
   return 'image/jpeg';
 }
 
+async function normalizeBufferForGeminiOcr(
+  buf: Buffer,
+  urlOrName: string = '',
+  fallbackMime: string = 'image/jpeg'
+): Promise<{ base64: string; mimeType: string }> {
+  const detectedMime = detectMimeTypeFromBuffer(buf, urlOrName) || fallbackMime;
+  if (detectedMime === 'application/pdf') {
+    return { base64: buf.toString('base64'), mimeType: 'application/pdf' };
+  }
+  try {
+    // Auto-orient EXIF rotation and normalize large/non-standard images to crisp JPEG for high-accuracy OCR
+    if (buf.length > 1.8 * 1024 * 1024 || !['image/jpeg', 'image/png', 'image/webp'].includes(detectedMime)) {
+      const optimized = await sharp(buf)
+        .rotate()
+        .resize({ width: 2200, height: 2200, fit: 'inside', withoutEnlargement: true })
+        .jpeg({ quality: 90 })
+        .toBuffer();
+      return { base64: optimized.toString('base64'), mimeType: 'image/jpeg' };
+    }
+  } catch (sharpErr) {
+    // Fallback to raw buffer if sharp cannot process
+  }
+  return { base64: buf.toString('base64'), mimeType: detectedMime };
+}
+
 // Multi-Tier Model Selection & Quota Circuit Breaker for Gemini Vision AI OCR
-const OCR_MODELS = ['gemini-3.8-flash', 'gemini-flash-latest'] as const;
+const OCR_MODELS = ['gemini-3.8-flash', 'gemini-flash-latest', 'gemini-3.1-flash-lite'] as const;
 
 let modelQuotaStatus: Record<string, { isExhausted: boolean; exhaustedUntil: number; reason?: string }> = {
   'gemini-3.8-flash': { isExhausted: false, exhaustedUntil: 0 },
   'gemini-flash-latest': { isExhausted: false, exhaustedUntil: 0 },
+  'gemini-3.1-flash-lite': { isExhausted: false, exhaustedUntil: 0 },
 };
 
 async function transcribeFormEc8aWithGemini(params: {
@@ -3375,7 +3484,7 @@ async function transcribeFormEc8aWithGemini(params: {
 }): Promise<GeminiFormEc8aExtraction | null> {
   const { imageUrl, base64Data, mimeType, forceRefresh = false } = params;
 
-  if (imageUrl && !forceRefresh && OCR_CACHE[imageUrl]) {
+  if (imageUrl && !forceRefresh && OCR_CACHE[imageUrl] && !isSyntheticOcrEntry(OCR_CACHE[imageUrl])) {
     return OCR_CACHE[imageUrl];
   }
 
@@ -3385,16 +3494,25 @@ async function transcribeFormEc8aWithGemini(params: {
     return null;
   }
 
-  let finalBase64 = base64Data || '';
+  let finalBase64 = '';
   let finalMime = mimeType || 'image/jpeg';
 
-  if (!finalBase64 && imageUrl) {
+  if (base64Data) {
+    const cleanB64 = base64Data.replace(/^data:[^;]+;base64,/, '');
+    const rawBuf = Buffer.from(cleanB64, 'base64');
+    const norm = await normalizeBufferForGeminiOcr(rawBuf, imageUrl || '', finalMime);
+    finalBase64 = norm.base64;
+    finalMime = norm.mimeType;
+  } else if (imageUrl) {
     if (imageUrl.startsWith('data:')) {
-      finalMime = imageUrl.split(';')[0]?.replace('data:', '') || 'image/jpeg';
-      finalBase64 = imageUrl.replace(/^data:[^;]+;base64,/, '');
+      const hintMime = imageUrl.split(';')[0]?.replace('data:', '') || 'image/jpeg';
+      const rawBuf = Buffer.from(imageUrl.replace(/^data:[^;]+;base64,/, ''), 'base64');
+      const norm = await normalizeBufferForGeminiOcr(rawBuf, '', hintMime);
+      finalBase64 = norm.base64;
+      finalMime = norm.mimeType;
     } else if (imageUrl.startsWith('/api/v1/result-sheets/') || imageUrl.startsWith('/api/v1/polling-units/')) {
       const parts = imageUrl.split('/');
-      const idPart = parts[4] || '';
+      const idPart = decodeURIComponent(parts[4] || '');
       const cleanId = idPart.replace(/^rs-/, '').replace(/^pu-/, '');
       const stored =
         UPLOADED_EC8A_STORE.get(idPart) ||
@@ -3402,20 +3520,40 @@ async function transcribeFormEc8aWithGemini(params: {
         UPLOADED_EC8A_STORE.get(`rs-${cleanId}`) ||
         UPLOADED_EC8A_STORE.get(`pu-${cleanId}`);
       if (stored) {
-        finalBase64 = stored.buffer.toString('base64');
-        finalMime = stored.mimeType || 'image/jpeg';
+        const norm = await normalizeBufferForGeminiOcr(stored.buffer, stored.fileName, stored.mimeType || 'image/jpeg');
+        finalBase64 = norm.base64;
+        finalMime = norm.mimeType;
       } else {
         const diskDir = path.resolve(process.cwd(), 'data', 'uploads');
         const diskPath = path.join(diskDir, `${cleanId}.jpg`);
         if (fs.existsSync(diskPath)) {
-          finalBase64 = fs.readFileSync(diskPath).toString('base64');
-          finalMime = 'image/jpeg';
+          const rawBuf = fs.readFileSync(diskPath);
+          const norm = await normalizeBufferForGeminiOcr(rawBuf, diskPath, 'image/jpeg');
+          finalBase64 = norm.base64;
+          finalMime = norm.mimeType;
         } else {
           const sheet = RESULT_SHEETS[idPart] || RESULT_SHEETS[`rs-${cleanId}`];
           if (sheet && (sheet as any).imageDataUrl) {
             const raw = (sheet as any).imageDataUrl;
-            finalMime = raw.split(';')[0]?.replace('data:', '') || 'image/jpeg';
-            finalBase64 = raw.replace(/^data:[^;]+;base64,/, '');
+            const hintMime = raw.split(';')[0]?.replace('data:', '') || 'image/jpeg';
+            const rawBuf = Buffer.from(raw.replace(/^data:[^;]+;base64,/, ''), 'base64');
+            const norm = await normalizeBufferForGeminiOcr(rawBuf, '', hintMime);
+            finalBase64 = norm.base64;
+            finalMime = norm.mimeType;
+          } else if (sheet?.sourceUrl?.startsWith('http')) {
+            try {
+              const imgRes = await fetch(sheet.sourceUrl, {
+                headers: { 'User-Agent': 'Mozilla/5.0 NERAMP-GeminiOcrPipeline/2.0' },
+              });
+              if (imgRes.ok) {
+                const buf = Buffer.from(await imgRes.arrayBuffer());
+                const norm = await normalizeBufferForGeminiOcr(buf, sheet.sourceUrl);
+                finalBase64 = norm.base64;
+                finalMime = norm.mimeType;
+              }
+            } catch (e) {
+              // ignore
+            }
           }
         }
       }
@@ -3428,8 +3566,9 @@ async function transcribeFormEc8aWithGemini(params: {
         });
         if (imgRes.ok) {
           const buf = Buffer.from(await imgRes.arrayBuffer());
-          finalMime = detectMimeTypeFromBuffer(buf, imageUrl);
-          finalBase64 = buf.toString('base64');
+          const norm = await normalizeBufferForGeminiOcr(buf, imageUrl);
+          finalMime = norm.mimeType;
+          finalBase64 = norm.base64;
         }
       } catch (fErr: any) {
         console.warn(`[GEMINI OCR] Could not fetch remote image ${imageUrl}:`, fErr.message);
@@ -3443,16 +3582,12 @@ async function transcribeFormEc8aWithGemini(params: {
   const candidateModels = OCR_MODELS.filter(
     (m) => !modelQuotaStatus[m]?.isExhausted || now > (modelQuotaStatus[m]?.exhaustedUntil || 0)
   );
-
-  if (candidateModels.length === 0) {
-    console.warn('[GEMINI OCR] All OCR models currently exhausted. Document scan preserved for manual verification.');
-    return null;
-  }
+  const modelsToTry = candidateModels.length > 0 ? candidateModels : [...OCR_MODELS];
 
   let extracted: GeminiFormEc8aExtraction | null = null;
   let lastError: any = null;
 
-  for (const model of candidateModels) {
+  for (const model of modelsToTry) {
     try {
       const response = await ai.models.generateContent({
         model,
@@ -3468,12 +3603,14 @@ async function transcribeFormEc8aWithGemini(params: {
               text:
                 'You are an expert electoral result sheet OCR engine for Nigeria INEC Form EC8A (Statement of Result of Poll from Polling Unit). ' +
                 'Carefully examine this Form EC8A document scan. ' +
-                'Transcribe the Polling Unit Code (e.g. 29-15-09-012 or 29/15/09/012), State Name, LGA Name, Ward Name, and Polling Unit Name. ' +
-                'Carefully read all handwritten numbers and words in the Party Results table: ' +
+                '1. Transcribe the Polling Unit Code (e.g. 29-15-09-012 or 29/15/09/012), State Name, LGA Name, Ward Name, and Polling Unit Name. ' +
+                '2. Carefully read all handwritten numbers and words in the Political Party Results table: ' +
+                'Use official INEC party acronyms for `partyCode` (A, AA, AAC, ADC, ADP, APC, APGA, APM, APP, BP, LP, NNPP, NRM, PDP, PRP, SDP, YP, YPP, ZLP). ' +
                 'Pay special attention to leading zeros or dashes in the IN FIGURES column (for example, "-100---" is 100, "001---" is 1, "-091---" is 91, "-002---" is 2) ' +
-                'and cross-verify every party row against the IN WORDS column (e.g., "ONE HUNDRED" = 100, "NINETY ONE" = 91, "TWO" = 2, "ONE" = 1). ' +
-                'Extract items #1 through #8 from the ballot accounting box: #1 Voters on Register, #2 Accredited Voters, #3 Ballot Papers Issued, #4 Unused Ballots, #5 Spoiled Ballots, #6 Rejected Ballots, #7 Total Valid Votes, and #8 Total Used Ballots. ' +
-                'Also extract the Presiding Officer Name, Election Date, and Form Serial Number (S/N). Return pure JSON conforming strictly to the schema.',
+                'and cross-verify every party row against the IN WORDS column (e.g., "ONE HUNDRED" = 100, "NINETY ONE" = 91, "TWO" = 2, "ONE" = 1). Only include parties that have 1 or more votes (`votesInFigures > 0`). ' +
+                '3. Extract items #1 through #8 from the ballot accounting box: #1 Voters on Register, #2 Accredited Voters, #3 Ballot Papers Issued, #4 Unused Ballots, #5 Spoiled Ballots, #6 Rejected Ballots, #7 Total Valid Votes, and #8 Total Used Ballots. ' +
+                'If any numeric box (such as Rejected Ballots, Spoiled Ballots, or Unused Ballots) has a dash (-), NIL, or is blank, output 0 for that integer. ' +
+                '4. Extract the Presiding Officer Name, Election Date, and Form Serial Number (S/N). Return pure JSON conforming strictly to the schema.',
             },
           ],
         },
@@ -3512,7 +3649,7 @@ async function transcribeFormEc8aWithGemini(params: {
                 },
               },
             },
-            required: ['votersOnRegister', 'accreditedVoters', 'rejectedBallots', 'totalValidVotes', 'partyScores'],
+            required: ['partyScores'],
           },
         },
       });
@@ -3520,7 +3657,11 @@ async function transcribeFormEc8aWithGemini(params: {
       const raw = (response.text || '').trim();
       if (raw) {
         const cleaned = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
-        extracted = JSON.parse(cleaned) as GeminiFormEc8aExtraction;
+        const parsed = JSON.parse(cleaned) as GeminiFormEc8aExtraction;
+        (parsed as any).modelUsed = model;
+        (parsed as any).transcribedAt = new Date().toISOString();
+        extracted = parsed;
+        modelQuotaStatus[model] = { isExhausted: false, exhaustedUntil: 0 };
         console.log(`[GEMINI OCR] Model ${model} successfully transcribed Form EC8A: PU ${extracted.pollingUnitCode || 'Unknown'}`);
         break;
       }
@@ -3529,10 +3670,10 @@ async function transcribeFormEc8aWithGemini(params: {
       const errMsg = err?.message || '';
       const is429 = errMsg.includes('429') || err?.status === 429 || errMsg.includes('RESOURCE_EXHAUSTED') || errMsg.includes('quota');
       if (is429) {
-        console.warn(`[GEMINI OCR] Model ${model} quota limit reached. Recording backoff and switching to fallback...`);
+        console.warn(`[GEMINI OCR] Model ${model} quota limit reached. Switching to fallback model...`);
         modelQuotaStatus[model] = {
           isExhausted: true,
-          exhaustedUntil: Date.now() + 12000 * 1000,
+          exhaustedUntil: Date.now() + 60 * 1000,
           reason: errMsg,
         };
       } else {
@@ -3549,6 +3690,15 @@ async function transcribeFormEc8aWithGemini(params: {
   }
 
   if (imageUrl) {
+    // Preserve original INEC metadata fields if Gemini did not overwrite them
+    const prev = OCR_CACHE[imageUrl] as any;
+    if (prev && typeof prev === 'object') {
+      if (!extracted.pollingUnitCode && prev.pollingUnitCode) extracted.pollingUnitCode = prev.pollingUnitCode;
+      if (!extracted.pollingUnitName && prev.pollingUnitName) extracted.pollingUnitName = prev.pollingUnitName;
+      if (!extracted.stateName && (prev.stateName || prev.state)) extracted.stateName = prev.stateName || prev.state;
+      if (!extracted.lgaName && (prev.lgaName || prev.lga)) extracted.lgaName = prev.lgaName || prev.lga;
+      if (!extracted.wardName && (prev.wardName || prev.ward)) extracted.wardName = prev.wardName || prev.ward;
+    }
     OCR_CACHE[imageUrl] = extracted;
     saveOcrCache();
   }
@@ -3566,24 +3716,24 @@ function applyOcrExtractionToSheetAndPu(resultSheetId: string, extracted: Gemini
 
   if (Array.isArray(extracted.partyScores) && extracted.partyScores.length > 0) {
     for (const row of extracted.partyScores) {
-      const code = String(row.partyCode || '').trim().toUpperCase();
+      const code = normalizePartyCode(row.partyCode);
       const votes = Math.max(0, Number(row.votesInFigures) || 0);
       if (!code) continue;
       if (votes > 0) {
-        partyVotes[code] = votes;
-        partyWordsSummary.push(`${code}: ${votes}${row.votesInWords ? ` (${row.votesInWords})` : ''}`);
+        partyVotes[code] = (partyVotes[code] || 0) + votes;
+        partyWordsSummary.push(`${code}: ${partyVotes[code]}${row.votesInWords ? ` (${row.votesInWords})` : ''}`);
       }
     }
   } else if (extracted.partyVotes && typeof extracted.partyVotes === 'object') {
     const wordsMap = extracted.partyVotesInWords || {};
     for (const [rawCode, rawVotes] of Object.entries(extracted.partyVotes)) {
-      const code = String(rawCode || '').trim().toUpperCase();
+      const code = normalizePartyCode(rawCode);
       const votes = Math.max(0, Number(rawVotes) || 0);
       if (!code) continue;
       if (votes > 0) {
-        partyVotes[code] = votes;
-        const w = wordsMap[code];
-        partyWordsSummary.push(`${code}: ${votes}${w ? ` (${w})` : ''}`);
+        partyVotes[code] = (partyVotes[code] || 0) + votes;
+        const w = wordsMap[rawCode] || wordsMap[code];
+        partyWordsSummary.push(`${code}: ${partyVotes[code]}${w ? ` (${w})` : ''}`);
       }
     }
   }
@@ -3818,6 +3968,9 @@ function resolveCanonicalLgaAndWard(
 // Hydrate POLLING_UNITS and RESULT_SHEETS from OCR_CACHE on startup so all 30 Osun LGAs and 16 Ekiti LGAs have immediate official data
 function hydratePollingUnitsFromOcrCache() {
   let hydrated = 0;
+  let realTranscribed = 0;
+  const pendingToQueue: string[] = [];
+
   for (const [docUrl, entry] of Object.entries(OCR_CACHE)) {
     const cached: any = entry;
     if (!cached || !cached.pollingUnitCode) continue;
@@ -3825,9 +3978,10 @@ function hydratePollingUnitsFromOcrCache() {
     const isEkiti = rawState.includes('EKITI');
     const targetStateCode = isEkiti ? 'EKITI' : 'OSUN';
     const targetElectionId = isEkiti ? 'elec-2026-gov-ekiti' : 'elec-2026-gov-osun';
-    const normalizedCode = String(cached.pollingUnitCode).replace(/\//g, '-').trim();
+    const normalizedCode = normalizePollingUnitCode(cached.pollingUnitCode);
     const puId = `pu-${normalizedCode}`;
     const resultSheetId = `rs-${normalizedCode}`;
+    const isSyntheticStub = isSyntheticOcrEntry(cached);
 
     const { lgaCode, wardCode } = resolveCanonicalLgaAndWard(
       targetStateCode,
@@ -3848,8 +4002,8 @@ function hydratePollingUnitsFromOcrCache() {
       accreditedVoters: Number(cached.accreditedVoters) || 280,
       electionId: targetElectionId,
       uploadStatus: 'UPLOADED',
-      transcriptionStatus: 'COMPLETED',
-      verificationStatus: 'VERIFIED',
+      transcriptionStatus: isSyntheticStub ? 'PENDING' : 'COMPLETED',
+      verificationStatus: isSyntheticStub ? 'PENDING_VERIFICATION' : 'VERIFIED',
       sourceUploadTimestamp: cached.transcribedAt || new Date().toISOString(),
       lastRetrievedTimestamp: new Date().toISOString(),
       resultSheetId,
@@ -3877,21 +4031,37 @@ function hydratePollingUnitsFromOcrCache() {
       imageUrl: docUrl,
       uploadTimestamp: cached.transcribedAt || new Date().toISOString(),
       retrievalTimestamp: new Date().toISOString(),
-      ocrConfidence: Number(cached.confidenceScore || cached.ocrConfidence || 98),
+      ocrConfidence: isSyntheticStub ? 0 : Number(cached.confidenceScore || cached.ocrConfidence || 98),
       sourceStatus: 'ORIGINAL',
       version: 1,
       transcription: { validVotes: 0, rejectedVotes: 0, totalVotesCast: 0, partyVotes: {} },
-      ocrExtraction: { validVotes: 0, rejectedVotes: 0, totalVotesCast: 0, partyVotes: {}, rawText: '' },
-      arithmeticCheck: { passed: true, difference: 0, formula: '', details: '' },
-      verifiedBy: 'Gemini Vision AI OCR + Ballot Arithmetic Check',
+      ocrExtraction: {
+        validVotes: 0,
+        rejectedVotes: 0,
+        totalVotesCast: 0,
+        partyVotes: {},
+        rawText: `INEC FORM EC8A — ${puRecord.name} (${normalizedCode}). Ready for Gemini Vision AI OCR transcription.`,
+      },
+      arithmeticCheck: {
+        passed: true,
+        difference: 0,
+        formula: 'Awaiting Gemini Vision AI OCR extraction',
+        details: 'Official Form EC8A document retrieved from INEC Results Portal (IReV).',
+      },
+      verifiedBy: isSyntheticStub ? 'Pending AI OCR Transcription' : 'Gemini Vision AI OCR + Ballot Arithmetic Check',
       verifiedAt: cached.transcribedAt || new Date().toISOString(),
       verifierNotes: `Official Form EC8A document from INEC IReV: ${docUrl}`,
     };
 
-    applyOcrExtractionToSheetAndPu(resultSheetId, cached);
+    if (!isSyntheticStub) {
+      applyOcrExtractionToSheetAndPu(resultSheetId, cached);
+      realTranscribed++;
+    } else {
+      pendingToQueue.push(resultSheetId);
+    }
     hydrated++;
   }
-  console.log(`[OCR CACHE HYDRATION] Hydrated ${hydrated} verified Polling Unit result sheets across Osun and Ekiti states.`);
+  console.log(`[OCR CACHE HYDRATION] Hydrated ${hydrated} Polling Unit result sheets (${realTranscribed} verified by Gemini Vision AI OCR, ${pendingToQueue.length} queued/ready for live AI OCR).`);
 }
 
 hydratePollingUnitsFromOcrCache();
@@ -4388,67 +4558,16 @@ app.post('/api/v1/ocr/upload-and-transcribe', async (req: Request, res: Response
       forceRefresh: true,
     });
 
-    // Resilient fallback if live Gemini Vision quota is temporarily exhausted so Form EC8A upload & transcription always succeeds
     if (!extracted) {
-      const hashInt = parseInt(shaHash.slice(0, 8), 16) || 12345;
-      const isEkiti = electionId.includes('ekiti') || fileName.toLowerCase().includes('ekiti');
-      const targetSt = isEkiti ? 'EKITI' : 'OSUN';
-      const stLgas = LGAS.filter((l) => l.stateCode === targetSt);
-      const pickedLga = stLgas[hashInt % Math.max(1, stLgas.length)];
-      const lgaWards = WARDS.filter((w) => w.lgaCode === pickedLga?.code);
-      const pickedWard = lgaWards[hashInt % Math.max(1, lgaWards.length)];
-      const seqNum = String((POLLING_UNITS.length % 90) + 10).padStart(3, '0');
-      const puCodeGen = isEkiti ? `13-01-01-${seqNum}` : `29-30-01-${seqNum}`;
-
-      const aVotes = isEkiti ? 12 + (hashInt % 15) : 138 + (hashInt % 65);
-      const apcVotes = isEkiti ? 145 + (hashInt % 60) : 96 + ((hashInt >> 3) % 55);
-      const pdpVotes = 54 + ((hashInt >> 5) % 40);
-      const adcVotes = 14 + (hashInt % 18);
-      const lpVotes = 9 + (hashInt % 12);
-      const sdpVotes = 6 + (hashInt % 10);
-      const nnppVotes = 4 + (hashInt % 7);
-      const zlpVotes = 2 + (hashInt % 5);
-      const validVotes = aVotes + apcVotes + pdpVotes + adcVotes + lpVotes + sdpVotes + nnppVotes + zlpVotes;
-      const rejectedBallots = 3 + (hashInt % 6);
-      const spoiledBallotPapers = hashInt % 2;
-      const accreditedVoters = validVotes + rejectedBallots;
-      const votersOnRegister = accreditedVoters + 185 + (hashInt % 140);
-      const ballotPapersIssued = votersOnRegister;
-      const unusedBallotPapers = ballotPapersIssued - (validVotes + rejectedBallots + spoiledBallotPapers);
-
-      extracted = {
-        serialNumber: `INEC/EC8A/${puCodeGen}`,
-        stateName: targetSt,
-        lgaName: pickedLga?.name || (isEkiti ? 'ADO EKITI' : 'OSOGBO'),
-        wardName: pickedWard?.name || 'ATAOJA I',
-        pollingUnitName: `OPEN SPACE / SCHOOL HALL (${fileName.replace(/\.[^.]+$/, '').toUpperCase()})`,
-        pollingUnitCode: puCodeGen,
-        votersOnRegister,
-        accreditedVoters,
-        ballotPapersIssued,
-        unusedBallotPapers,
-        spoiledBallotPapers,
-        rejectedBallots,
-        totalValidVotes: validVotes,
-        totalUsedBallotPapers: validVotes + rejectedBallots + spoiledBallotPapers,
-        presidingOfficerName: `INEC PRESIDING OFFICER (${puCodeGen})`,
-        electionDateOnForm: '2026-08-15',
-        ocrConfidence: 0.97,
-        partyScores: [
-          { partyCode: 'A', votesInFigures: aVotes },
-          { partyCode: 'APC', votesInFigures: apcVotes },
-          { partyCode: 'PDP', votesInFigures: pdpVotes },
-          { partyCode: 'ADC', votesInFigures: adcVotes },
-          { partyCode: 'LP', votesInFigures: lpVotes },
-          { partyCode: 'SDP', votesInFigures: sdpVotes },
-          { partyCode: 'NNPP', votesInFigures: nnppVotes },
-          { partyCode: 'ZLP', votesInFigures: zlpVotes },
-        ],
-      };
+      res.status(503).json({
+        error:
+          'Gemini Vision AI OCR was temporarily unable to transcribe this image (e.g. temporary model capacity spike or unreadable scan). Please retry in a few moments or inspect the image in the Verification Workspace.',
+      });
+      return;
     }
 
-    const rawCode = extracted.pollingUnitCode || `29-15-09-${String(POLLING_UNITS.length + 1).padStart(3, '0')}`;
-    const normalizedCode = rawCode.replace(/\//g, '-').trim();
+    const rawCode = normalizePollingUnitCode(extracted.pollingUnitCode) || `29-15-09-${String(POLLING_UNITS.length + 1).padStart(3, '0')}`;
+    const normalizedCode = rawCode;
     const stateCode = (extracted.stateName || 'OSUN').toUpperCase().includes('EKITI') ? 'EKITI' : 'OSUN';
     const { lgaCode, wardCode } = resolveCanonicalLgaAndWard(
       stateCode,
@@ -6130,12 +6249,24 @@ async function startServer() {
   app.use('/party-logos', express.static(path.resolve(__dirname, 'public/party-logos')));
 
   if (process.env.NODE_ENV !== 'production') {
-    const { createServer: createViteServer } = await import('vite');
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: 'spa',
+    let viteMiddleware: any = null;
+    const viteReadyPromise = (async () => {
+      const { createServer: createViteServer } = await import('vite');
+      const vite = await createViteServer({
+        server: { middlewareMode: true },
+        appType: 'spa',
+      });
+      viteMiddleware = vite.middlewares;
+      return viteMiddleware;
+    })();
+
+    app.use(async (req, res, next) => {
+      if (viteMiddleware) {
+        return viteMiddleware(req, res, next);
+      }
+      const mw = await viteReadyPromise;
+      return mw(req, res, next);
     });
-    app.use(vite.middlewares);
   } else {
     const distPath = path.resolve(__dirname, 'dist');
     app.use(express.static(distPath));

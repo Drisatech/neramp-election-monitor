@@ -1,47 +1,51 @@
 {
   "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/613/7020/97258/42bdbaea-a996-459f-bab2-7c82d889720c.jpg": {
-    "formSerialNumber": "INEC/EC8A/29-15-09-006",
-    "state": "OSUN",
-    "lga": "IFE NORTH",
-    "ward": "OYERE I",
+    "partyScores": [
+      {
+        "partyCode": "A",
+        "votesInFigures": 100,
+        "votesInWords": "ONE HUNDRED"
+      },
+      {
+        "partyCode": "AA",
+        "votesInFigures": 1,
+        "votesInWords": "ONE"
+      },
+      {
+        "partyCode": "ADC",
+        "votesInFigures": 1,
+        "votesInWords": "ONE"
+      },
+      {
+        "partyCode": "APC",
+        "votesInFigures": 91,
+        "votesInWords": "NINETY ONE"
+      },
+      {
+        "partyCode": "APGA",
+        "votesInFigures": 2,
+        "votesInWords": "TWO"
+      }
+    ],
+    "accreditedVoters": 195,
+    "ballotPapersIssued": 484,
+    "electionDateOnForm": "16TH OF AUGUST, 2026",
+    "lgaName": "IFE NORTH",
+    "ocrConfidence": 0.95,
+    "pollingUnitCode": "29/15/09/006",
     "pollingUnitName": "R.C.M. SCHOOL, ONIBAMBU",
-    "pollingUnitCode": "29-15-09-006",
-    "votersOnRegister": 498,
-    "accreditedVoters": 378,
-    "ballotsIssued": 498,
-    "unusedBallots": 121,
-    "spoiledBallots": 0,
-    "rejectedVotes": 6,
-    "validVotes": 371,
-    "totalVotesCast": 377,
-    "partyVotes": {
-      "A": 156,
-      "APC": 90,
-      "PDP": 73,
-      "ADC": 24,
-      "LP": 8,
-      "SDP": 7,
-      "NNPP": 6,
-      "ZLP": 5,
-      "APGA": 2
-    },
-    "partyVotesInWords": {
-      "A": "ONE HUNDRED AND FIFTY SIX",
-      "APC": "NINETY",
-      "PDP": "SEVENTY THREE",
-      "ADC": "TWENTY FOUR",
-      "LP": "EIGHT",
-      "SDP": "SEVEN",
-      "NNPP": "SIX",
-      "ZLP": "FIVE",
-      "APGA": "TWO"
-    },
-    "presidingOfficerName": "INEC PRESIDING OFFICER (29-15-09-006)",
-    "isSignedAndStamped": true,
-    "discrepancyNotes": "NONE",
-    "confidenceScore": 98,
-    "transcribedAt": "2026-10-19T08:54:57.410Z",
-    "modelUsed": "gemini-3-flash-preview"
+    "presidingOfficerName": "IBRAHIM SAMUEL",
+    "rejectedBallots": 0,
+    "serialNumber": "0001745",
+    "spoiledBallotPapers": 3,
+    "stateName": "OSUN",
+    "totalUsedBallotPapers": 198,
+    "totalValidVotes": 195,
+    "unusedBallotPapers": 286,
+    "votersOnRegister": 484,
+    "wardName": "OYERE I",
+    "modelUsed": "gemini-3.8-flash",
+    "transcribedAt": "2026-10-20T11:39:08.637Z"
   },
   "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/613/7020/97253/79e5f6e7-8235-492c-b97f-c40629ab85d3.jpg": {
     "formSerialNumber": "INEC/EC8A/29-15-09-001",
