@@ -33,5 +33,5 @@ USER node
 
 EXPOSE 3000
 
-# Start production server on PORT (3000)
-CMD ["node", "server.ts"]
+# Start production server on PORT (e.g. 3000)
+CMD ["npm", "start"]

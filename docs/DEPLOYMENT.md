@@ -1,135 +1,96 @@
-# Production Deployment Guide - Nigeria Election Watch 2027
+# Production Deployment Guide - Nigeria Election Watch
 
-This guide outlines deployment procedures across Local, Staging, and Production environments for the Nigeria Election Watch platform.
-
----
-
-## 1. Local Development & Testing Deployment
-
-### Prerequisites
-- Docker Engine 24.0+ and Docker Compose v2.20+
-- Node.js 20 LTS & Python 3.12 (optional for running outside containers)
-
-### Step-by-Step Local Deployment
-1. **Clone the repository & copy environment configuration:**
-   ```bash
-   cp .env.example .env
-   ```
-
-2. **Launch all services via Docker Compose:**
-   ```bash
-   docker compose up -d --build
-   ```
-   This will spin up:
-   - `election_watch_db`: PostgreSQL 16 + PostGIS on port 5432
-   - `election_watch_redis`: Redis 7.2 on port 6379
-   - `election_watch_backend`: FastAPI API Gateway on port 8000
-   - `election_watch_worker`: Background OCR & Ingestion worker
-   - `election_watch_frontend`: React + Express Web Application on port 3000
-
-3. **Verify service health probes:**
-   ```bash
-   curl -f http://localhost:8000/api/v1/health
-   curl -f http://localhost:8000/api/v1/health/ready
-   curl -f http://localhost:3000/api/v1/health
-   ```
-
-4. **Run backend automated test suite:**
-   ```bash
-   python3 -m unittest discover backend/tests
-   ```
+This guide outlines deployment procedures for the unified Nigeria Election Watch platform, including instructions to disconnect legacy Google Cloud Run triggers and deploy to Render.com or any Node/Docker hosting provider.
 
 ---
 
-## 2. Staging Environment Deployment
+## 1. Disconnecting Google Cloud Run Auto-Deployments from GitHub
 
-Staging mirrors production with synthetic election fixtures and test credentials.
+If pushing commits to GitHub previously triggered automated deployments to Google Cloud Run, follow these steps to stop them:
 
-1. **Create Staging Secrets in Secret Manager:**
-   ```bash
-   gcloud secrets create election-watch-secrets-staging --data-file=.env.staging
-   ```
+### Method A: Disable/Delete Trigger in Google Cloud Console
+1. Navigate to the **[Google Cloud Console](https://console.cloud.google.com/)** and select your project.
+2. In the navigation menu, go to **Cloud Build** > **Triggers**.
+3. Locate the trigger associated with your GitHub repository and Cloud Run service (e.g., `election-watch-backend` or `election-watch-frontend`).
+4. Click the three dots icon (`⋮`) next to the trigger and select **Disable** (to pause) or **Delete** (to permanently remove).
+5. Alternatively, open **Cloud Run** > select your service > click **Edit Continuous Deployment** > **Disconnect / Delete Trigger**.
 
-2. **Deploy Cloud SQL (PostGIS enabled):**
-   ```bash
-   gcloud sql instances create election-watch-sql-staging \
-       --database-version=POSTGRES_16 \
-       --tier=db-custom-2-7680 \
-       --region=europe-west1
-   ```
+### Method B: Disconnect Google Cloud Build from GitHub
+1. Open your GitHub account: **Settings** > **Applications** > **Authorized GitHub Apps** (or **Installed GitHub Apps**).
+2. Find **Google Cloud Build**.
+3. Under **Repository access**, remove this repository or revoke access.
+4. Also check your GitHub repository's **Settings** > **Webhooks**: if there is a webhook pointing to `cloudbuild.googleapis.com`, delete or disable it.
 
-3. **Run Database Migrations (Alembic):**
-   ```bash
-   alembic upgrade head
-   ```
+### Method C: Disabling via gcloud CLI
+```bash
+# List active Cloud Build triggers
+gcloud builds triggers list
+
+# Delete or disable the trigger
+gcloud builds triggers delete <TRIGGER_NAME_OR_ID>
+```
 
 ---
 
-## 3. Production Deployment (Google Cloud Run & Cloud SQL)
+## 2. Deploying to Render.com (Recommended)
 
-### Prerequisites
-- Google Cloud SDK (`gcloud`) initialized with active project billing
-- Cloud SQL Admin, Cloud Run Admin, and Secret Manager access roles
+The app includes native `render.yaml` blueprint configuration for automated continuous deployment on Render.
 
-### Architecture Setup
+### Option 1: Automatic Blueprint Deployment
+1. Log in to [Render.com](https://render.com).
+2. Click **New +** > **Blueprint**.
+3. Connect your GitHub repository.
+4. Render automatically parses `render.yaml`:
+   - **Runtime**: Node.js
+   - **Build Command**: `npm install && npm run build`
+   - **Start Command**: `npm start`
+   - **Health Check**: `/api/v1/health`
+5. Click **Apply**. Render will automatically deploy new commits whenever you push to GitHub.
 
-1. **Deploy Managed Cloud SQL with PostGIS:**
-   ```bash
-   gcloud sql instances create election-watch-sql-prod \
-       --database-version=POSTGRES_16 \
-       --tier=db-custom-8-32768 \
-       --region=europe-west1 \
-       --availability-type=REGIONAL \
-       --backup-start-time=02:00 \
-       --enable-bin-log \
-       --storage-auto-increase
-   
-   # Connect and enable PostGIS extension
-   gcloud sql connect election-watch-sql-prod --user=postgres
-   # Inside psql:
-   CREATE DATABASE election_watch;
-   \c election_watch;
-   CREATE EXTENSION IF NOT EXISTS postgis;
-   ```
+### Option 2: Manual Web Service on Render
+1. Click **New +** > **Web Service**.
+2. Connect your GitHub repository.
+3. Configure the following settings:
+   - **Environment**: `Node`
+   - **Build Command**: `npm install && npm run build`
+   - **Start Command**: `npm start`
+   - **Health Check Path**: `/api/v1/health`
+4. In the **Environment Variables** section, add:
+   - `NODE_ENV` = `production`
+   - `PORT` = `10000` (Render sets this dynamically, but `server.ts` handles it automatically)
+   - (Optional) `GEMINI_API_KEY`, `OPENAI_API_KEY`, `GROQ_API_KEY`, or `ANTHROPIC_API_KEY` for AI OCR.
 
-2. **Configure Production Secrets:**
-   ```bash
-   # Generate 32-byte cryptographic secret key
-   SECRET_KEY=$(openssl rand -hex 32)
-   
-   gcloud secrets create election-watch-secrets --replication-policy="automatic"
-   echo -n "{\"database_url\":\"postgresql+asyncpg://...\", \"secret_key\":\"$SECRET_KEY\"}" | \
-       gcloud secrets versions add election-watch-secrets --data-file=-
-   ```
+---
 
-3. **Build and Push Container Images:**
-   ```bash
-   # Build FastAPI Backend
-   docker build -t gcr.io/$PROJECT_ID/election-watch-backend:v1.0.0 -f backend/Dockerfile .
-   docker push gcr.io/$PROJECT_ID/election-watch-backend:v1.0.0
-   
-   # Build React Frontend
-   docker build -t gcr.io/$PROJECT_ID/election-watch-frontend:v1.0.0 -f Dockerfile.frontend .
-   docker push gcr.io/$PROJECT_ID/election-watch-frontend:v1.0.0
-   
-   # Build Background Worker
-   docker build -t gcr.io/$PROJECT_ID/election-watch-worker:v1.0.0 -f backend/Dockerfile.worker .
-   docker push gcr.io/$PROJECT_ID/election-watch-worker:v1.0.0
-   ```
+## 3. Local Development & Docker Deployment
 
-4. **Deploy Backend Service to Google Cloud Run:**
-   ```bash
-   gcloud run services replace deploy/cloudrun-backend.yaml
-   ```
+### Step-by-Step Local Run
+```bash
+# Install dependencies
+npm install
 
-5. **Deploy Frontend Web Tier to Google Cloud Run:**
-   ```bash
-   gcloud run services replace deploy/cloudrun-frontend.yaml
-   ```
+# Build client bundle
+npm run build
 
-6. **Post-Deployment Smoke Test:**
-   ```bash
-   curl -I https://api.electionwatch.ng/api/v1/health
-   curl -I https://api.electionwatch.ng/api/v1/health/ready
-   curl -I https://electionwatch.ng/
-   ```
+# Start production server
+npm start
+```
+
+### Docker Container Run
+```bash
+# Build the unified container
+docker build -t election-watch:latest .
+
+# Run container on port 3000 (or any port)
+docker run -p 3000:3000 -e PORT=3000 election-watch:latest
+```
+
+---
+
+## 4. Verification & Health Probes
+
+Once deployed, verify the service using the built-in health probes:
+```bash
+curl -f https://<your-render-url>/api/v1/health
+curl -f https://<your-render-url>/api/v1/health/live
+```

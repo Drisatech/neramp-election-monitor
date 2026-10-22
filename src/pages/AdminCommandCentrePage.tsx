@@ -32,6 +32,7 @@ import {
   Cpu,
   BarChart2,
   HardDrive,
+  Sparkles,
 } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -498,6 +499,18 @@ export const AdminCommandCentrePage: React.FC = () => {
 
         {/* Action Controls */}
         <div className="flex flex-wrap items-center gap-2.5">
+          {isSuperOrProjectAdmin && (
+            <button
+              type="button"
+              onClick={() => window.dispatchEvent(new CustomEvent('open-ai-ocr-settings'))}
+              className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-teal-900 bg-teal-50 hover:bg-teal-100 rounded-lg border border-teal-300 transition-colors shadow-2xs cursor-pointer"
+              title="Configure Gemini Vision AI OCR engine, rate limits, latency diagnostics, and API keys"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-teal-700" />
+              <span>AI OCR Settings</span>
+            </button>
+          )}
+
           {isSuperOrProjectAdmin && (
             <RegisteredVotersImportModal
               onSuccess={() => {
@@ -1088,10 +1101,20 @@ export const AdminCommandCentrePage: React.FC = () => {
               <button
                 onClick={handleRunDiagnostics}
                 disabled={isDiagnosticRunning}
-                className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg transition-colors"
+                className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg transition-colors cursor-pointer"
               >
                 <Activity className={`w-3.5 h-3.5 ${isDiagnosticRunning ? 'animate-spin' : ''}`} />
                 <span>Run Diagnostics</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => window.dispatchEvent(new CustomEvent('open-ai-ocr-settings'))}
+                className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-teal-900 bg-teal-50 hover:bg-teal-100 border border-teal-300 rounded-lg transition-colors cursor-pointer shadow-2xs"
+                title="Configure Gemini Vision AI OCR engine, test ping, or attach custom API key"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-teal-700" />
+                <span>AI OCR Configuration</span>
               </button>
             </div>
           </div>

@@ -19,7 +19,10 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const PORT = Number(process.env.PORT) || 3000;
+const portArgIndex = process.argv.indexOf('--port');
+const PORT = portArgIndex !== -1 && process.argv[portArgIndex + 1]
+  ? Number(process.argv[portArgIndex + 1]) || 3000
+  : Number(process.env.PORT) || 3000;
 
 // Google Cloud Storage & Cloud SQL Configuration
 const GCS_BUCKET_NAME = process.env.GCS_BUCKET_NAME || 'neramp-election-evidence-0652072827';
@@ -3439,6 +3442,115 @@ async function normalizeBufferForGeminiOcr(
   return { base64: buf.toString('base64'), mimeType: detectedMime };
 }
 
+// ==========================================
+// FLEXIBLE MULTI-PROVIDER AI OCR ENGINE
+// (Google Gemini, OpenAI, Groq, Anthropic Claude)
+// ==========================================
+
+export type AiProvider = 'gemini' | 'openai' | 'groq' | 'claude';
+
+export interface ProviderConfig {
+  name: string;
+  description: string;
+  envVar: string;
+  defaultModel: string;
+  models: string[];
+  docUrl: string;
+  keyPlaceholder: string;
+}
+
+const AI_PROVIDERS: Record<AiProvider, ProviderConfig> = {
+  gemini: {
+    name: 'Google Gemini',
+    description: 'High throughput, fast multimodal reasoning (Google AI Studio Free Tier supported)',
+    envVar: 'GEMINI_API_KEY',
+    defaultModel: 'gemini-3.5-flash-lite',
+    models: ['gemini-3.5-flash-lite', 'gemini-3.1-flash-lite', 'gemini-3.8-flash'],
+    docUrl: 'https://aistudio.google.com/app/apikey',
+    keyPlaceholder: 'AQ... or AIzaSy...',
+  },
+  openai: {
+    name: 'OpenAI (GPT-4o)',
+    description: 'Industry-standard structured outputs & reliable Form EC8A transcription',
+    envVar: 'OPENAI_API_KEY',
+    defaultModel: 'gpt-4o-mini',
+    models: ['gpt-4o-mini', 'gpt-4o'],
+    docUrl: 'https://platform.openai.com/api-keys',
+    keyPlaceholder: 'sk-proj-...',
+  },
+  groq: {
+    name: 'Groq (Llama 3.2 Vision)',
+    description: 'Ultra-low latency LPU inference using open-weights Llama 3.2 Vision models',
+    envVar: 'GROQ_API_KEY',
+    defaultModel: 'llama-3.2-11b-vision-preview',
+    models: ['llama-3.2-11b-vision-preview', 'llama-3.2-90b-vision-preview'],
+    docUrl: 'https://console.groq.com/keys',
+    keyPlaceholder: 'gsk_...',
+  },
+  claude: {
+    name: 'Anthropic Claude',
+    description: 'Exceptional handwritten text deciphering and document layout comprehension',
+    envVar: 'ANTHROPIC_API_KEY',
+    defaultModel: 'claude-3-5-sonnet-20241022',
+    models: ['claude-3-5-sonnet-20241022', 'claude-3-5-haiku-20241022'],
+    docUrl: 'https://console.anthropic.com/settings/keys',
+    keyPlaceholder: 'sk-ant-api03-...',
+  },
+};
+
+let activeAiProvider: AiProvider = (process.env.ACTIVE_AI_PROVIDER as AiProvider) || 'gemini';
+
+let customProviderKeys: Record<AiProvider, string> = {
+  gemini: process.env.CUSTOM_GEMINI_API_KEY || '',
+  openai: process.env.CUSTOM_OPENAI_API_KEY || '',
+  groq: process.env.CUSTOM_GROQ_API_KEY || '',
+  claude: process.env.CUSTOM_CLAUDE_API_KEY || '',
+};
+
+let selectedProviderModels: Record<AiProvider, string> = {
+  gemini: 'gemini-3.5-flash-lite',
+  openai: 'gpt-4o-mini',
+  groq: 'llama-3.2-11b-vision-preview',
+  claude: 'claude-3-5-sonnet-20241022',
+};
+
+function getEffectiveApiKey(provider: AiProvider): string {
+  if (customProviderKeys[provider]) return customProviderKeys[provider];
+  if (provider === 'gemini') return customGeminiApiKey || process.env.GEMINI_API_KEY || '';
+  if (provider === 'openai') return process.env.OPENAI_API_KEY || '';
+  if (provider === 'groq') return process.env.GROQ_API_KEY || '';
+  if (provider === 'claude') return process.env.ANTHROPIC_API_KEY || '';
+  return '';
+}
+
+const FORM_EC8A_OCR_PROMPT =
+  'You are an expert electoral result sheet OCR engine for Nigeria INEC Form EC8A (Statement of Result of Poll from Polling Unit). ' +
+  'Carefully examine this Form EC8A document scan. ' +
+  '1. Transcribe the Polling Unit Code (e.g. 29-15-09-012 or 29/15/09/012), State Name, LGA Name, Ward Name, and Polling Unit Name. ' +
+  '2. Carefully read all handwritten numbers and words in the Political Party Results table: ' +
+  'Use official INEC party acronyms for `partyCode` (A, AA, AAC, ADC, ADP, APC, APGA, APM, APP, BP, LP, NNPP, NRM, PDP, PRP, SDP, YP, YPP, ZLP). ' +
+  'Pay special attention to leading zeros or dashes in the IN FIGURES column (for example, "-100---" is 100, "001---" is 1, "-091---" is 91, "-002---" is 2) ' +
+  'and cross-verify every party row against the IN WORDS column (e.g., "ONE HUNDRED" = 100, "NINETY ONE" = 91, "TWO" = 2, "ONE" = 1). Only include parties that have 1 or more votes (`votesInFigures > 0`). ' +
+  '3. Extract items #1 through #8 from the ballot accounting box: #1 Voters on Register, #2 Accredited Voters, #3 Ballot Papers Issued, #4 Unused Ballots, #5 Spoiled Ballots, #6 Rejected Ballots, #7 Total Valid Votes, and #8 Total Used Ballots. ' +
+  'If any numeric box (such as Rejected Ballots, Spoiled Ballots, or Unused Ballots) has a dash (-), NIL, or is blank, output 0 for that integer. ' +
+  '4. Extract the Presiding Officer Name, Election Date, and Form Serial Number (S/N). ' +
+  'Return strictly valid JSON with this structure: {"serialNumber": string, "stateName": string, "lgaName": string, "wardName": string, "pollingUnitName": string, "pollingUnitCode": string, "votersOnRegister": number, "accreditedVoters": number, "ballotPapersIssued": number, "unusedBallotPapers": number, "spoiledBallotPapers": number, "rejectedBallots": number, "totalValidVotes": number, "totalUsedBallotPapers": number, "presidingOfficerName": string, "electionDateOnForm": string, "ocrConfidence": number, "partyScores": [{"partyCode": string, "votesInFigures": number, "votesInWords": string}]}. Return JSON only without markdown formatting.';
+
+function cleanAndParseEc8aJson(raw: string): any {
+  if (!raw) throw new Error('Empty response from AI vision model');
+  const cleaned = raw
+    .replace(/^```(?:json)?\s*/i, '')
+    .replace(/\s*```$/, '')
+    .trim();
+  const firstBrace = cleaned.indexOf('{');
+  const lastBrace = cleaned.lastIndexOf('}');
+  if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+    const jsonSub = cleaned.substring(firstBrace, lastBrace + 1);
+    return JSON.parse(jsonSub);
+  }
+  return JSON.parse(cleaned);
+}
+
 // Multi-Tier Model Selection & Quota Circuit Breaker for Gemini Vision AI OCR
 const OCR_MODELS = [
   'gemini-3.5-flash-lite',
@@ -3717,6 +3829,391 @@ async function transcribeFormEc8aWithGemini(params: {
   return extracted;
 }
 
+async function transcribeWithOpenAi(finalBase64: string, finalMime: string, model: string, apiKey: string) {
+  const res = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model: model || 'gpt-4o-mini',
+      response_format: { type: 'json_object' },
+      messages: [
+        {
+          role: 'system',
+          content: 'You are an expert electoral result sheet OCR engine for Nigeria INEC Form EC8A. Return pure JSON conforming strictly to the requested schema.',
+        },
+        {
+          role: 'user',
+          content: [
+            { type: 'text', text: FORM_EC8A_OCR_PROMPT },
+            {
+              type: 'image_url',
+              image_url: {
+                url: `data:${finalMime};base64,${finalBase64}`,
+                detail: 'high',
+              },
+            },
+          ],
+        },
+      ],
+      max_tokens: 2500,
+    }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err?.error?.message || `OpenAI API returned HTTP ${res.status}`);
+  }
+  const data = await res.json();
+  const rawText = data.choices?.[0]?.message?.content || '';
+  return cleanAndParseEc8aJson(rawText);
+}
+
+async function transcribeWithGroq(finalBase64: string, finalMime: string, model: string, apiKey: string) {
+  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model: model || 'llama-3.2-11b-vision-preview',
+      response_format: { type: 'json_object' },
+      messages: [
+        {
+          role: 'user',
+          content: [
+            { type: 'text', text: FORM_EC8A_OCR_PROMPT + '\nRespond with raw JSON only.' },
+            {
+              type: 'image_url',
+              image_url: {
+                url: `data:${finalMime};base64,${finalBase64}`,
+              },
+            },
+          ],
+        },
+      ],
+      max_tokens: 2500,
+    }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err?.error?.message || `Groq API returned HTTP ${res.status}`);
+  }
+  const data = await res.json();
+  const rawText = data.choices?.[0]?.message?.content || '';
+  return cleanAndParseEc8aJson(rawText);
+}
+
+async function transcribeWithClaude(finalBase64: string, finalMime: string, model: string, apiKey: string) {
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+    },
+    body: JSON.stringify({
+      model: model || 'claude-3-5-sonnet-20241022',
+      max_tokens: 2500,
+      system: 'You are an expert electoral result sheet OCR engine for Nigeria INEC Form EC8A. Respond strictly with raw JSON, no markdown formatting or commentary.',
+      messages: [
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'image',
+              source: {
+                type: 'base64',
+                media_type: finalMime,
+                data: finalBase64,
+              },
+            },
+            {
+              type: 'text',
+              text: FORM_EC8A_OCR_PROMPT,
+            },
+          ],
+        },
+      ],
+    }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err?.error?.message || `Claude API returned HTTP ${res.status}`);
+  }
+  const data = await res.json();
+  const rawText = data.content?.[0]?.text || '';
+  return cleanAndParseEc8aJson(rawText);
+}
+
+async function pingProviderConnection(
+  provider: AiProvider,
+  model?: string,
+  customKey?: string
+): Promise<{ success: boolean; message: string; latencyMs: number; activeModel: string; keySource: string }> {
+  const apiKey = customKey || getEffectiveApiKey(provider);
+  if (!apiKey) {
+    throw new Error(
+      `No API key configured for ${AI_PROVIDERS[provider].name}. Please configure an API key in the settings or set ${AI_PROVIDERS[provider].envVar}.`
+    );
+  }
+  const targetModel = model || selectedProviderModels[provider] || AI_PROVIDERS[provider].defaultModel;
+  const t0 = Date.now();
+
+  if (provider === 'gemini') {
+    const ai = new GoogleGenAI({ apiKey, httpOptions: { headers: { 'User-Agent': 'aistudio-build' } } });
+    const response = await ai.models.generateContent({
+      model: targetModel,
+      contents: 'Ping: Reply with "OK: Gemini Vision AI OCR is active and ready"',
+    });
+    return {
+      success: true,
+      message: (response.text || 'Gemini Vision AI OCR is active and responding.').trim(),
+      latencyMs: Date.now() - t0,
+      activeModel: targetModel,
+      keySource: customProviderKeys.gemini ? 'custom_admin_key' : 'environment_variable',
+    };
+  }
+
+  if (provider === 'openai') {
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: targetModel,
+        messages: [{ role: 'user', content: 'Ping: Reply with "OK: OpenAI Vision OCR is active and ready"' }],
+        max_tokens: 30,
+      }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err?.error?.message || `OpenAI returned HTTP ${res.status}`);
+    }
+    const data = await res.json();
+    return {
+      success: true,
+      message: (data.choices?.[0]?.message?.content || 'OpenAI Vision OCR is active and responding.').trim(),
+      latencyMs: Date.now() - t0,
+      activeModel: targetModel,
+      keySource: customProviderKeys.openai ? 'custom_admin_key' : 'environment_variable',
+    };
+  }
+
+  if (provider === 'groq') {
+    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: targetModel,
+        messages: [{ role: 'user', content: 'Ping: Reply with "OK: Groq Vision OCR is active and ready"' }],
+        max_tokens: 30,
+      }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err?.error?.message || `Groq returned HTTP ${res.status}`);
+    }
+    const data = await res.json();
+    return {
+      success: true,
+      message: (data.choices?.[0]?.message?.content || 'Groq Vision OCR is active and responding.').trim(),
+      latencyMs: Date.now() - t0,
+      activeModel: targetModel,
+      keySource: customProviderKeys.groq ? 'custom_admin_key' : 'environment_variable',
+    };
+  }
+
+  if (provider === 'claude') {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: targetModel,
+        max_tokens: 30,
+        messages: [{ role: 'user', content: 'Ping: Reply with "OK: Anthropic Claude Vision OCR is active and ready"' }],
+      }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err?.error?.message || `Claude returned HTTP ${res.status}`);
+    }
+    const data = await res.json();
+    return {
+      success: true,
+      message: (data.content?.[0]?.text || 'Claude Vision OCR is active and responding.').trim(),
+      latencyMs: Date.now() - t0,
+      activeModel: targetModel,
+      keySource: customProviderKeys.claude ? 'custom_admin_key' : 'environment_variable',
+    };
+  }
+
+  throw new Error(`Unknown provider: ${provider}`);
+}
+
+async function transcribeFormEc8aMultiProvider(params: {
+  imageUrl?: string;
+  base64Data?: string;
+  mimeType?: string;
+  forceRefresh?: boolean;
+}): Promise<GeminiFormEc8aExtraction | null> {
+  const { imageUrl, base64Data, mimeType, forceRefresh = false } = params;
+
+  if (imageUrl && !forceRefresh && OCR_CACHE[imageUrl] && !isSyntheticOcrEntry(OCR_CACHE[imageUrl])) {
+    return OCR_CACHE[imageUrl];
+  }
+
+  const provider = activeAiProvider;
+  const apiKey = getEffectiveApiKey(provider);
+  const model = selectedProviderModels[provider] || AI_PROVIDERS[provider].defaultModel;
+
+  let finalBase64 = '';
+  let finalMime = mimeType || 'image/jpeg';
+
+  if (base64Data) {
+    const cleanB64 = base64Data.replace(/^data:[^;]+;base64,/, '');
+    const rawBuf = Buffer.from(cleanB64, 'base64');
+    const norm = await normalizeBufferForGeminiOcr(rawBuf, imageUrl || '', finalMime);
+    finalBase64 = norm.base64;
+    finalMime = norm.mimeType;
+  } else if (imageUrl) {
+    if (imageUrl.startsWith('data:')) {
+      const hintMime = imageUrl.split(';')[0]?.replace('data:', '') || 'image/jpeg';
+      const rawBuf = Buffer.from(imageUrl.replace(/^data:[^;]+;base64,/, ''), 'base64');
+      const norm = await normalizeBufferForGeminiOcr(rawBuf, imageUrl, hintMime);
+      finalBase64 = norm.base64;
+      finalMime = norm.mimeType;
+    } else {
+      const urlHash = crypto.createHash('md5').update(imageUrl).digest('hex');
+      const diskDir = path.resolve(process.cwd(), 'data', 'uploads');
+      const cachedDiskPath = path.resolve(diskDir, `cache_${urlHash}.jpg`);
+      if (fs.existsSync(cachedDiskPath)) {
+        try {
+          const rawBuf = fs.readFileSync(cachedDiskPath);
+          finalBase64 = rawBuf.toString('base64');
+          finalMime = 'image/jpeg';
+        } catch (e) {
+          // ignore read error
+        }
+      }
+
+      if (!finalBase64) {
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 15000);
+          const imgRes = await fetch(imageUrl, {
+            signal: controller.signal,
+            headers: {
+              'User-Agent': 'Mozilla/5.0 NERAMP-VisionOcrPipeline/2.0',
+            },
+          });
+          clearTimeout(timeoutId);
+          if (imgRes.ok) {
+            const buf = Buffer.from(await imgRes.arrayBuffer());
+            const norm = await normalizeBufferForGeminiOcr(buf, imageUrl);
+            finalMime = norm.mimeType;
+            finalBase64 = norm.base64;
+            try {
+              if (!fs.existsSync(diskDir)) fs.mkdirSync(diskDir, { recursive: true });
+              fs.writeFileSync(cachedDiskPath, Buffer.from(norm.base64, 'base64'));
+            } catch (wErr) {
+              // ignore write failure
+            }
+          } else {
+            throw new Error(`Remote image server returned HTTP ${imgRes.status} (${imgRes.statusText})`);
+          }
+        } catch (fErr: any) {
+          const errDetail = fErr.name === 'AbortError' ? 'Download timed out after 15s' : fErr.message;
+          console.warn(`[MULTI-OCR] Could not fetch remote image ${imageUrl}:`, errDetail);
+          throw new Error(`Failed to download Form EC8A document scan: ${errDetail}`);
+        }
+      }
+    }
+  }
+
+  if (!finalBase64) {
+    throw new Error('No image data found or could not be loaded for this Form EC8A document scan.');
+  }
+
+  if (!apiKey) {
+    if (provider !== 'gemini' && getEffectiveApiKey('gemini')) {
+      console.warn(`[MULTI-OCR] ${AI_PROVIDERS[provider].name} key missing. Falling back to Google Gemini.`);
+      return transcribeFormEc8aWithGemini({ imageUrl, base64Data: finalBase64, mimeType: finalMime, forceRefresh });
+    }
+    throw new Error(
+      `API key for ${AI_PROVIDERS[provider].name} is not configured. Please open AI OCR Settings and select a provider or attach an API key.`
+    );
+  }
+
+  let extracted: GeminiFormEc8aExtraction | null = null;
+  let lastErr: any = null;
+
+  try {
+    if (provider === 'gemini') {
+      extracted = await transcribeFormEc8aWithGemini({ imageUrl, base64Data: finalBase64, mimeType: finalMime, forceRefresh });
+    } else if (provider === 'openai') {
+      console.log(`[MULTI-OCR] Transcribing via OpenAI (${model})...`);
+      extracted = await transcribeWithOpenAi(finalBase64, finalMime, model, apiKey);
+    } else if (provider === 'groq') {
+      console.log(`[MULTI-OCR] Transcribing via Groq (${model})...`);
+      extracted = await transcribeWithGroq(finalBase64, finalMime, model, apiKey);
+    } else if (provider === 'claude') {
+      console.log(`[MULTI-OCR] Transcribing via Anthropic Claude (${model})...`);
+      extracted = await transcribeWithClaude(finalBase64, finalMime, model, apiKey);
+    }
+  } catch (err: any) {
+    lastErr = err;
+    console.warn(`[MULTI-OCR] ${provider} extraction failed:`, err.message);
+    if (provider !== 'gemini' && getEffectiveApiKey('gemini')) {
+      try {
+        console.log('[MULTI-OCR] Attempting fallback to Google Gemini...');
+        extracted = await transcribeFormEc8aWithGemini({ imageUrl, base64Data: finalBase64, mimeType: finalMime, forceRefresh });
+      } catch (geminiErr: any) {
+        console.warn('[MULTI-OCR] Gemini fallback error:', geminiErr.message);
+      }
+    }
+  }
+
+  if (!extracted) {
+    if (imageUrl && OCR_CACHE[imageUrl]) {
+      console.log(`[MULTI-OCR] Live OCR failed; recovering cached Form EC8A record for ${imageUrl}`);
+      return OCR_CACHE[imageUrl];
+    }
+    const errorMsg = lastErr?.message || `${AI_PROVIDERS[provider].name} OCR could not produce valid Form EC8A extraction.`;
+    throw new Error(errorMsg);
+  }
+
+  (extracted as any).providerUsed = provider;
+  (extracted as any).modelUsed = model;
+  (extracted as any).transcribedAt = new Date().toISOString();
+
+  if (imageUrl) {
+    const prev = OCR_CACHE[imageUrl] as any;
+    if (prev && typeof prev === 'object') {
+      if (!extracted.pollingUnitCode && prev.pollingUnitCode) extracted.pollingUnitCode = prev.pollingUnitCode;
+      if (!extracted.pollingUnitName && prev.pollingUnitName) extracted.pollingUnitName = prev.pollingUnitName;
+      if (!extracted.stateName && (prev.stateName || prev.state)) extracted.stateName = prev.stateName || prev.state;
+      if (!extracted.lgaName && (prev.lgaName || prev.lga)) extracted.lgaName = prev.lgaName || prev.lga;
+      if (!extracted.wardName && (prev.wardName || prev.ward)) extracted.wardName = prev.wardName || prev.ward;
+    }
+    OCR_CACHE[imageUrl] = extracted;
+    saveOcrCache();
+  }
+
+  return extracted;
+}
+
 function applyOcrExtractionToSheetAndPu(resultSheetId: string, extracted: GeminiFormEc8aExtraction | any) {
   const sheet = RESULT_SHEETS[resultSheetId];
   if (!sheet) return null;
@@ -3879,11 +4376,11 @@ async function transcribeResultSheetById(resultSheetId: string, forceRefresh = f
     if (pu && pu.transcriptionStatus === 'PENDING') {
       pu.transcriptionStatus = 'IN_PROGRESS';
     }
-    const extracted = await transcribeFormEc8aWithGemini({
+    const extracted = await transcribeFormEc8aMultiProvider({
       imageUrl: sheet.imageUrl,
       forceRefresh,
     });
-    if (!extracted) throw new Error('Gemini Vision AI OCR returned no extraction result');
+    if (!extracted) throw new Error('AI Vision OCR returned no extraction result');
     return applyOcrExtractionToSheetAndPu(resultSheetId, extracted);
   })();
 
@@ -4306,92 +4803,123 @@ app.get('/api/v1/proxy-ec8a-image', async (req: Request, res: Response) => {
   }
 });
 
-// Check Gemini Vision AI OCR Quota & Model Status
+// Check AI OCR Provider, Quota & Model Status
 app.get('/api/v1/ocr/quota-status', (_req: Request, res: Response) => {
+  const activeKey = getEffectiveApiKey(activeAiProvider);
+  const providerMeta = AI_PROVIDERS[activeAiProvider];
+
+  const providersStatus = (Object.keys(AI_PROVIDERS) as AiProvider[]).map((key) => {
+    const effKey = getEffectiveApiKey(key);
+    return {
+      id: key,
+      name: AI_PROVIDERS[key].name,
+      description: AI_PROVIDERS[key].description,
+      envVar: AI_PROVIDERS[key].envVar,
+      defaultModel: AI_PROVIDERS[key].defaultModel,
+      models: AI_PROVIDERS[key].models,
+      selectedModel: selectedProviderModels[key] || AI_PROVIDERS[key].defaultModel,
+      isConfigured: Boolean(effKey),
+      keySource: customProviderKeys[key] ? 'custom_admin_key' : effKey ? 'environment_variable' : 'none',
+      maskedKey: effKey ? `${effKey.slice(0, 6)}...${effKey.slice(-4)}` : null,
+      docUrl: AI_PROVIDERS[key].docUrl,
+      keyPlaceholder: AI_PROVIDERS[key].keyPlaceholder,
+    };
+  });
+
   const now = Date.now();
-  const availableModels = OCR_MODELS.filter(
+  const availableGeminiModels = OCR_MODELS.filter(
     (m) => !modelQuotaStatus[m]?.isExhausted || now > (modelQuotaStatus[m]?.exhaustedUntil || 0)
   );
-  const activeKey = customGeminiApiKey || process.env.GEMINI_API_KEY || '';
+
   res.json({
     data: {
-      primaryModel: OCR_MODELS[0],
-      activeModel: availableModels[0] || OCR_MODELS[0],
-      allModels: OCR_MODELS,
-      fallbackModels: OCR_MODELS.slice(1),
-      quotaStatus: modelQuotaStatus,
-      hasAvailableModel: availableModels.length > 0,
+      activeProvider: activeAiProvider,
+      activeProviderName: providerMeta.name,
+      activeModel: selectedProviderModels[activeAiProvider] || providerMeta.defaultModel,
       apiKeyConfigured: Boolean(activeKey),
-      keySource: customGeminiApiKey ? 'custom_user_key' : 'environment_built_in',
+      keySource: customProviderKeys[activeAiProvider]
+        ? 'custom_admin_key'
+        : activeKey
+        ? 'environment_variable'
+        : 'none',
       maskedKey: activeKey ? `${activeKey.slice(0, 6)}...${activeKey.slice(-4)}` : null,
-      customKeyAttached: Boolean(customGeminiApiKey),
+      customKeyAttached: Boolean(customProviderKeys[activeAiProvider]),
+      providers: providersStatus,
+      // Backward compatibility fields
+      primaryModel: selectedProviderModels[activeAiProvider] || providerMeta.defaultModel,
+      allModels: providerMeta.models,
+      fallbackModels: providerMeta.models.slice(1),
+      quotaStatus: modelQuotaStatus,
+      hasAvailableModel: Boolean(activeKey),
     },
   });
 });
 
-// Update or Clear Custom Gemini API Key
+// Update AI OCR Provider, Selected Model, or Custom API Key
 app.post('/api/v1/ocr/api-key', (req: Request, res: Response) => {
-  const { apiKey } = req.body || {};
-  if (apiKey && typeof apiKey === 'string' && apiKey.trim().length > 0) {
-    customGeminiApiKey = apiKey.trim();
-    console.log('[GEMINI OCR] Custom user Gemini API key configured.');
-    res.json({
-      success: true,
-      message: 'Custom Gemini API Key applied. AI OCR requests will now use your key for priority throughput and higher quota.',
-      keySource: 'custom_user_key',
-      maskedKey: `${customGeminiApiKey.slice(0, 6)}...${customGeminiApiKey.slice(-4)}`,
-    });
-  } else {
-    customGeminiApiKey = '';
-    console.log('[GEMINI OCR] Reverted to environment built-in Gemini API key.');
-    res.json({
-      success: true,
-      message: 'Reverted to default built-in AI Studio Gemini API Key.',
-      keySource: 'environment_built_in',
-    });
-  }
-});
+  const { provider, apiKey, model } = req.body || {};
 
-// Test Gemini AI OCR Connection
-app.post('/api/v1/ocr/test-connection', async (_req: Request, res: Response) => {
-  const ai = getGeminiClient();
-  if (!ai) {
-    res.status(400).json({ success: false, error: 'No GEMINI_API_KEY is configured in the environment or settings.' });
-    return;
+  if (provider && (Object.keys(AI_PROVIDERS) as AiProvider[]).includes(provider)) {
+    activeAiProvider = provider as AiProvider;
   }
-  const t0 = Date.now();
-  let lastErr: any = null;
 
-  for (const model of OCR_MODELS) {
-    try {
-      const response = await ai.models.generateContent({
-        model,
-        contents: 'Ping: Reply with "OK: Gemini Vision AI OCR is active and ready"',
-      });
-      res.json({
-        success: true,
-        message: (response.text || 'Gemini Vision AI OCR is active and responding.').trim(),
-        latencyMs: Date.now() - t0,
-        activeModel: model,
-        keySource: customGeminiApiKey ? 'custom_user_key' : 'environment_built_in',
-      });
-      return;
-    } catch (err: any) {
-      lastErr = err;
-      const errMsg = err?.message || '';
-      console.warn(`[GEMINI OCR] Test ping for ${model} notice:`, errMsg);
+  const currentProvider = activeAiProvider;
+  if (model && AI_PROVIDERS[currentProvider].models.includes(model)) {
+    selectedProviderModels[currentProvider] = model;
+  }
+
+  if (typeof apiKey === 'string') {
+    if (apiKey.trim().length > 0) {
+      customProviderKeys[currentProvider] = apiKey.trim();
+      if (currentProvider === 'gemini') {
+        customGeminiApiKey = apiKey.trim();
+      }
+      console.log(`[MULTI-OCR] Custom API key configured for ${AI_PROVIDERS[currentProvider].name}.`);
+    } else {
+      // Empty string reverts to environment variable
+      customProviderKeys[currentProvider] = '';
+      if (currentProvider === 'gemini') {
+        customGeminiApiKey = '';
+      }
+      console.log(`[MULTI-OCR] Reverted ${AI_PROVIDERS[currentProvider].name} to environment key.`);
     }
   }
 
-  const errMsg = lastErr?.message || 'Connection failed';
-  const is429 = errMsg.includes('429') || errMsg.includes('RESOURCE_EXHAUSTED');
-  res.status(is429 ? 429 : 502).json({
-    success: false,
-    error: is429
-      ? 'Gemini API Free Tier quota or rate limit exceeded. You can attach a paid API key.'
-      : `Gemini ping failed: ${errMsg}`,
-    latencyMs: Date.now() - t0,
+  const effectiveKey = getEffectiveApiKey(currentProvider);
+
+  res.json({
+    success: true,
+    message: `Active AI OCR Provider set to ${AI_PROVIDERS[currentProvider].name} (${selectedProviderModels[currentProvider]}).`,
+    activeProvider: currentProvider,
+    activeModel: selectedProviderModels[currentProvider],
+    keySource: customProviderKeys[currentProvider] ? 'custom_admin_key' : 'environment_variable',
+    maskedKey: effectiveKey ? `${effectiveKey.slice(0, 6)}...${effectiveKey.slice(-4)}` : null,
   });
+});
+
+// Test AI OCR Connection Ping
+app.post('/api/v1/ocr/test-connection', async (req: Request, res: Response) => {
+  const { provider, model, apiKey } = req.body || {};
+  const targetProvider: AiProvider = (provider && (Object.keys(AI_PROVIDERS) as AiProvider[]).includes(provider))
+    ? (provider as AiProvider)
+    : activeAiProvider;
+  const targetModel = model || selectedProviderModels[targetProvider] || AI_PROVIDERS[targetProvider].defaultModel;
+
+  try {
+    const result = await pingProviderConnection(targetProvider, targetModel, apiKey);
+    res.json(result);
+  } catch (err: any) {
+    const errMsg = err?.message || 'Connection test failed';
+    const is429 = errMsg.includes('429') || errMsg.includes('RESOURCE_EXHAUSTED') || errMsg.includes('quota');
+    res.status(is429 ? 429 : 502).json({
+      success: false,
+      error: is429
+        ? `${AI_PROVIDERS[targetProvider].name} rate/quota limit reached. Please check your plan or attach a valid API key.`
+        : errMsg,
+      provider: targetProvider,
+      activeModel: targetModel,
+    });
+  }
 });
 
 // Trigger Live Gemini Vision AI OCR on a Specific Result Sheet
@@ -4642,7 +5170,7 @@ app.post('/api/v1/ocr/upload-and-transcribe', async (req: Request, res: Response
     const imgBuffer = Buffer.from(cleanBase64, 'base64');
     const shaHash = crypto.createHash('sha256').update(cleanBase64).digest('hex');
 
-    let extracted: any = await transcribeFormEc8aWithGemini({
+    let extracted: any = await transcribeFormEc8aMultiProvider({
       base64Data: cleanBase64,
       mimeType,
       forceRefresh: true,
@@ -6339,24 +6867,12 @@ async function startServer() {
   app.use('/party-logos', express.static(path.resolve(__dirname, 'public/party-logos')));
 
   if (process.env.NODE_ENV !== 'production') {
-    let viteMiddleware: any = null;
-    const viteReadyPromise = (async () => {
-      const { createServer: createViteServer } = await import('vite');
-      const vite = await createViteServer({
-        server: { middlewareMode: true },
-        appType: 'spa',
-      });
-      viteMiddleware = vite.middlewares;
-      return viteMiddleware;
-    })();
-
-    app.use(async (req, res, next) => {
-      if (viteMiddleware) {
-        return viteMiddleware(req, res, next);
-      }
-      const mw = await viteReadyPromise;
-      return mw(req, res, next);
+    const { createServer: createViteServer } = await import('vite');
+    const vite = await createViteServer({
+      server: { middlewareMode: true },
+      appType: 'spa',
     });
+    app.use(vite.middlewares);
   } else {
     const distPath = path.resolve(__dirname, 'dist');
     app.use(express.static(distPath));

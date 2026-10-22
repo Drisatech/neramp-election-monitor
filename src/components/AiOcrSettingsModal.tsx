@@ -10,6 +10,8 @@ import {
   X,
   RefreshCw,
   Zap,
+  Layers,
+  Check,
 } from 'lucide-react';
 import {
   fetchOcrQuotaStatus,
@@ -17,11 +19,68 @@ import {
   testGeminiOcrConnection,
 } from '../services/api';
 
+export type AiProvider = 'gemini' | 'openai' | 'groq' | 'claude';
+
 interface AiOcrSettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
   onKeyUpdated?: () => void;
 }
+
+const PROVIDER_METADATA_FALLBACK: Record<
+  AiProvider,
+  {
+    name: string;
+    description: string;
+    envVar: string;
+    defaultModel: string;
+    models: string[];
+    docUrl: string;
+    keyPlaceholder: string;
+    badge: string;
+  }
+> = {
+  gemini: {
+    name: 'Google Gemini',
+    description: 'High throughput, fast multimodal reasoning (Google AI Studio Free Tier supported)',
+    envVar: 'GEMINI_API_KEY',
+    defaultModel: 'gemini-3.5-flash-lite',
+    models: ['gemini-3.5-flash-lite', 'gemini-3.1-flash-lite', 'gemini-3.8-flash'],
+    docUrl: 'https://aistudio.google.com/app/apikey',
+    keyPlaceholder: 'AQ... or AIzaSy...',
+    badge: 'Built-in Free Tier',
+  },
+  openai: {
+    name: 'OpenAI (GPT-4o)',
+    description: 'Industry-standard structured outputs & reliable Form EC8A transcription',
+    envVar: 'OPENAI_API_KEY',
+    defaultModel: 'gpt-4o-mini',
+    models: ['gpt-4o-mini', 'gpt-4o'],
+    docUrl: 'https://platform.openai.com/api-keys',
+    keyPlaceholder: 'sk-proj-...',
+    badge: 'Standard & Fast',
+  },
+  groq: {
+    name: 'Groq (Llama 3.2 Vision)',
+    description: 'Ultra-low latency LPU inference using open-weights Llama 3.2 Vision models',
+    envVar: 'GROQ_API_KEY',
+    defaultModel: 'llama-3.2-11b-vision-preview',
+    models: ['llama-3.2-11b-vision-preview', 'llama-3.2-90b-vision-preview'],
+    docUrl: 'https://console.groq.com/keys',
+    keyPlaceholder: 'gsk_...',
+    badge: 'Ultra-Low Latency',
+  },
+  claude: {
+    name: 'Anthropic Claude',
+    description: 'Exceptional handwritten text deciphering and document layout comprehension',
+    envVar: 'ANTHROPIC_API_KEY',
+    defaultModel: 'claude-3-5-sonnet-20241022',
+    models: ['claude-3-5-sonnet-20241022', 'claude-3-5-haiku-20241022'],
+    docUrl: 'https://console.anthropic.com/settings/keys',
+    keyPlaceholder: 'sk-ant-api03-...',
+    badge: 'High Precision',
+  },
+};
 
 export const AiOcrSettingsModal: React.FC<AiOcrSettingsModalProps> = ({
   isOpen,
@@ -29,6 +88,8 @@ export const AiOcrSettingsModal: React.FC<AiOcrSettingsModalProps> = ({
   onKeyUpdated,
 }) => {
   const [quotaData, setQuotaData] = useState<any>(null);
+  const [selectedProvider, setSelectedProvider] = useState<AiProvider>('gemini');
+  const [selectedModel, setSelectedModel] = useState<string>('gemini-3.5-flash-lite');
   const [apiKeyInput, setApiKeyInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -37,6 +98,8 @@ export const AiOcrSettingsModal: React.FC<AiOcrSettingsModalProps> = ({
     success: boolean;
     message: string;
     latencyMs?: number;
+    provider?: string;
+    activeModel?: string;
   } | null>(null);
   const [feedbackNotice, setFeedbackNotice] = useState<{
     type: 'success' | 'error';
@@ -48,6 +111,10 @@ export const AiOcrSettingsModal: React.FC<AiOcrSettingsModalProps> = ({
       setIsLoading(true);
       const res = await fetchOcrQuotaStatus();
       setQuotaData(res.data);
+      if (res.data?.activeProvider) {
+        setSelectedProvider(res.data.activeProvider);
+        setSelectedModel(res.data.activeModel || 'gemini-3.5-flash-lite');
+      }
     } catch (err: any) {
       console.warn('Could not load OCR status:', err.message);
     } finally {
@@ -60,16 +127,36 @@ export const AiOcrSettingsModal: React.FC<AiOcrSettingsModalProps> = ({
       loadStatus();
       setFeedbackNotice(null);
       setTestResult(null);
+      setApiKeyInput('');
     }
   }, [isOpen]);
 
-  const handleSaveKey = async (e: React.FormEvent) => {
+  const currentProviderStatus = (quotaData?.providers || []).find(
+    (p: any) => p.id === selectedProvider
+  );
+  const meta = PROVIDER_METADATA_FALLBACK[selectedProvider] || PROVIDER_METADATA_FALLBACK.gemini;
+  const availableModels = currentProviderStatus?.models || meta.models;
+
+  const handleProviderSelect = (prov: AiProvider) => {
+    setSelectedProvider(prov);
+    const pStatus = (quotaData?.providers || []).find((p: any) => p.id === prov);
+    const pMeta = PROVIDER_METADATA_FALLBACK[prov];
+    setSelectedModel(pStatus?.selectedModel || pMeta?.defaultModel || '');
+    setApiKeyInput('');
+    setTestResult(null);
+    setFeedbackNotice(null);
+  };
+
+  const handleSaveConfig = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!apiKeyInput.trim()) return;
     try {
       setIsSaving(true);
       setFeedbackNotice(null);
-      const res = await setCustomGeminiApiKey(apiKeyInput.trim());
+      const res = await setCustomGeminiApiKey(
+        apiKeyInput.trim(),
+        selectedProvider,
+        selectedModel
+      );
       setFeedbackNotice({ type: 'success', text: res.message });
       setApiKeyInput('');
       await loadStatus();
@@ -85,7 +172,7 @@ export const AiOcrSettingsModal: React.FC<AiOcrSettingsModalProps> = ({
     try {
       setIsSaving(true);
       setFeedbackNotice(null);
-      const res = await setCustomGeminiApiKey('');
+      const res = await setCustomGeminiApiKey('', selectedProvider, selectedModel);
       setFeedbackNotice({ type: 'success', text: res.message });
       await loadStatus();
       if (onKeyUpdated) onKeyUpdated();
@@ -100,16 +187,24 @@ export const AiOcrSettingsModal: React.FC<AiOcrSettingsModalProps> = ({
     try {
       setIsTesting(true);
       setTestResult(null);
-      const res = await testGeminiOcrConnection();
+      const res = await testGeminiOcrConnection(
+        selectedProvider,
+        selectedModel,
+        apiKeyInput.trim() || undefined
+      );
       setTestResult({
         success: true,
         message: res.message,
         latencyMs: res.latencyMs,
+        provider: res.provider || selectedProvider,
+        activeModel: res.activeModel || selectedModel,
       });
     } catch (err: any) {
       setTestResult({
         success: false,
         message: err.message,
+        provider: selectedProvider,
+        activeModel: selectedModel,
       });
     } finally {
       setIsTesting(false);
@@ -120,7 +215,7 @@ export const AiOcrSettingsModal: React.FC<AiOcrSettingsModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl border border-slate-200 shadow-2xl max-w-xl w-full p-6 space-y-5 max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-xl border border-slate-200 shadow-2xl max-w-2xl w-full p-6 space-y-5 max-h-[92vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-slate-200 pb-3">
           <div className="flex items-center gap-2.5">
@@ -129,10 +224,10 @@ export const AiOcrSettingsModal: React.FC<AiOcrSettingsModalProps> = ({
             </div>
             <div>
               <h2 className="text-base font-bold text-slate-900">
-                Gemini Vision AI OCR Configuration
+                AI OCR Provider & Model Configuration
               </h2>
               <p className="text-xs text-slate-500">
-                Manage AI models, test OCR connection, or attach a custom Google AI Studio key
+                Choose your AI Vision provider (Google Gemini, OpenAI, Groq, Anthropic Claude), customize models, and manage API keys
               </p>
             </div>
           </div>
@@ -144,27 +239,13 @@ export const AiOcrSettingsModal: React.FC<AiOcrSettingsModalProps> = ({
           </button>
         </div>
 
-        {/* Informational Answer Card */}
-        <div className="p-3.5 bg-sky-50 border border-sky-200 rounded-lg text-xs space-y-1.5 text-sky-950">
-          <div className="flex items-center gap-1.5 font-bold text-sky-900">
-            <Zap className="w-4 h-4 text-sky-600 shrink-0" />
-            <span>Do I need a paid API key for AI OCR?</span>
-          </div>
-          <p className="text-slate-700 leading-relaxed">
-            <strong>No, a paid key is optional:</strong> The platform is pre-configured with a built-in Gemini Vision API key operating on Google AI Studio Free Tier (up to 15 requests/minute). Single-sheet Form EC8A OCR works out of the box.
-          </p>
-          <p className="text-slate-700 leading-relaxed">
-            <strong>When to use a Paid Key:</strong> If you are running high-speed batch transcription across hundreds of polling units simultaneously or encountering Google Free Tier rate limits, you can attach your own Paid Gemini API key below for priority throughput and zero rate limits.
-          </p>
-        </div>
-
-        {/* Current Active Status */}
-        <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 space-y-3">
+        {/* Provider Selection Cards */}
+        <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
-              <Cpu className="w-4 h-4 text-emerald-700" />
-              Engine & Models Status
-            </span>
+            <label className="text-xs font-bold text-slate-800 uppercase tracking-wide flex items-center gap-1.5">
+              <Layers className="w-3.5 h-3.5 text-emerald-700" />
+              <span>Select AI Vision OCR Provider</span>
+            </label>
             <button
               onClick={loadStatus}
               disabled={isLoading}
@@ -175,150 +256,178 @@ export const AiOcrSettingsModal: React.FC<AiOcrSettingsModalProps> = ({
             </button>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 text-xs">
-            <div className="bg-white p-2.5 rounded border border-slate-200">
-              <span className="text-slate-500 block text-[11px]">Primary Model</span>
-              <span className="font-mono font-bold text-slate-900 text-sm">
-                {quotaData?.primaryModel || quotaData?.activeModel || 'gemini-3.5-flash-lite'}
-              </span>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            {(Object.keys(PROVIDER_METADATA_FALLBACK) as AiProvider[]).map((provKey) => {
+              const pMeta = PROVIDER_METADATA_FALLBACK[provKey];
+              const pStatus = (quotaData?.providers || []).find((p: any) => p.id === provKey);
+              const isSelected = selectedProvider === provKey;
+              const isCurrentlyActiveInServer = quotaData?.activeProvider === provKey;
+              const hasKey = pStatus?.isConfigured;
+
+              return (
+                <button
+                  key={provKey}
+                  type="button"
+                  onClick={() => handleProviderSelect(provKey)}
+                  className={`p-3 rounded-lg border text-left transition-all relative cursor-pointer ${
+                    isSelected
+                      ? 'border-emerald-700 bg-emerald-50/70 shadow-2xs ring-2 ring-emerald-600/20'
+                      : 'border-slate-200 bg-white hover:bg-slate-50'
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-1">
+                    <span className="font-bold text-xs text-slate-900 flex items-center gap-1.5">
+                      {pMeta.name}
+                      {isCurrentlyActiveInServer && (
+                        <span className="px-1.5 py-0.2 bg-emerald-100 text-emerald-800 text-[10px] font-mono rounded font-bold">
+                          ACTIVE
+                        </span>
+                      )}
+                    </span>
+                    <span
+                      className={`text-[10px] font-semibold px-1.5 py-0.5 rounded flex items-center gap-1 ${
+                        hasKey
+                          ? 'bg-emerald-100 text-emerald-800'
+                          : 'bg-amber-100 text-amber-800'
+                      }`}
+                    >
+                      <span className={`w-1.5 h-1.5 rounded-full ${hasKey ? 'bg-emerald-600' : 'bg-amber-600'}`} />
+                      {hasKey ? 'Ready' : 'Key Needed'}
+                    </span>
+                  </div>
+
+                  <p className="text-[11px] text-slate-500 mt-1 line-clamp-2 leading-relaxed">
+                    {pMeta.description}
+                  </p>
+
+                  <div className="mt-2 text-[10px] font-mono text-slate-400 flex items-center justify-between">
+                    <span>Default: {pMeta.defaultModel}</span>
+                    <span className="text-slate-500 font-semibold">{pMeta.badge}</span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Selected Provider Configuration Form */}
+        <form onSubmit={handleSaveConfig} className="bg-slate-50 border border-slate-200 rounded-lg p-4 space-y-3.5">
+          <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+            <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+              <Cpu className="w-4 h-4 text-emerald-700" />
+              <span>Configure {meta.name}</span>
+            </span>
+            <span className="text-[11px] text-slate-500 font-mono">
+              Env Variable: <strong>{meta.envVar}</strong>
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+            {/* Model Selector Dropdown */}
+            <div>
+              <label className="text-slate-700 block font-semibold mb-1">
+                Vision OCR Model:
+              </label>
+              <select
+                value={selectedModel}
+                onChange={(e) => setSelectedModel(e.target.value)}
+                className="w-full bg-white border border-slate-300 font-mono font-bold text-xs rounded-lg p-2 text-slate-900 focus:outline-emerald-600"
+              >
+                {availableModels.map((m: string) => (
+                  <option key={m} value={m}>
+                    {m} {m === meta.defaultModel ? '(Recommended)' : ''}
+                  </option>
+                ))}
+              </select>
             </div>
-            <div className="bg-white p-2.5 rounded border border-slate-200">
-              <span className="text-slate-500 block text-[11px]">Active Key Source</span>
-              <span className="font-bold text-slate-900 text-xs flex items-center gap-1 mt-0.5">
-                {quotaData?.customKeyAttached ? (
-                  <span className="text-purple-700 flex items-center gap-1 font-mono">
-                    <Key className="w-3.5 h-3.5" />
-                    Custom User Key ({quotaData?.maskedKey})
+
+            {/* Current Active Status Info */}
+            <div>
+              <label className="text-slate-700 block font-semibold mb-1">
+                Active Key Source:
+              </label>
+              <div className="p-2 bg-white rounded-lg border border-slate-200 flex items-center justify-between text-xs min-h-[38px]">
+                {currentProviderStatus?.isConfigured ? (
+                  <span className="text-emerald-700 font-semibold flex items-center gap-1.5">
+                    <ShieldCheck className="w-3.5 h-3.5" />
+                    <span>
+                      {currentProviderStatus.keySource === 'custom_admin_key'
+                        ? 'Custom Admin Key'
+                        : selectedProvider === 'gemini'
+                        ? 'Built-in AI Studio Key'
+                        : `Env Var (${meta.envVar})`}
+                    </span>
+                    <span className="font-mono text-[11px] text-slate-500">
+                      ({currentProviderStatus.maskedKey})
+                    </span>
                   </span>
                 ) : (
-                  <span className="text-emerald-700 flex items-center gap-1">
-                    <ShieldCheck className="w-3.5 h-3.5" />
-                    Built-in AI Studio Key
+                  <span className="text-amber-700 font-semibold flex items-center gap-1">
+                    <AlertCircle className="w-3.5 h-3.5 text-amber-600" />
+                    <span>No API key configured for {meta.name}</span>
                   </span>
                 )}
-              </span>
-            </div>
-          </div>
-
-          {/* Fallback tier info */}
-          <div className="text-[11px] text-slate-500 flex items-center justify-between pt-1 border-t border-slate-200">
-            <span>
-              Fallback Tier:{' '}
-              {(quotaData?.fallbackModels || ['gemini-3.1-flash-lite', 'gemini-3.8-flash']).map((m: string, i: number, arr: string[]) => (
-                <React.Fragment key={m}>
-                  <strong className="font-mono text-slate-700">{m}</strong>
-                  {i < arr.length - 1 && ' → '}
-                </React.Fragment>
-              ))}
-            </span>
-            <span className="text-emerald-700 font-semibold flex items-center gap-1">
-              <CheckCircle2 className="w-3 h-3" /> Ready
-            </span>
-          </div>
-        </div>
-
-        {/* Test Connection Button & Result */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-700">Quick Diagnostics</span>
-            <button
-              type="button"
-              onClick={handleTestConnection}
-              disabled={isTesting}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-white rounded text-xs font-semibold transition-colors disabled:opacity-50 cursor-pointer shadow-2xs"
-            >
-              {isTesting ? (
-                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-              ) : (
-                <Zap className="w-3.5 h-3.5 text-amber-300" />
-              )}
-              <span>{isTesting ? 'Testing Connection...' : 'Test OCR Ping Now'}</span>
-            </button>
-          </div>
-
-          {testResult && (
-            <div
-              className={`p-3 rounded-lg border text-xs flex items-start gap-2 ${
-                testResult.success
-                  ? 'bg-emerald-50 border-emerald-200 text-emerald-900'
-                  : 'bg-rose-50 border-rose-200 text-rose-900'
-              }`}
-            >
-              {testResult.success ? (
-                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-              ) : (
-                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
-              )}
-              <div className="space-y-0.5">
-                <div className="font-bold">
-                  {testResult.success ? 'Gemini OCR is Operational' : 'Connection Failed'}
-                  {testResult.latencyMs && (
-                    <span className="ml-2 font-mono text-[11px] font-normal opacity-80">
-                      ({testResult.latencyMs}ms)
-                    </span>
-                  )}
-                </div>
-                <div className="text-[11px] font-mono break-all">{testResult.message}</div>
               </div>
             </div>
-          )}
-        </div>
-
-        {/* Custom API Key Input Form */}
-        <form onSubmit={handleSaveKey} className="space-y-3 pt-2 border-t border-slate-200">
-          <div className="flex items-center justify-between">
-            <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-              <Key className="w-4 h-4 text-emerald-700" />
-              <span>Attach Custom Gemini API Key (Optional)</span>
-            </label>
-            <a
-              href="https://aistudio.google.com/app/apikey"
-              target="_blank"
-              rel="noreferrer"
-              className="text-[11px] text-emerald-800 hover:text-emerald-900 font-semibold flex items-center gap-1 underline"
-            >
-              <span>Get key from Google AI Studio</span>
-              <ExternalLink className="w-3 h-3" />
-            </a>
           </div>
 
-          <p className="text-xs text-slate-500">
-            Paste your Google AI Studio API Key (starts with <code className="bg-slate-100 px-1 py-0.5 rounded text-slate-700 font-mono">AIzaSy...</code>) to unlock higher concurrency limits.
-          </p>
-
-          <div className="flex items-center gap-2">
-            <input
-              type="password"
-              value={apiKeyInput}
-              onChange={(e) => setApiKeyInput(e.target.value)}
-              placeholder={quotaData?.customKeyAttached ? 'Enter new key to update...' : 'AIzaSy...'}
-              className="flex-1 px-3 py-2 border border-slate-300 rounded-lg text-xs font-mono focus:outline-none focus:ring-2 focus:ring-emerald-600"
-            />
-            <button
-              type="submit"
-              disabled={isSaving || !apiKeyInput.trim()}
-              className="px-4 py-2 bg-emerald-800 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition-colors disabled:opacity-50 cursor-pointer shadow-2xs"
-            >
-              {isSaving ? 'Saving...' : 'Apply Key'}
-            </button>
-          </div>
-
-          {quotaData?.customKeyAttached && (
-            <div className="flex items-center justify-between pt-1 text-xs">
-              <span className="text-slate-500">
-                Active custom key: <strong className="font-mono">{quotaData?.maskedKey}</strong>
-              </span>
-              <button
-                type="button"
-                onClick={handleRevertToDefault}
-                disabled={isSaving}
-                className="text-rose-700 hover:text-rose-900 font-bold underline cursor-pointer"
+          {/* API Key Input */}
+          <div className="space-y-1.5 pt-1">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                <Key className="w-3.5 h-3.5 text-emerald-700" />
+                <span>Custom API Key for {meta.name} (Optional if set in Env)</span>
+              </label>
+              <a
+                href={meta.docUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="text-[11px] text-emerald-800 hover:text-emerald-900 font-semibold flex items-center gap-1 underline"
               >
-                Revert to Default Environment Key
+                <span>Get API key from {meta.name}</span>
+                <ExternalLink className="w-3 h-3" />
+              </a>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <input
+                type="password"
+                value={apiKeyInput}
+                onChange={(e) => setApiKeyInput(e.target.value)}
+                placeholder={
+                  currentProviderStatus?.keySource === 'custom_admin_key'
+                    ? 'Enter new key to update...'
+                    : `Paste ${meta.name} key (${meta.keyPlaceholder})`
+                }
+                className="flex-1 px-3 py-2 border border-slate-300 rounded-lg text-xs font-mono bg-white focus:outline-none focus:ring-2 focus:ring-emerald-600"
+              />
+              <button
+                type="submit"
+                disabled={isSaving}
+                className="px-4 py-2 bg-emerald-800 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition-colors disabled:opacity-50 cursor-pointer shadow-2xs whitespace-nowrap"
+              >
+                {isSaving ? 'Applying...' : 'Save & Switch Provider'}
               </button>
             </div>
-          )}
 
+            {currentProviderStatus?.keySource === 'custom_admin_key' && (
+              <div className="flex items-center justify-between pt-0.5 text-xs">
+                <span className="text-slate-500 text-[11px]">
+                  Custom key active: <strong className="font-mono">{currentProviderStatus.maskedKey}</strong>
+                </span>
+                <button
+                  type="button"
+                  onClick={handleRevertToDefault}
+                  disabled={isSaving}
+                  className="text-rose-700 hover:text-rose-900 font-semibold text-[11px] underline cursor-pointer"
+                >
+                  Clear Custom Key & Revert to Environment
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Feedback Notice */}
           {feedbackNotice && (
             <div
               className={`p-2.5 rounded-lg border text-xs flex items-center gap-2 ${
@@ -337,8 +446,66 @@ export const AiOcrSettingsModal: React.FC<AiOcrSettingsModalProps> = ({
           )}
         </form>
 
+        {/* Quick Diagnostics Ping Button & Result */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-slate-700">Live Provider Diagnostics</span>
+            <button
+              type="button"
+              onClick={handleTestConnection}
+              disabled={isTesting}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-white rounded text-xs font-semibold transition-colors disabled:opacity-50 cursor-pointer shadow-2xs"
+            >
+              {isTesting ? (
+                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Zap className="w-3.5 h-3.5 text-amber-300" />
+              )}
+              <span>{isTesting ? 'Pinging Provider...' : `Test ${meta.name} Ping Now`}</span>
+            </button>
+          </div>
+
+          {testResult && (
+            <div
+              className={`p-3 rounded-lg border text-xs flex items-start gap-2 ${
+                testResult.success
+                  ? 'bg-emerald-50 border-emerald-200 text-emerald-900'
+                  : 'bg-rose-50 border-rose-200 text-rose-900'
+              }`}
+            >
+              {testResult.success ? (
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+              ) : (
+                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+              )}
+              <div className="space-y-0.5">
+                <div className="font-bold flex items-center gap-2">
+                  <span>
+                    {testResult.success ? `${meta.name} OCR is Operational` : `${meta.name} Ping Failed`}
+                  </span>
+                  {testResult.latencyMs && (
+                    <span className="font-mono text-[11px] font-normal bg-emerald-100 text-emerald-800 px-1.5 py-0.2 rounded">
+                      {testResult.latencyMs}ms latency
+                    </span>
+                  )}
+                  {testResult.activeModel && (
+                    <span className="font-mono text-[11px] text-slate-500">
+                      Model: {testResult.activeModel}
+                    </span>
+                  )}
+                </div>
+                <div className="text-[11px] font-mono break-all">{testResult.message}</div>
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* Modal Footer */}
-        <div className="pt-2 border-t border-slate-200 flex justify-end">
+        <div className="pt-2 border-t border-slate-200 flex items-center justify-between text-xs text-slate-500">
+          <span>
+            Active on Server: <strong>{quotaData?.activeProviderName || 'Google Gemini'}</strong> (
+            <code className="font-mono">{quotaData?.activeModel || 'gemini-3.5-flash-lite'}</code>)
+          </span>
           <button
             type="button"
             onClick={onClose}

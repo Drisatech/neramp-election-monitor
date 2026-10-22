@@ -234,6 +234,15 @@ export const AdminIngestionPage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new CustomEvent('open-ai-ocr-settings'))}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-teal-50 hover:bg-teal-100 text-teal-900 border border-teal-300 rounded text-xs font-bold transition-colors cursor-pointer shadow-2xs"
+            title="Configure Gemini Vision AI OCR engine, rate limits, latency diagnostics, and API keys"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-teal-700" />
+            <span>AI OCR Settings</span>
+          </button>
           <Link
             to="/admin?tab=storage"
             className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-800 hover:bg-emerald-900 text-white rounded text-xs font-semibold transition-colors shadow-2xs"
@@ -459,7 +468,7 @@ export const AdminIngestionPage: React.FC = () => {
               <h3 className="text-sm font-bold text-white tracking-wide flex items-center gap-2">
                 <span>Gemini Vision AI OCR Engine (INEC Form EC8A Transcription)</span>
                 <span className="text-[10px] font-mono bg-emerald-700/80 text-emerald-100 px-2 py-0.5 rounded border border-emerald-600">
-                  gemini-3.8-flash · Active
+                  gemini-3.5-flash-lite · Active
                 </span>
               </h3>
               <p className="text-xs text-emerald-200">
@@ -469,6 +478,16 @@ export const AdminIngestionPage: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
+            <button
+              type="button"
+              onClick={() => window.dispatchEvent(new CustomEvent('open-ai-ocr-settings'))}
+              className="px-3.5 py-1.5 bg-teal-600/30 hover:bg-teal-600/50 text-teal-100 hover:text-white font-bold rounded text-xs transition-colors flex items-center gap-1.5 border border-teal-500/40 shadow-xs cursor-pointer"
+              title="Configure Gemini Vision AI OCR engine, rate limits, latency diagnostics, and API keys"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-teal-300" />
+              <span>Configure AI OCR / API Key</span>
+            </button>
+
             <button
               onClick={handleBatchOcr}
               disabled={isBatchOcrRunning}

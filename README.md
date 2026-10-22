@@ -109,18 +109,16 @@ https://inecelectionresults.ng/elections/types
 
 ---
 
-### Option C: Docker Compose (Full Stack with PostgreSQL & PostGIS)
+### Option D: Deploy to Render.com with GitHub (Zero-Config Continuous Deployment)
 
-Run the entire platform including PostgreSQL (with PostGIS), Python FastAPI backend, and React frontend with a single command:
+The repository includes a ready-to-use `render.yaml` blueprint:
 
-```bash
-docker-compose up --build
-```
+1. Push your repository to GitHub.
+2. In [Render.com](https://render.com), select **New +** &rarr; **Blueprint** and connect your repository.
+3. Render automatically reads `render.yaml`, runs `npm install && npm run build`, and starts `npm start` on dynamic `PORT`.
+4. Continuous deployment is automated on push to GitHub.
 
-Services:
-- **Web Application**: `http://localhost:3000`
-- **FastAPI Backend**: `http://localhost:8000`
-- **PostgreSQL / PostGIS Database**: `localhost:5432`
+To disconnect older Google Cloud Run triggers and manage webhook settings, see [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 
 ---
 

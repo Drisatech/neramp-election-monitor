@@ -274,17 +274,6 @@ export const Navbar: React.FC = () => {
                   </span>
                 )}
               </button>
-
-              <button
-                type="button"
-                onClick={() => setIsOcrModalOpen(true)}
-                aria-label="Open AI OCR Configuration & Status"
-                title="Gemini Vision AI OCR Engine, Status & API Key Configuration"
-                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-teal-200 bg-teal-50 hover:bg-teal-100 text-teal-900 text-xs font-bold transition-colors cursor-pointer"
-              >
-                <Sparkles className="w-3.5 h-3.5 text-teal-700" />
-                <span>AI OCR</span>
-              </button>
             </div>
 
             {/* Management User Profile or Hidden for Public */}
