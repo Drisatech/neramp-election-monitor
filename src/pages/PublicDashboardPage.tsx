@@ -8,7 +8,6 @@ import {
   Search,
   Filter,
   Download,
-  ArrowRight,
   Sparkles,
   Trophy,
   Award,
@@ -18,8 +17,8 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useElection } from '../context/ElectionContext';
-import { fetchElectionSummary, fetchUploadProgress, fetchVerificationSummary, fetchPublishedDiscrepancies } from '../services/api';
-import { ElectionSummary, Discrepancy } from '../types';
+import { fetchElectionSummary, fetchUploadProgress, fetchVerificationSummary } from '../services/api';
+import { ElectionSummary } from '../types';
 import { MetricCard } from '../components/MetricCard';
 import { CandidateVoteChart } from '../components/CandidateVoteChart';
 import { UploadProgressChart } from '../components/UploadProgressChart';
@@ -46,20 +45,17 @@ export const PublicDashboardPage: React.FC = () => {
 
   const [summary, setSummary] = useState<ElectionSummary | null>(null);
   const [uploadTimeline, setUploadTimeline] = useState<any[]>([]);
-  const [discrepancies, setDiscrepancies] = useState<Discrepancy[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const loadData = async () => {
     try {
       setIsLoading(true);
-      const [sumRes, upRes, discRes] = await Promise.all([
+      const [sumRes, upRes] = await Promise.all([
         fetchElectionSummary(selectedElectionId, selectedStateCode, selectedLgaCode, selectedWardCode),
         fetchUploadProgress(selectedElectionId, selectedStateCode, selectedLgaCode, selectedWardCode),
-        fetchPublishedDiscrepancies(selectedElectionId),
       ]);
       setSummary(sumRes.data);
       setUploadTimeline(upRes.data.timeline || []);
-      setDiscrepancies(discRes.data);
     } catch (err) {
       console.error('Failed to load dashboard data:', err);
     } finally {
@@ -373,34 +369,30 @@ export const PublicDashboardPage: React.FC = () => {
         </div>
 
         <div className="lg:col-span-4 space-y-4">
-          {/* Published Discrepancies Callout */}
+          {/* Platform Verification Protocol */}
           <div className="bg-white p-4 rounded-lg border border-slate-200">
-            <div className="flex items-center justify-between mb-3 border-b border-slate-100 pb-2">
-              <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wide flex items-center gap-1.5">
-                <AlertTriangle className="w-3.5 h-3.5 text-rose-600" />
-                <span>Discrepancies Requiring Review</span>
+            <div className="flex items-center gap-2 mb-2.5 border-b border-slate-100 pb-2">
+              <ShieldCheck className="w-4 h-4 text-emerald-800" />
+              <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wide">
+                Integrity & Verification Protocol
               </h3>
-              <Link
-                to="/discrepancies"
-                className="text-xs text-emerald-800 hover:text-emerald-950 font-bold inline-flex items-center gap-0.5"
-              >
-                <span>View all</span>
-                <ArrowRight className="w-3 h-3" />
-              </Link>
             </div>
-
-            <div className="space-y-2.5">
-              {discrepancies.slice(0, 3).map((disc) => (
-                <div key={disc.id} className="p-2.5 bg-slate-50 rounded border border-slate-200 text-xs">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="font-mono font-bold text-slate-900">{disc.pollingUnitCode}</span>
-                    <span className="text-[10px] font-bold text-rose-700 bg-rose-50 px-1 py-0.5 rounded border border-rose-200">
-                      {disc.category.replace('_', ' ')}
-                    </span>
-                  </div>
-                  <p className="text-slate-600 text-[11px] leading-tight line-clamp-2">{disc.reviewNotes}</p>
-                </div>
-              ))}
+            <p className="text-xs text-slate-600 mb-3 leading-relaxed">
+              Every polling-unit result undergoes rigorous verification before statistical aggregation:
+            </p>
+            <div className="space-y-2 text-xs">
+              <div className="p-2.5 bg-slate-50 rounded border border-slate-200">
+                <span className="font-bold text-slate-900 block text-[11px]">1. Source Document Capture</span>
+                <span className="text-slate-600 text-[11px]">Direct retrieval and SHA-256 cryptographic hashing of official Form EC8A result sheets.</span>
+              </div>
+              <div className="p-2.5 bg-slate-50 rounded border border-slate-200">
+                <span className="font-bold text-slate-900 block text-[11px]">2. Deterministic Arithmetic Audit</span>
+                <span className="text-slate-600 text-[11px]">Automated formula validation: Valid Votes + Rejected Ballots = Total Votes Cast.</span>
+              </div>
+              <div className="p-2.5 bg-slate-50 rounded border border-slate-200">
+                <span className="font-bold text-slate-900 block text-[11px]">3. Observer Field Confirmation</span>
+                <span className="text-slate-600 text-[11px]">Independent accreditation reports cross-referenced against polling-unit returns.</span>
+              </div>
             </div>
           </div>
 

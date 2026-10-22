@@ -20,12 +20,12 @@ const MANAGEMENT_PROFILES: TeamMemberProfile[] = [
   {
     role: 'SUPER_ADMIN',
     title: 'Super Administrator',
-    name: 'Engr. D. Ibrahim (Lead Developer)',
+    name: 'Engr. Idris A.',
     email: 'drisatech@gmail.com',
     badge: 'NERAMP-DEV-001',
     jurisdiction: 'National Infrastructure & Security (Full System Access)',
     defaultDestination: '/admin-ingestion',
-    description: 'Unrestricted access to Cloud Run ingestion, database purge, security controls, and system logs.',
+    description: 'Unrestricted access to system ingestion, database purge, security controls, and system logs.',
   },
   {
     role: 'PROJECT_ADMIN',

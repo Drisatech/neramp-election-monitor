@@ -29,7 +29,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
-        return JSON.parse(stored);
+        const parsed = JSON.parse(stored);
+        if (parsed?.role === 'SUPER_ADMIN' && parsed?.name?.includes('Ibrahim')) {
+          parsed.name = 'Engr. Idris A.';
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
+        }
+        return parsed;
       }
     } catch {
       // ignore
