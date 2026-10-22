@@ -6864,6 +6864,7 @@ app.post('/api/v1/admin/readiness/toggle-checklist', (req: Request, res: Respons
 // ==========================================
 
 async function startServer() {
+  app.use(express.static(path.resolve(__dirname, 'public')));
   app.use('/party-logos', express.static(path.resolve(__dirname, 'public/party-logos')));
 
   if (process.env.NODE_ENV !== 'production') {

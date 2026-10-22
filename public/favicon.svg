@@ -1,0 +1,107 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <!-- Gradients for rich visual depth -->
+    <linearGradient id="boxGrad" x1="10" y1="26" x2="54" y2="60" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#047857" />
+      <stop offset="100%" stop-color="#064e3b" />
+    </linearGradient>
+
+    <linearGradient id="lidGrad" x1="6" y1="22" x2="58" y2="28" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#059669" />
+      <stop offset="100%" stop-color="#047857" />
+    </linearGradient>
+
+    <linearGradient id="paperGrad" x1="24" y1="4" x2="40" y2="28" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="100%" stop-color="#f1f5f9" />
+    </linearGradient>
+  </defs>
+
+  <!-- BALLOT SHEET (Descending into ballot box slot) -->
+  <g id="ballot-sheet">
+    <path
+      d="M24 5C24 4.44772 24.4477 4 25 4H39C39.5523 4 40 4.44772 40 5V27H24V5Z"
+      fill="url(#paperGrad)"
+      stroke="#cbd5e1"
+      stroke-width="0.8"
+    />
+    <path d="M24 23H40V26H24V23Z" fill="#94a3b8" fill-opacity="0.3" />
+    <line x1="28" y1="9" x2="36" y2="9" stroke="#94a3b8" stroke-width="1.2" stroke-linecap="round" />
+    <line x1="28" y1="13" x2="36" y2="13" stroke="#94a3b8" stroke-width="1.2" stroke-linecap="round" />
+    <!-- Green election checkmark mark on ballot sheet -->
+    <path
+      d="M28.5 18L30.5 20L35.5 15.5"
+      stroke="#059669"
+      stroke-width="1.6"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    />
+  </g>
+
+  <!-- BALLOT BOX (Main Container) -->
+  <rect
+    x="10"
+    y="26"
+    width="44"
+    height="32"
+    rx="3"
+    fill="url(#boxGrad)"
+    stroke="#064e3b"
+    stroke-width="1.2"
+  />
+
+  <!-- Front Plate / Seal on Box -->
+  <rect
+    x="16"
+    y="34"
+    width="32"
+    height="18"
+    rx="2"
+    fill="#065f46"
+    stroke="#10b981"
+    stroke-width="0.8"
+    stroke-opacity="0.4"
+  />
+
+  <!-- NERAMP Typography -->
+  <text
+    x="32"
+    y="44.5"
+    text-anchor="middle"
+    fill="#ffffff"
+    font-size="6.2"
+    font-weight="900"
+    letter-spacing="0.8"
+    font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+  >NERAMP</text>
+
+  <!-- Nigerian Flag Accent Stripe -->
+  <rect x="23" y="47.5" width="6" height="1.8" fill="#10b981" rx="0.4" />
+  <rect x="29" y="47.5" width="6" height="1.8" fill="#ffffff" rx="0.4" />
+  <rect x="35" y="47.5" width="6" height="1.8" fill="#10b981" rx="0.4" />
+
+  <!-- Box Lid -->
+  <rect
+    x="7"
+    y="23"
+    width="50"
+    height="6"
+    rx="1.5"
+    fill="url(#lidGrad)"
+    stroke="#064e3b"
+    stroke-width="1"
+  />
+
+  <!-- Ballot Slot Opening -->
+  <rect
+    x="22"
+    y="24.5"
+    width="20"
+    height="3"
+    rx="1"
+    fill="#022c22"
+    stroke="#047857"
+    stroke-width="0.5"
+  />
+  <line x1="23.5" y1="26" x2="40.5" y2="26" stroke="#000000" stroke-width="1" opacity="0.7" />
+</svg>
