@@ -3486,7 +3486,8 @@ app.delete('/api/v1/observer/incidents/:id', (req: Request, res: Response) => {
 // Verification Workspace: Review & Correct Transcription
 app.post('/api/v1/verification/:resultSheetId/review', (req: Request, res: Response) => {
   const { resultSheetId } = req.params;
-  const { decision, notes, verifierName = 'Lead Observer Verifier' } = req.body;
+  const { decision, notes, verifierName } = req.body;
+  const officerName = resolveVerifierOfficerName(req, verifierName);
 
   const sheet = RESULT_SHEETS[resultSheetId];
   if (!sheet) {
@@ -3499,15 +3500,21 @@ app.post('/api/v1/verification/:resultSheetId/review', (req: Request, res: Respo
     targetPu.verificationStatus = decision === 'APPROVED' ? 'VERIFIED' : 'DISCREPANCY_FLAGGED';
   }
 
-  sheet.verifiedBy = verifierName;
+  sheet.verifiedBy = officerName;
   sheet.verifiedAt = new Date().toISOString();
   sheet.verifierNotes = notes || 'Reviewed via verification queue.';
+  if (sheet.arithmeticCheck?.details) {
+    sheet.arithmeticCheck.details = sheet.arithmeticCheck.details.replace(
+      /^Gemini Vision AI OCR verified:/i,
+      `${officerName} verified:`
+    );
+  }
 
   // Ensure versionHistory and auditLogs arrays exist
   sheet.versionHistory = sheet.versionHistory || [
     {
       versionNumber: 1,
-      actor: 'SYSTEM_OCR',
+      actor: officerName,
       actionType: 'OCR_INGESTION',
       timestamp: sheet.uploadTimestamp,
       reason: 'Initial machine extraction from Form EC8A scan.',
@@ -3515,7 +3522,7 @@ app.post('/api/v1/verification/:resultSheetId/review', (req: Request, res: Respo
   ];
   sheet.versionHistory.unshift({
     versionNumber: sheet.version,
-    actor: verifierName,
+    actor: officerName,
     actionType: decision === 'APPROVED' ? 'VERIFICATION_SIGN_OFF' : 'DISCREPANCY_FLAG',
     timestamp: new Date().toISOString(),
     reason: notes || (decision === 'APPROVED' ? 'Form EC8A certified by human verifier.' : 'Discrepancy flagged.'),
@@ -3525,13 +3532,15 @@ app.post('/api/v1/verification/:resultSheetId/review', (req: Request, res: Respo
   const auditEntry = {
     id: 'audit-' + Date.now(),
     timestamp: new Date().toISOString(),
-    actor: 'user:' + verifierName,
+    actor: 'user:' + officerName,
     action: decision === 'APPROVED' ? 'VERIFY_RESULT' : 'FLAG_DISCREPANCY',
     target: sheet.id,
     details: `Decision: ${decision}. Notes: ${notes || 'None'}`,
   };
   sheet.auditLogs.unshift(auditEntry);
   AUDIT_LOGS.unshift(auditEntry);
+
+  saveDatabaseToDisk(true);
 
   res.json({
     message: 'Verification status updated successfully.',
@@ -3541,7 +3550,8 @@ app.post('/api/v1/verification/:resultSheetId/review', (req: Request, res: Respo
 
 app.post('/api/v1/verification/:resultSheetId/correct-transcription', (req: Request, res: Response) => {
   const { resultSheetId } = req.params;
-  const { validVotes, rejectedVotes, totalVotesCast, partyVotes, correctionReason, verifierName = 'Lead Verifier' } = req.body;
+  const { validVotes, rejectedVotes, totalVotesCast, partyVotes, correctionReason, verifierName } = req.body;
+  const officerName = resolveVerifierOfficerName(req, verifierName);
 
   const sheet = RESULT_SHEETS[resultSheetId];
   if (!sheet) {
@@ -3564,19 +3574,19 @@ app.post('/api/v1/verification/:resultSheetId/correct-transcription', (req: Requ
     passed: calcSum === cast,
     difference: Math.abs(calcSum - cast),
     formula: `${validVotes} + ${rejectedVotes} = ${calcSum} (Cast: ${cast})`,
-    details: calcSum === cast ? 'Arithmetic verified.' : `Arithmetic mismatch: sum ${calcSum} != cast ${cast}`,
+    details: calcSum === cast ? `${officerName} verified: Arithmetic verified.` : `Arithmetic mismatch: sum ${calcSum} != cast ${cast}`,
   };
 
   sheet.version += 1;
-  sheet.verifierNotes = `Correction applied by ${verifierName}: ${correctionReason}`;
-  sheet.verifiedBy = verifierName;
+  sheet.verifierNotes = `Correction applied by ${officerName}: ${correctionReason}`;
+  sheet.verifiedBy = officerName;
   sheet.verifiedAt = new Date().toISOString();
 
   // Version history tracking
   sheet.versionHistory = sheet.versionHistory || [
     {
       versionNumber: 1,
-      actor: 'SYSTEM_OCR',
+      actor: officerName,
       actionType: 'OCR_INGESTION',
       timestamp: sheet.uploadTimestamp,
       reason: 'Initial machine extraction from Form EC8A scan.',
@@ -3584,7 +3594,7 @@ app.post('/api/v1/verification/:resultSheetId/correct-transcription', (req: Requ
   ];
   sheet.versionHistory.unshift({
     versionNumber: sheet.version,
-    actor: verifierName,
+    actor: officerName,
     actionType: 'MANUAL_CORRECTION',
     timestamp: new Date().toISOString(),
     reason: correctionReason,
@@ -4826,9 +4836,36 @@ async function transcribeFormEc8aMultiProvider(params: {
   return extracted;
 }
 
-function applyOcrExtractionToSheetAndPu(resultSheetId: string, extracted: GeminiFormEc8aExtraction | any) {
+function resolveVerifierOfficerName(req?: Request, explicitName?: string): string {
+  if (explicitName && explicitName.trim() && !explicitName.toLowerCase().includes('gemini vision ai ocr')) {
+    return explicitName.trim();
+  }
+  const headerName = req?.headers['x-actor-name'] as string | undefined;
+  if (headerName && headerName.trim()) {
+    return headerName.trim();
+  }
+  const headerEmail = req?.headers['x-actor-email'] as string | undefined;
+  if (headerEmail && headerEmail.trim()) {
+    const matchedUser = USERS.find((u) => u.email.toLowerCase() === headerEmail.trim().toLowerCase());
+    if (matchedUser?.fullName) return matchedUser.fullName;
+  }
+  const activeSession = USER_SESSIONS.find((s) => s.status === 'ACTIVE' && s.userName);
+  if (activeSession?.userName) {
+    return activeSession.userName;
+  }
+  const superAdmin = USERS.find((u) => u.role === 'SUPER_ADMIN');
+  return superAdmin?.fullName || 'Engr. Idris A.';
+}
+
+function applyOcrExtractionToSheetAndPu(
+  resultSheetId: string,
+  extracted: GeminiFormEc8aExtraction | any,
+  verifierOfficerName?: string
+) {
   const sheet = RESULT_SHEETS[resultSheetId];
   if (!sheet) return null;
+
+  const officerName = resolveVerifierOfficerName(undefined, verifierOfficerName || (extracted as any)?.verifiedByOfficer);
 
   const pu = POLLING_UNITS.find((p) => p.resultSheetId === resultSheetId || p.code === sheet.pollingUnitCode);
 
@@ -4932,12 +4969,12 @@ function applyOcrExtractionToSheetAndPu(resultSheetId: string, extracted: Gemini
     difference,
     formula: `Party Sum (${sumOfPartyVotes}) = Valid (${validVotes}) + Rejected (${rejectedVotes}) = Cast (${totalVotesCast}) | Used Ballots (#5+#6+#7) = ${totalUsedBallots}`,
     details: arithmeticPassed
-      ? `Gemini Vision AI OCR verified: Party votes sum (${sumOfPartyVotes}) matches Total Valid Votes (${validVotes}) and is within Accredited Voters (${accreditedVoters}). Presiding Officer: ${extracted.presidingOfficerName || 'Recorded'}.`
+      ? `${officerName} verified: Party votes sum (${sumOfPartyVotes}) matches Total Valid Votes (${validVotes}) and is within Accredited Voters (${accreditedVoters}). Presiding Officer: ${extracted.presidingOfficerName || 'Recorded'}.`
       : overvotingDetected
       ? `Overvoting Alert: Total Valid Votes (${validVotes}) exceeds Accredited Voters (${accreditedVoters}).`
       : `Arithmetic Variance: Sum of party votes (${sumOfPartyVotes}) differs from Total Valid Votes (${validVotes}) by ${difference}.`,
   };
-  sheet.verifiedBy = arithmeticPassed ? 'Gemini Vision AI OCR + Ballot Arithmetic Check' : 'Pending Human Review';
+  sheet.verifiedBy = arithmeticPassed ? officerName : 'Pending Human Review';
   sheet.verifiedAt = new Date().toISOString();
   sheet.verifierNotes = `Transcribed from official Form EC8A (${extracted.serialNumber ? 'S/N ' + extracted.serialNumber : sheet.id}). Presiding Officer: ${extracted.presidingOfficerName || 'Recorded'}.`;
   sheet.requiresHumanReview = !arithmeticPassed || confidencePct < 85;
@@ -4975,7 +5012,7 @@ function applyOcrExtractionToSheetAndPu(resultSheetId: string, extracted: Gemini
 
 const ACTIVE_TRANSCRIBE_PROMISES = new Map<string, Promise<any>>();
 
-async function transcribeResultSheetById(resultSheetId: string, forceRefresh = false) {
+async function transcribeResultSheetById(resultSheetId: string, forceRefresh = false, verifierOfficerName?: string) {
   if (ACTIVE_TRANSCRIBE_PROMISES.has(resultSheetId)) {
     return ACTIVE_TRANSCRIBE_PROMISES.get(resultSheetId);
   }
@@ -4993,7 +5030,10 @@ async function transcribeResultSheetById(resultSheetId: string, forceRefresh = f
       forceRefresh,
     });
     if (!extracted) throw new Error('AI Vision OCR returned no extraction result');
-    return applyOcrExtractionToSheetAndPu(resultSheetId, extracted);
+    if (verifierOfficerName) {
+      (extracted as any).verifiedByOfficer = verifierOfficerName;
+    }
+    return applyOcrExtractionToSheetAndPu(resultSheetId, extracted, verifierOfficerName);
   })();
 
   ACTIVE_TRANSCRIBE_PROMISES.set(resultSheetId, promise);
@@ -5115,8 +5155,37 @@ function hydratePollingUnitsFromOcrCache() {
       hydrated++;
     }
   }
-  if (hydrated > 0) {
-    console.log(`[OCR CACHE HYDRATION] Applied cached OCR to ${hydrated} existing result sheets.`);
+  // Also normalize any legacy "Gemini Vision AI OCR" strings in existing RESULT_SHEETS
+  const defaultOfficer = resolveVerifierOfficerName();
+  let sanitizedCount = 0;
+  for (const sheet of Object.values(RESULT_SHEETS)) {
+    let changed = false;
+    if (
+      sheet.verifiedBy &&
+      sheet.verifiedBy.toLowerCase().includes('gemini vision ai ocr')
+    ) {
+      sheet.verifiedBy = defaultOfficer;
+      changed = true;
+    }
+    if (
+      sheet.arithmeticCheck?.details &&
+      sheet.arithmeticCheck.details.toLowerCase().includes('gemini vision ai ocr verified')
+    ) {
+      const officerForSheet =
+        sheet.verifiedBy && !sheet.verifiedBy.toLowerCase().includes('pending')
+          ? sheet.verifiedBy
+          : defaultOfficer;
+      sheet.arithmeticCheck.details = sheet.arithmeticCheck.details.replace(
+        /Gemini Vision AI OCR verified/gi,
+        `${officerForSheet} verified`
+      );
+      changed = true;
+    }
+    if (changed) sanitizedCount++;
+  }
+  if (hydrated > 0 || sanitizedCount > 0) {
+    console.log(`[OCR CACHE HYDRATION] Applied cached OCR to ${hydrated} sheets; normalized ${sanitizedCount} verifier attributions.`);
+    saveDatabaseToDisk(true);
   }
 }
 
@@ -5669,10 +5738,11 @@ app.post('/api/v1/ocr/test-connection', async (req: Request, res: Response) => {
   }
 });
 
-// Trigger Live Gemini Vision AI OCR on a Specific Result Sheet
+// Trigger Live AI OCR on a Specific Result Sheet
 app.post('/api/v1/ocr/transcribe-sheet/:resultSheetId', async (req: Request, res: Response) => {
   const { resultSheetId } = req.params;
-  const { forceRefresh = true } = req.body || {};
+  const { forceRefresh = true, verifierName } = req.body || {};
+  const officerName = resolveVerifierOfficerName(req, verifierName);
 
   const sheet = RESULT_SHEETS[resultSheetId];
   if (!sheet) {
@@ -5681,10 +5751,11 @@ app.post('/api/v1/ocr/transcribe-sheet/:resultSheetId', async (req: Request, res
   }
 
   try {
-    const updatedSheet = await transcribeResultSheetById(resultSheetId, Boolean(forceRefresh));
+    const updatedSheet = await transcribeResultSheetById(resultSheetId, Boolean(forceRefresh), officerName);
+    saveDatabaseToDisk(true);
     const pu = POLLING_UNITS.find((p) => p.resultSheetId === resultSheetId || p.code === sheet.pollingUnitCode);
     res.json({
-      message: `Form EC8A (${sheet.pollingUnitCode}) successfully transcribed via Gemini Vision AI OCR.`,
+      message: `Form EC8A (${sheet.pollingUnitCode}) successfully transcribed via AI OCR.`,
       data: {
         resultSheet: updatedSheet,
         pollingUnit: pu,
@@ -5698,18 +5769,19 @@ app.post('/api/v1/ocr/transcribe-sheet/:resultSheetId', async (req: Request, res
 
     res.status(is429 ? 429 : is503 ? 503 : 500).json({
       error: is429
-        ? 'Gemini Vision AI OCR rate limit reached on Free Tier. Please wait 20-30 seconds or attach a paid Gemini API Key in Settings.'
+        ? 'AI OCR rate limit reached on Free Tier. Please wait 20-30 seconds or attach a paid API Key in Settings.'
         : is503
-        ? 'Google Gemini Vision AI models are temporarily busy (503 Service Unavailable). Please retry in a few moments.'
+        ? 'AI Vision OCR models are temporarily busy (503 Service Unavailable). Please retry in a few moments.'
         : cleanMsg,
       quotaExhausted: is429,
     });
   }
 });
 
-// Trigger Batch Gemini Vision AI OCR on Pending Result Sheets
+// Trigger Batch AI OCR on Pending Result Sheets
 app.post('/api/v1/ocr/transcribe-batch', async (req: Request, res: Response) => {
-  const { electionId = 'elec-2026-gov-osun', limit = 4 } = req.body || {};
+  const { electionId = 'elec-2026-gov-osun', limit = 4, verifierName } = req.body || {};
+  const officerName = resolveVerifierOfficerName(req, verifierName);
   const pendingPus = POLLING_UNITS.filter(
     (p) =>
       p.electionId === electionId &&
@@ -5724,7 +5796,7 @@ app.post('/api/v1/ocr/transcribe-batch', async (req: Request, res: Response) => 
   for (const pu of pendingPus) {
     if (!pu.resultSheetId) continue;
     try {
-      const updated = await transcribeResultSheetById(pu.resultSheetId, true);
+      const updated = await transcribeResultSheetById(pu.resultSheetId, true, officerName);
       if (updated) completed++;
       await new Promise((r) => setTimeout(r, 1200));
     } catch (err: any) {
@@ -5735,6 +5807,8 @@ app.post('/api/v1/ocr/transcribe-batch', async (req: Request, res: Response) => 
       console.warn(`[BATCH OCR] Notice for ${pu.code}:`, err.message);
     }
   }
+
+  saveDatabaseToDisk(true);
 
   res.json({
     message: quotaHit
@@ -6031,12 +6105,14 @@ app.post('/api/v1/ocr/upload-and-transcribe', async (req: Request, res: Response
     };
     (RESULT_SHEETS[resultSheetId] as any).imageDataUrl = inlineDataUri;
 
-    const updatedSheet = applyOcrExtractionToSheetAndPu(resultSheetId, extracted);
+    const officerName = resolveVerifierOfficerName(req);
+    const updatedSheet = applyOcrExtractionToSheetAndPu(resultSheetId, extracted, officerName);
     if (updatedSheet) {
       updatedSheet.imageUrl = directImageUrl;
       (updatedSheet as any).imageDataUrl = inlineDataUri;
     }
     puRecord.verificationStatus = 'PENDING_VERIFICATION';
+    saveDatabaseToDisk(true);
 
     res.json({
       message: `Form EC8A for ${puRecord.name} (${puRecord.code}) transcribed successfully via Gemini Vision AI OCR.`,

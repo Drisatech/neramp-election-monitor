@@ -26,22 +26,32 @@ import { getPartyInfo } from '../constants/parties';
 export const PollingUnitDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
-  const { role, isSuperOrProjectAdmin } = useAuth();
-  const canVerify = isSuperOrProjectAdmin || role === 'RESULT_VERIFIER' || role === 'ELECTION_ANALYST' || role === 'STATE_COORDINATOR' || true;
+  const { role, isAuthenticated, user, isSuperOrProjectAdmin } = useAuth();
+  const canVerify =
+    isAuthenticated &&
+    role !== 'PUBLIC_USER' &&
+    (isSuperOrProjectAdmin ||
+      role === 'RESULT_VERIFIER' ||
+      role === 'ELECTION_ANALYST' ||
+      role === 'STATE_COORDINATOR' ||
+      role === 'LGA_COORDINATOR' ||
+      role === 'MONITORING_COORDINATOR');
 
   const [pu, setPu] = useState<(PollingUnit & { resultSheet?: ResultSheet; discrepancies?: Discrepancy[]; provenance?: any }) | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [transcribeNotice, setTranscribeNotice] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'workspace'>(
-    searchParams.get('tab') === 'workspace' ? 'workspace' : 'overview'
+    canVerify && searchParams.get('tab') === 'workspace' ? 'workspace' : 'overview'
   );
 
   useEffect(() => {
-    if (searchParams.get('tab') === 'workspace') {
+    if (canVerify && searchParams.get('tab') === 'workspace') {
       setActiveTab('workspace');
+    } else if (!canVerify) {
+      setActiveTab('overview');
     }
-  }, [searchParams]);
+  }, [searchParams, canVerify]);
 
   const loadDetail = async () => {
     if (!id) return;
@@ -107,6 +117,31 @@ export const PollingUnitDetailPage: React.FC = () => {
       pu.transcriptionStatus === 'PENDING' ||
       pu.transcriptionStatus === 'IN_PROGRESS');
 
+  // Resolve human Verification Officer name (replaces any legacy "Gemini Vision AI OCR..." label with the logged-in account name or recorded human officer)
+  const resolvedVerifierName = (() => {
+    const rawVerifier = sheet?.verifiedBy || '';
+    const isAiLabel =
+      !rawVerifier ||
+      rawVerifier.toLowerCase().includes('gemini vision ai ocr') ||
+      rawVerifier.toLowerCase().includes('ai ocr');
+    if (user?.name && isAuthenticated && role !== 'PUBLIC_USER') {
+      return isAiLabel ? user.name : rawVerifier;
+    }
+    if (isAiLabel) {
+      return 'Engr. Idris A.';
+    }
+    return rawVerifier;
+  })();
+
+  const resolvedArithmeticDetails = (() => {
+    const rawDetails = sheet?.arithmeticCheck?.details || '';
+    if (!rawDetails) return '';
+    return rawDetails.replace(
+      /Gemini Vision AI OCR verified/gi,
+      `${resolvedVerifierName} verified`
+    );
+  })();
+
   return (
     <div className="space-y-5">
       <DisclaimerBanner />
@@ -136,11 +171,11 @@ export const PollingUnitDetailPage: React.FC = () => {
 
         {/* Tab Switcher & AI OCR Trigger */}
         <div className="flex items-center gap-2">
-          {sheet && (
+          {sheet && canVerify && (
             <button
               onClick={handleTranscribeWithAi}
               disabled={isTranscribing}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-800 hover:bg-emerald-700 text-white rounded-md text-xs font-bold shadow-2xs transition-colors disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-800 hover:bg-emerald-700 text-white rounded-md text-xs font-bold shadow-2xs transition-colors disabled:opacity-50 cursor-pointer"
             >
               {isTranscribing ? (
                 <RefreshCw className="w-3.5 h-3.5 animate-spin" />
@@ -174,7 +209,7 @@ export const PollingUnitDetailPage: React.FC = () => {
         </div>
       </div>
 
-      {transcribeNotice && (
+      {transcribeNotice && canVerify && (
         <div className={`p-3 rounded-md text-xs font-semibold flex flex-wrap items-center justify-between gap-2 ${
           transcribeNotice.includes('failed') || transcribeNotice.includes('limit') || transcribeNotice.includes('quota')
             ? 'bg-rose-50 text-rose-800 border border-rose-200'
@@ -196,8 +231,8 @@ export const PollingUnitDetailPage: React.FC = () => {
         </div>
       )}
 
-      {/* Awaiting OCR Prompt if sheet exists but party votes are pending */}
-      {isAwaitingOcr && (
+      {/* Awaiting OCR Prompt if sheet exists but party votes are pending (Authorised Staff Only) */}
+      {isAwaitingOcr && canVerify && (
         <div className="p-4 bg-amber-50/80 border border-amber-300 rounded-lg flex flex-wrap items-center justify-between gap-3 text-amber-950">
           <div className="flex items-center gap-2.5">
             <Sparkles className="w-5 h-5 text-amber-600 shrink-0" />
@@ -261,7 +296,7 @@ export const PollingUnitDetailPage: React.FC = () => {
                 {pu.verificationStatus.replace('_', ' ')}
               </span>
               <span className="text-[11px] text-slate-500 block">
-                {sheet?.verifiedBy ? `By: ${sheet.verifiedBy}` : 'Unsigned'}
+                {sheet?.verifiedBy ? `By: ${resolvedVerifierName}` : 'Unsigned'}
               </span>
             </div>
           </div>
@@ -300,7 +335,7 @@ export const PollingUnitDetailPage: React.FC = () => {
                   <p className="text-xs font-mono font-semibold text-slate-800">
                     {sheet.arithmeticCheck.formula}
                   </p>
-                  <p className="text-xs text-slate-600 mt-1">{sheet.arithmeticCheck.details}</p>
+                  <p className="text-xs text-slate-600 mt-1">{resolvedArithmeticDetails}</p>
                 </div>
 
                 {/* Form EC8A Official Ballot Accounting Box (#1 to #8) */}
@@ -422,13 +457,15 @@ export const PollingUnitDetailPage: React.FC = () => {
                   ) : (
                     <div className="p-4 text-center text-slate-500 text-xs">
                       <p>Party scores not yet transcribed.</p>
-                      <button
-                        onClick={handleTranscribeWithAi}
-                        disabled={isTranscribing}
-                        className="mt-2 px-3 py-1 bg-emerald-800 text-white rounded font-bold hover:bg-emerald-700"
-                      >
-                        {isTranscribing ? 'Transcribing...' : 'Run Gemini AI OCR'}
-                      </button>
+                      {canVerify && (
+                        <button
+                          onClick={handleTranscribeWithAi}
+                          disabled={isTranscribing}
+                          className="mt-2 px-3 py-1 bg-emerald-800 text-white rounded font-bold hover:bg-emerald-700 cursor-pointer"
+                        >
+                          {isTranscribing ? 'Transcribing...' : 'Run AI OCR'}
+                        </button>
+                      )}
                     </div>
                   )}
 
@@ -456,7 +493,7 @@ export const PollingUnitDetailPage: React.FC = () => {
                   </span>
                   <div>
                     <strong>Verification Officer: </strong>
-                    {sheet.verifiedBy || 'Pending assignment'}
+                    {sheet.verifiedBy ? resolvedVerifierName : 'Pending assignment'}
                   </div>
                   <div>
                     <strong>Verification Timestamp: </strong>

@@ -1,0 +1,3559 @@
+{
+  "platform": "NIGERIA ELECTION RESULTS ANALYSIS AND MONITORING PLATFORM (NERAMP)",
+  "exportVersion": 2,
+  "exportedAt": "2026-10-23T17:20:44.662Z",
+  "exporter": "admin:backup",
+  "storagePath": "/app/data",
+  "summary": {
+    "totalPollingUnits": 49,
+    "totalResultSheets": 49,
+    "totalUsers": 7,
+    "totalDiscrepancies": 0,
+    "totalIncidents": 0,
+    "totalAuditLogs": 15
+  },
+  "pollingUnits": [
+    {
+      "id": "pu-29-17-03-007",
+      "code": "29-17-03-007",
+      "name": "OGUNLADE JUNCTION",
+      "stateCode": "OSUN",
+      "lgaCode": "ILA",
+      "wardCode": "ILA_RA_01",
+      "registeredVoters": 1027,
+      "accreditedVoters": 594,
+      "electionId": "elec-2026-gov-osun",
+      "uploadStatus": "UPLOADED",
+      "transcriptionStatus": "COMPLETED",
+      "verificationStatus": "VERIFIED",
+      "sourceUploadTimestamp": "2026-08-15T22:42:53.705Z",
+      "lastRetrievedTimestamp": "2026-10-23T16:36:05.371Z",
+      "resultSheetId": "rs-29-17-03-007",
+      "latitude": 7.724098028966982,
+      "longitude": 4.620603287937495
+    },
+    {
+      "id": "pu-29-17-03-002",
+      "code": "29-17-03-002",
+      "name": "ST. MICHAEL PRY. SCHOOL",
+      "stateCode": "OSUN",
+      "lgaCode": "ILA",
+      "wardCode": "ILA_RA_01",
+      "registeredVoters": 945,
+      "accreditedVoters": 441,
+      "electionId": "elec-2026-gov-osun",
+      "uploadStatus": "UPLOADED",
+      "transcriptionStatus": "COMPLETED",
+      "verificationStatus": "VERIFIED",
+      "sourceUploadTimestamp": "2026-08-15T22:42:36.941Z",
+      "lastRetrievedTimestamp": "2026-10-23T16:36:05.372Z",
+      "resultSheetId": "rs-29-17-03-002",
+      "latitude": 7.703879761736755,
+      "longitude": 4.763509125996915
+    },
+    {
+      "id": "pu-29-17-03-003",
+      "code": "29-17-03-003",
+      "name": "AJABA JUNCTION",
+      "stateCode": "OSUN",
+      "lgaCode": "ILA",
+      "wardCode": "ILA_RA_01",
+      "registeredVoters": 0,
+      "accreditedVoters": 0,
+      "electionId": "elec-2026-gov-osun",
+      "uploadStatus": "UPLOADED",
+      "transcriptionStatus": "IN_PROGRESS",
+      "verificationStatus": "PENDING_VERIFICATION",
+      "sourceUploadTimestamp": "2026-08-15T18:03:03.142Z",
+      "lastRetrievedTimestamp": "2026-10-23T16:36:05.372Z",
+      "resultSheetId": "rs-29-17-03-003",
+      "latitude": 7.613642460554479,
+      "longitude": 4.505086225899483
+    },
+    {
+      "id": "pu-29-17-03-006",
+      "code": "29-17-03-006",
+      "name": "NEW GARAGE",
+      "stateCode": "OSUN",
+      "lgaCode": "ILA",
+      "wardCode": "ILA_RA_01",
+      "registeredVoters": 0,
+      "accreditedVoters": 0,
+      "electionId": "elec-2026-gov-osun",
+      "uploadStatus": "UPLOADED",
+      "transcriptionStatus": "IN_PROGRESS",
+      "verificationStatus": "PENDING_VERIFICATION",
+      "sourceUploadTimestamp": "2026-08-15T17:48:08.219Z",
+      "lastRetrievedTimestamp": "2026-10-23T16:36:05.372Z",
+      "resultSheetId": "rs-29-17-03-006",
+      "latitude": 7.581509935821617,
+      "longitude": 4.421092103808966
+    },
+    {
+      "id": "pu-29-17-03-005",
+      "code": "29-17-03-005",
+      "name": "ONIFADE JUNCTION",
+      "stateCode": "OSUN",
+      "lgaCode": "ILA",
+      "wardCode": "ILA_RA_01",
+      "registeredVoters": 0,
+      "accreditedVoters": 0,
+      "electionId": "elec-2026-gov-osun",
+      "uploadStatus": "UPLOADED",
+      "transcriptionStatus": "IN_PROGRESS",
+      "verificationStatus": "PENDING_VERIFICATION",
+      "sourceUploadTimestamp": "2026-08-15T17:36:06.876Z",
+      "lastRetrievedTimestamp": "2026-10-23T16:36:05.372Z",
+      "resultSheetId": "rs-29-17-03-005",
+      "latitude": 7.793901945148415,
+      "longitude": 4.788348831594402
+    },
+    {
+      "id": "pu-29-17-03-008",
+      "code": "29-17-03-008",
+      "name": "IYANA IRESI",
+      "stateCode": "OSUN",
+      "lgaCode": "ILA",
+      "wardCode": "ILA_RA_01",
+      "registeredVoters": 0,
+      "accreditedVoters": 0,
+      "electionId": "elec-2026-gov-osun",
+      "uploadStatus": "UPLOADED",
+      "transcriptionStatus": "IN_PROGRESS",
+      "verificationStatus": "PENDING_VERIFICATION",
+      "sourceUploadTimestamp": "2026-08-15T16:48:03.407Z",
+      "lastRetrievedTimestamp": "2026-10-23T16:36:05.372Z",
+      "resultSheetId": "rs-29-17-03-008",
+      "latitude": 7.560937804650056,
+      "longitude": 4.655377840432935
+    },
+    {
+      "id": "pu-29-17-03-001",
+      "code": "29-17-03-001",
+      "name": "ADEKUNLE JUNCTION",
+      "stateCode": "OSUN",
+      "lgaCode": "ILA",
+      "wardCode": "ILA_RA_01",
+      "registeredVoters": 0,
+      "accreditedVoters": 0,
+      "electionId": "elec-2026-gov-osun",
+      "uploadStatus": "UPLOADED",
+      "transcriptionStatus": "IN_PROGRESS",
+      "verificationStatus": "PENDING_VERIFICATION",
+      "sourceUploadTimestamp": "2026-08-15T15:54:07.595Z",
+      "lastRetrievedTimestamp": "2026-10-23T16:36:05.372Z",
+      "resultSheetId": "rs-29-17-03-001",
+      "latitude": 7.81946903616525,
+      "longitude": 4.636795757810246
+    },
+    {
+      "id": "pu-29-17-03-004",
+      "code": "29-17-03-004",
+      "name": "AJABA GARAGE",
+      "stateCode": "OSUN",
+      "lgaCode": "ILA",
+      "wardCode": "ILA_RA_01",
+      "registeredVoters": 0,
+      "accreditedVoters": 0,
+      "electionId": "elec-2026-gov-osun",
+      "uploadStatus": "UPLOADED",
+      "transcriptionStatus": "IN_PROGRESS",
+      "verificationStatus": "PENDING_VERIFICATION",
+      "sourceUploadTimestamp": "2026-08-15T15:03:10.095Z",
+      "lastRetrievedTimestamp": "2026-10-23T16:36:05.372Z",
+      "resultSheetId": "rs-29-17-03-004",
+      "latitude": 7.743616664423715,
+      "longitude": 4.54454514102907
+    },
+    {
+      "id": "pu-29-17-08-008",
+      "code": "29-17-08-008",
+      "name": "AGBAMU JUNCTION",
+      "stateCode": "OSUN",
+      "lgaCode": "ILA",
+      "wardCode": "ILA_RA_02",
+      "registeredVoters": 591,
+      "accreditedVoters": 321,
+      "electionId": "elec-2026-gov-osun",
+      "uploadStatus": "UPLOADED",
+      "transcriptionStatus": "COMPLETED",
+      "verificationStatus": "VERIFIED",
+      "sourceUploadTimestamp": "2026-08-15T22:42:14.982Z",
+      "lastRetrievedTimestamp": "2026-10-23T16:36:06.358Z",
+      "resultSheetId": "rs-29-17-08-008",
+      "latitude": 7.617755343803616,
+      "longitude": 4.626739622421341
+    },
+    {
+      "id": "pu-29-17-08-007",
+      "code": "29-17-08-007",
+      "name": "A.U.D. PRY. SCHOOL, OKE OLA III",
+      "stateCode": "OSUN",
+      "lgaCode": "ILA",
+      "wardCode": "ILA_RA_02",
+      "registeredVoters": 505,
+      "accreditedVoters": 291,
+      "electionId": "elec-2026-gov-osun",
+      "uploadStatus": "UPLOADED",
+      "transcriptionStatus": "COMPLETED",
+      "verificationStatus": "VERIFIED",
+      "sourceUploadTimestamp": "2026-08-15T22:42:09.864Z",
+      "lastRetrievedTimestamp": "2026-10-23T16:36:06.358Z",
+      "resultSheetId": "rs-29-17-08-007",
+      "latitude": 7.638307548084543,
+      "longitude": 4.664709395345432
+    },
+    {
+      "id": "pu-29-17-08-011",
+      "code": "29-17-08-011",
+      "name": "ALOYIN (OPP. GENERAL HOSPITAL, ILA)",
+      "stateCode": "OSUN",
+      "lgaCode": "ILA",
+      "wardCode": "ILA_RA_02",
+      "registeredVoters": 0,
+      "accreditedVoters": 0,
+      "electionId": "elec-2026-gov-osun",
+      "uploadStatus": "UPLOADED",
+      "transcriptionStatus": "IN_PROGRESS",
+      "verificationStatus": "PENDING_VERIFICATION",
+      "sourceUploadTimestamp": "2026-08-15T18:57:35.473Z",
+      "lastRetrievedTimestamp": "2026-10-23T16:36:06.358Z",
+      "resultSheetId": "rs-29-17-08-011",
+      "latitude": 7.764041488071432,
+      "longitude": 4.43658791016779
+    },
+    {
+      "id": "pu-29-17-08-010",
+      "code": "29-17-08-010",
+      "name": "L.A. PRY. SCHOOL, ALOYIN II",
+      "stateCode": "OSUN",
+      "lgaCode": "ILA",
+      "wardCode": "ILA_RA_02",
+      "registeredVoters": 0,
+      "accreditedVoters": 0,
+      "electionId": "elec-2026-gov-osun",
+      "uploadStatus": "UPLOADED",
+      "transcriptionStatus": "IN_PROGRESS",
+      "verificationStatus": "PENDING_VERIFICATION",
+      "sourceUploadTimestamp": "2026-08-15T18:18:11.574Z",
+      "lastRetrievedTimestamp": "2026-10-23T16:36:06.358Z",
+      "resultSheetId": "rs-29-17-08-010",
+      "latitude": 7.792317963486952,
+      "longitude": 4.788557545249121
+    },
+    {
+      "id": "pu-29-17-08-001",
+      "code": "29-17-08-001",
+      "name": "NO SORROW HOUSE, OKE OLA",
+      "stateCode": "OSUN",
+      "lgaCode": "ILA",
+      "wardCode": "ILA_RA_02",
+      "registeredVoters": 0,
+      "accreditedVoters": 0,
+      "electionId": "elec-2026-gov-osun",
+      "uploadStatus": "UPLOADED",
+      "transcriptionStatus": "IN_PROGRESS",
+      "verificationStatus": "PENDING_VERIFICATION",
+      "sourceUploadTimestamp": "2026-08-15T17:27:10.710Z",
+      "lastRetrievedTimestamp": "2026-10-23T16:36:06.358Z",
+      "resultSheetId": "rs-29-17-08-001",
+      "latitude": 7.5423598931434634,
+      "longitude": 4.615416832720027
+    },
+    {
+      "id": "pu-29-17-08-012",
+      "code": "29-17-08-012",
+      "name": "MATERNITY CENTRE, OKO AWO",
+      "stateCode": "OSUN",
+      "lgaCode": "ILA",
+      "wardCode": "ILA_RA_02",
+      "registeredVoters": 0,
+      "accreditedVoters": 0,
+      "electionId": "elec-2026-gov-osun",
+      "uploadStatus": "UPLOADED",
+      "transcriptionStatus": "IN_PROGRESS",
+      "verificationStatus": "PENDING_VERIFICATION",
+      "sourceUploadTimestamp": "2026-08-15T17:00:32.725Z",
+      "lastRetrievedTimestamp": "2026-10-23T16:36:06.358Z",
+      "resultSheetId": "rs-29-17-08-012",
+      "latitude": 7.83931700213007,
+      "longitude": 4.701446655411187
+    },
+    {
+      "id": "pu-29-17-08-009",
+      "code": "29-17-08-009",
+      "name": "L.A. PRY. SCHOOL, ALOYIN I",
+      "stateCode": "OSUN",
+      "lgaCode": "ILA",
+      "wardCode": "ILA_RA_02",
+      "registeredVoters": 0,
+      "accreditedVoters": 0,
+      "electionId": "elec-2026-gov-osun",
+      "uploadStatus": "UPLOADED",
+      "transcriptionStatus": "IN_PROGRESS",
+      "verificationStatus": "PENDING_VERIFICATION",
+      "sourceUploadTimestamp": "2026-08-15T16:45:04.370Z",
+      "lastRetrievedTimestamp": "2026-10-23T16:36:06.358Z",
+      "resultSheetId": "rs-29-17-08-009",
+      "latitude": 7.509898954549417,
+      "longitude": 4.408783281437138
+    },
+    {
+      "id": "pu-29-17-08-003",
+      "code": "29-17-08-003",
+      "name": "SWEET MOTHER HOUSE FRONTAGE",
+      "stateCode": "OSUN",
+      "lgaCode": "ILA",
+      "wardCode": "ILA_RA_02",
+      "registeredVoters": 0,
+      "accreditedVoters": 0,
+      "electionId": "elec-2026-gov-osun",
+      "uploadStatus": "UPLOADED",
+      "transcriptionStatus": "IN_PROGRESS",
+      "verificationStatus": "PENDING_VERIFICATION",
+      "sourceUploadTimestamp": "2026-08-15T16:30:17.083Z",
+      "lastRetrievedTimestamp": "2026-10-23T16:36:06.359Z",
+      "resultSheetId": "rs-29-17-08-003",
+      "latitude": 7.534463171245188,
+      "longitude": 4.712063352048437
+    },
+    {
+      "id": "pu-29-17-08-005",
+      "code": "29-17-08-005",
+      "name": "A.U.D.PRY SCHOOL, OKE OLA I",
+      "stateCode": "OSUN",
+      "lgaCode": "ILA",
+      "wardCode": "ILA_RA_02",
+      "registeredVoters": 0,
+      "accreditedVoters": 0,
+      "electionId": "elec-2026-gov-osun",
+      "uploadStatus": "UPLOADED",
+      "transcriptionStatus": "IN_PROGRESS",
+      "verificationStatus": "PENDING_VERIFICATION",
+      "sourceUploadTimestamp": "2026-08-15T16:27:04.033Z",
+      "lastRetrievedTimestamp": "2026-10-23T16:36:06.359Z",
+      "resultSheetId": "rs-29-17-08-005",
+      "latitude": 7.801248887456999,
+      "longitude": 4.6884661078297585
+    },
+    {
+      "id": "pu-29-17-08-002",
+      "code": "29-17-08-002",
+      "name": "OKE OLA (OPP.C & S CHURCH)",
+      "stateCode": "OSUN",
+      "lgaCode": "ILA",
+      "wardCode": "ILA_RA_02",
+      "registeredVoters": 0,
+      "accreditedVoters": 0,
+      "electionId": "elec-2026-gov-osun",
+      "uploadStatus": "UPLOADED",
+      "transcriptionStatus": "IN_PROGRESS",
+      "verificationStatus": "PENDING_VERIFICATION",
+      "sourceUploadTimestamp": "2026-08-15T16:18:08.785Z",
+      "lastRetrievedTimestamp": "2026-10-23T16:36:06.359Z",
+      "resultSheetId": "rs-29-17-08-002",
+      "latitude": 7.535378381416784,
+      "longitude": 4.636552201466693
+    },
+    {
+      "id": "pu-29-17-08-004",
+      "code": "29-17-08-004",
+      "name": "DUROTOLU JUNCTION",
+      "stateCode": "OSUN",
+      "lgaCode": "ILA",
+      "wardCode": "ILA_RA_02",
+      "registeredVoters": 0,
+      "accreditedVoters": 0,
+      "electionId": "elec-2026-gov-osun",
+      "uploadStatus": "UPLOADED",
+      "transcriptionStatus": "IN_PROGRESS",
+      "verificationStatus": "PENDING_VERIFICATION",
+      "sourceUploadTimestamp": "2026-08-15T15:48:34.459Z",
+      "lastRetrievedTimestamp": "2026-10-23T16:36:06.359Z",
+      "resultSheetId": "rs-29-17-08-004",
+      "latitude": 7.569335111532789,
+      "longitude": 4.4688301368078776
+    },
+    {
+      "id": "pu-29-17-08-006",
+      "code": "29-17-08-006",
+      "name": "A.U.D. PRY. SCHOOL, OKE OLA II",
+      "stateCode": "OSUN",
+      "lgaCode": "ILA",
+      "wardCode": "ILA_RA_02",
+      "registeredVoters": 0,
+      "accreditedVoters": 0,
+      "electionId": "elec-2026-gov-osun",
+      "uploadStatus": "UPLOADED",
+      "transcriptionStatus": "IN_PROGRESS",
+      "verificationStatus": "PENDING_VERIFICATION",
+      "sourceUploadTimestamp": "2026-08-15T15:48:05.648Z",
+      "lastRetrievedTimestamp": "2026-10-23T16:36:06.359Z",
+      "resultSheetId": "rs-29-17-08-006",
+      "latitude": 7.719673659796289,
+      "longitude": 4.612658079064392
+    },
+    {
+      "id": "pu-29-17-02-001",
+      "code": "29-17-02-001",
+      "name": "OJUDE ENARE",
+      "stateCode": "OSUN",
+      "lgaCode": "ILA",
+      "wardCode": "ILA_RA_01",
+      "registeredVoters": 0,
+      "accreditedVoters": 0,
+      "electionId": "elec-2026-gov-osun",
+      "uploadStatus": "UPLOADED",
+      "transcriptionStatus": "IN_PROGRESS",
+      "verificationStatus": "PENDING_VERIFICATION",
+      "sourceUploadTimestamp": "2026-08-15T18:39:06.844Z",
+      "lastRetrievedTimestamp": "2026-10-23T16:36:07.061Z",
+      "resultSheetId": "rs-29-17-02-001",
+      "latitude": 7.871931024366941,
+      "longitude": 4.560033750623616
+    },
+    {
+      "id": "pu-29-17-02-006",
+      "code": "29-17-02-006",
+      "name": "OJUDE OBAJOKO",
+      "stateCode": "OSUN",
+      "lgaCode": "ILA",
+      "wardCode": "ILA_RA_01",
+      "registeredVoters": 0,
+      "accreditedVoters": 0,
+      "electionId": "elec-2026-gov-osun",
+      "uploadStatus": "UPLOADED",
+      "transcriptionStatus": "IN_PROGRESS",
+      "verificationStatus": "PENDING_VERIFICATION",
+      "sourceUploadTimestamp": "2026-08-15T18:39:06.019Z",
+      "lastRetrievedTimestamp": "2026-10-23T16:36:07.061Z",
+      "resultSheetId": "rs-29-17-02-006",
+      "latitude": 7.532916622879227,
+      "longitude": 4.697729673602496
+    },
+    {
+      "id": "pu-29-17-02-008",
+      "code": "29-17-02-008",
+      "name": "AWUGBO",
+      "stateCode": "OSUN",
+      "lgaCode": "ILA",
+      "wardCode": "ILA_RA_01",
+      "registeredVoters": 0,
+      "accreditedVoters": 0,
+      "electionId": "elec-2026-gov-osun",
+      "uploadStatus": "UPLOADED",
+      "transcriptionStatus": "IN_PROGRESS",
+      "verificationStatus": "PENDING_VERIFICATION",
+      "sourceUploadTimestamp": "2026-08-15T17:21:11.605Z",
+      "lastRetrievedTimestamp": "2026-10-23T16:36:07.061Z",
+      "resultSheetId": "rs-29-17-02-008",
+      "latitude": 7.746533833133637,
+      "longitude": 4.750453460785707
+    },
+    {
+      "id": "pu-29-17-02-009",
+      "code": "29-17-02-009",
+      "name": "AJIONI",
+      "stateCode": "OSUN",
+      "lgaCode": "ILA",
+      "wardCode": "ILA_RA_01",
+      "registeredVoters": 0,
+      "accreditedVoters": 0,
+      "electionId": "elec-2026-gov-osun",
+      "uploadStatus": "UPLOADED",
+      "transcriptionStatus": "IN_PROGRESS",
+      "verificationStatus": "PENDING_VERIFICATION",
+      "sourceUploadTimestamp": "2026-08-15T16:18:06.311Z",
+      "lastRetrievedTimestamp": "2026-10-23T16:36:07.061Z",
+      "resultSheetId": "rs-29-17-02-009",
+      "latitude": 7.628176173481953,
+      "longitude": 4.468562631614072
+    },
+    {
+      "id": "pu-29-17-02-007",
+      "code": "29-17-02-007",
+      "name": "OJUDE OBAALE",
+      "stateCode": "OSUN",
+      "lgaCode": "ILA",
+      "wardCode": "ILA_RA_01",
+      "registeredVoters": 0,
+      "accreditedVoters": 0,
+      "electionId": "elec-2026-gov-osun",
+      "uploadStatus": "UPLOADED",
+      "transcriptionStatus": "IN_PROGRESS",
+      "verificationStatus": "PENDING_VERIFICATION",
+      "sourceUploadTimestamp": "2026-08-15T15:15:24.375Z",
+      "lastRetrievedTimestamp": "2026-10-23T16:36:07.061Z",
+      "resultSheetId": "rs-29-17-02-007",
+      "latitude": 7.671937136331137,
+      "longitude": 4.492193436421601
+    },
+    {
+      "id": "pu-29-17-02-003",
+      "code": "29-17-02-003",
+      "name": "COOPERATIVE STORE II",
+      "stateCode": "OSUN",
+      "lgaCode": "ILA",
+      "wardCode": "ILA_RA_01",
+      "registeredVoters": 0,
+      "accreditedVoters": 0,
+      "electionId": "elec-2026-gov-osun",
+      "uploadStatus": "UPLOADED",
+      "transcriptionStatus": "IN_PROGRESS",
+      "verificationStatus": "PENDING_VERIFICATION",
+      "sourceUploadTimestamp": "2026-08-15T15:12:20.682Z",
+      "lastRetrievedTimestamp": "2026-10-23T16:36:07.061Z",
+      "resultSheetId": "rs-29-17-02-003",
+      "latitude": 7.741669884255537,
+      "longitude": 4.465964867847079
+    },
+    {
+      "id": "pu-29-17-02-002",
+      "code": "29-17-02-002",
+      "name": "COOPERATIVE STORE I",
+      "stateCode": "OSUN",
+      "lgaCode": "ILA",
+      "wardCode": "ILA_RA_01",
+      "registeredVoters": 0,
+      "accreditedVoters": 0,
+      "electionId": "elec-2026-gov-osun",
+      "uploadStatus": "UPLOADED",
+      "transcriptionStatus": "IN_PROGRESS",
+      "verificationStatus": "PENDING_VERIFICATION",
+      "sourceUploadTimestamp": "2026-08-15T15:03:07.477Z",
+      "lastRetrievedTimestamp": "2026-10-23T16:36:07.061Z",
+      "resultSheetId": "rs-29-17-02-002",
+      "latitude": 7.532969553306968,
+      "longitude": 4.453413491883339
+    },
+    {
+      "id": "pu-29-17-02-005",
+      "code": "29-17-02-005",
+      "name": "DISPENSARY",
+      "stateCode": "OSUN",
+      "lgaCode": "ILA",
+      "wardCode": "ILA_RA_01",
+      "registeredVoters": 0,
+      "accreditedVoters": 0,
+      "electionId": "elec-2026-gov-osun",
+      "uploadStatus": "UPLOADED",
+      "transcriptionStatus": "IN_PROGRESS",
+      "verificationStatus": "PENDING_VERIFICATION",
+      "sourceUploadTimestamp": "2026-08-15T14:54:03.951Z",
+      "lastRetrievedTimestamp": "2026-10-23T16:36:07.061Z",
+      "resultSheetId": "rs-29-17-02-005",
+      "latitude": 7.65332352315773,
+      "longitude": 4.5401763010258005
+    },
+    {
+      "id": "pu-29-17-02-004",
+      "code": "29-17-02-004",
+      "name": "OLOOTU",
+      "stateCode": "OSUN",
+      "lgaCode": "ILA",
+      "wardCode": "ILA_RA_01",
+      "registeredVoters": 0,
+      "accreditedVoters": 0,
+      "electionId": "elec-2026-gov-osun",
+      "uploadStatus": "UPLOADED",
+      "transcriptionStatus": "IN_PROGRESS",
+      "verificationStatus": "PENDING_VERIFICATION",
+      "sourceUploadTimestamp": "2026-08-15T14:49:02.823Z",
+      "lastRetrievedTimestamp": "2026-10-23T16:36:07.061Z",
+      "resultSheetId": "rs-29-17-02-004",
+      "latitude": 7.763702515387474,
+      "longitude": 4.706089696770317
+    },
+    {
+      "id": "pu-29-17-10-008",
+      "code": "29-17-10-008",
+      "name": "ODOODE (JANGI ROAD)",
+      "stateCode": "OSUN",
+      "lgaCode": "ILA",
+      "wardCode": "ILA_RA_04",
+      "registeredVoters": 434,
+      "accreditedVoters": 254,
+      "electionId": "elec-2026-gov-osun",
+      "uploadStatus": "UPLOADED",
+      "transcriptionStatus": "COMPLETED",
+      "verificationStatus": "VERIFIED",
+      "sourceUploadTimestamp": "2026-08-16T04:52:43.837Z",
+      "lastRetrievedTimestamp": "2026-10-23T16:36:07.743Z",
+      "resultSheetId": "rs-29-17-10-008",
+      "latitude": 7.691477111292672,
+      "longitude": 4.552760927502929
+    },
+    {
+      "id": "pu-29-17-10-007",
+      "code": "29-17-10-007",
+      "name": "ODOODE (OPP. ODOODE MOSQUE)",
+      "stateCode": "OSUN",
+      "lgaCode": "ILA",
+      "wardCode": "ILA_RA_04",
+      "registeredVoters": 0,
+      "accreditedVoters": 0,
+      "electionId": "elec-2026-gov-osun",
+      "uploadStatus": "UPLOADED",
+      "transcriptionStatus": "IN_PROGRESS",
+      "verificationStatus": "PENDING_VERIFICATION",
+      "sourceUploadTimestamp": "2026-08-15T15:57:05.214Z",
+      "lastRetrievedTimestamp": "2026-10-23T16:36:07.743Z",
+      "resultSheetId": "rs-29-17-10-007",
+      "latitude": 7.867312571473092,
+      "longitude": 4.797354100014582
+    },
+    {
+      "id": "pu-29-17-10-002",
+      "code": "29-17-10-002",
+      "name": "OJUDE AWOROII",
+      "stateCode": "OSUN",
+      "lgaCode": "ILA",
+      "wardCode": "ILA_RA_04",
+      "registeredVoters": 0,
+      "accreditedVoters": 0,
+      "electionId": "elec-2026-gov-osun",
+      "uploadStatus": "UPLOADED",
+      "transcriptionStatus": "IN_PROGRESS",
+      "verificationStatus": "PENDING_VERIFICATION",
+      "sourceUploadTimestamp": "2026-08-15T15:33:15.788Z",
+      "lastRetrievedTimestamp": "2026-10-23T16:36:07.743Z",
+      "resultSheetId": "rs-29-17-10-002",
+      "latitude": 7.609779611806344,
+      "longitude": 4.674072331605574
+    },
+    {
+      "id": "pu-29-17-10-003",
+      "code": "29-17-10-003",
+      "name": "OJUDE ALAPINNI I",
+      "stateCode": "OSUN",
+      "lgaCode": "ILA",
+      "wardCode": "ILA_RA_04",
+      "registeredVoters": 0,
+      "accreditedVoters": 0,
+      "electionId": "elec-2026-gov-osun",
+      "uploadStatus": "UPLOADED",
+      "transcriptionStatus": "IN_PROGRESS",
+      "verificationStatus": "PENDING_VERIFICATION",
+      "sourceUploadTimestamp": "2026-08-15T15:24:26.630Z",
+      "lastRetrievedTimestamp": "2026-10-23T16:36:07.743Z",
+      "resultSheetId": "rs-29-17-10-003",
+      "latitude": 7.515494792984124,
+      "longitude": 4.4335947847014285
+    },
+    {
+      "id": "pu-29-17-10-004",
+      "code": "29-17-10-004",
+      "name": "OJUDE ALAPINNI II",
+      "stateCode": "OSUN",
+      "lgaCode": "ILA",
+      "wardCode": "ILA_RA_04",
+      "registeredVoters": 0,
+      "accreditedVoters": 0,
+      "electionId": "elec-2026-gov-osun",
+      "uploadStatus": "UPLOADED",
+      "transcriptionStatus": "IN_PROGRESS",
+      "verificationStatus": "PENDING_VERIFICATION",
+      "sourceUploadTimestamp": "2026-08-15T15:18:46.757Z",
+      "lastRetrievedTimestamp": "2026-10-23T16:36:07.743Z",
+      "resultSheetId": "rs-29-17-10-004",
+      "latitude": 7.746761536883351,
+      "longitude": 4.759825154793199
+    },
+    {
+      "id": "pu-29-17-10-006",
+      "code": "29-17-10-006",
+      "name": "OJUDE ALAA",
+      "stateCode": "OSUN",
+      "lgaCode": "ILA",
+      "wardCode": "ILA_RA_04",
+      "registeredVoters": 0,
+      "accreditedVoters": 0,
+      "electionId": "elec-2026-gov-osun",
+      "uploadStatus": "UPLOADED",
+      "transcriptionStatus": "IN_PROGRESS",
+      "verificationStatus": "PENDING_VERIFICATION",
+      "sourceUploadTimestamp": "2026-08-15T15:12:06.582Z",
+      "lastRetrievedTimestamp": "2026-10-23T16:36:07.743Z",
+      "resultSheetId": "rs-29-17-10-006",
+      "latitude": 7.845759613612488,
+      "longitude": 4.408848154295408
+    },
+    {
+      "id": "pu-29-17-10-005",
+      "code": "29-17-10-005",
+      "name": "OJUDE ALAPINNI III",
+      "stateCode": "OSUN",
+      "lgaCode": "ILA",
+      "wardCode": "ILA_RA_04",
+      "registeredVoters": 0,
+      "accreditedVoters": 0,
+      "electionId": "elec-2026-gov-osun",
+      "uploadStatus": "UPLOADED",
+      "transcriptionStatus": "IN_PROGRESS",
+      "verificationStatus": "PENDING_VERIFICATION",
+      "sourceUploadTimestamp": "2026-08-15T14:49:50.143Z",
+      "lastRetrievedTimestamp": "2026-10-23T16:36:07.743Z",
+      "resultSheetId": "rs-29-17-10-005",
+      "latitude": 7.592045635363509,
+      "longitude": 4.6742926867310794
+    },
+    {
+      "id": "pu-29-17-10-010",
+      "code": "29-17-10-010",
+      "name": "ODOODE (IDI LAMGBODO) II",
+      "stateCode": "OSUN",
+      "lgaCode": "ILA",
+      "wardCode": "ILA_RA_04",
+      "registeredVoters": 0,
+      "accreditedVoters": 0,
+      "electionId": "elec-2026-gov-osun",
+      "uploadStatus": "UPLOADED",
+      "transcriptionStatus": "IN_PROGRESS",
+      "verificationStatus": "PENDING_VERIFICATION",
+      "sourceUploadTimestamp": "2026-08-15T14:49:41.241Z",
+      "lastRetrievedTimestamp": "2026-10-23T16:36:07.743Z",
+      "resultSheetId": "rs-29-17-10-010",
+      "latitude": 7.557157263520785,
+      "longitude": 4.722000277982794
+    },
+    {
+      "id": "pu-29-17-10-001",
+      "code": "29-17-10-001",
+      "name": "OJUDE AWORO I",
+      "stateCode": "OSUN",
+      "lgaCode": "ILA",
+      "wardCode": "ILA_RA_04",
+      "registeredVoters": 0,
+      "accreditedVoters": 0,
+      "electionId": "elec-2026-gov-osun",
+      "uploadStatus": "UPLOADED",
+      "transcriptionStatus": "IN_PROGRESS",
+      "verificationStatus": "PENDING_VERIFICATION",
+      "sourceUploadTimestamp": "2026-08-15T14:49:17.308Z",
+      "lastRetrievedTimestamp": "2026-10-23T16:36:07.743Z",
+      "resultSheetId": "rs-29-17-10-001",
+      "latitude": 7.769780935004195,
+      "longitude": 4.637117670008606
+    },
+    {
+      "id": "pu-29-17-10-009",
+      "code": "29-17-10-009",
+      "name": "ODOODE (IDI LANGBODO) I",
+      "stateCode": "OSUN",
+      "lgaCode": "ILA",
+      "wardCode": "ILA_RA_04",
+      "registeredVoters": 0,
+      "accreditedVoters": 0,
+      "electionId": "elec-2026-gov-osun",
+      "uploadStatus": "UPLOADED",
+      "transcriptionStatus": "IN_PROGRESS",
+      "verificationStatus": "PENDING_VERIFICATION",
+      "sourceUploadTimestamp": "2026-08-15T14:47:00.412Z",
+      "lastRetrievedTimestamp": "2026-10-23T16:36:07.743Z",
+      "resultSheetId": "rs-29-17-10-009",
+      "latitude": 7.613011238580237,
+      "longitude": 4.453192615062213
+    },
+    {
+      "id": "pu-29-17-05-005",
+      "code": "29-17-05-005",
+      "name": "ST. MATTHEW PRY. SCHOOL III",
+      "stateCode": "OSUN",
+      "lgaCode": "ILA",
+      "wardCode": "ILA_RA_05",
+      "registeredVoters": 0,
+      "accreditedVoters": 0,
+      "electionId": "elec-2026-gov-osun",
+      "uploadStatus": "UPLOADED",
+      "transcriptionStatus": "IN_PROGRESS",
+      "verificationStatus": "PENDING_VERIFICATION",
+      "sourceUploadTimestamp": "2026-08-15T17:15:05.042Z",
+      "lastRetrievedTimestamp": "2026-10-23T16:36:08.904Z",
+      "resultSheetId": "rs-29-17-05-005",
+      "latitude": 7.852125575210554,
+      "longitude": 4.678896448232512
+    },
+    {
+      "id": "pu-29-17-05-001",
+      "code": "29-17-05-001",
+      "name": "OLUKORI JUNCTION I",
+      "stateCode": "OSUN",
+      "lgaCode": "ILA",
+      "wardCode": "ILA_RA_05",
+      "registeredVoters": 0,
+      "accreditedVoters": 0,
+      "electionId": "elec-2026-gov-osun",
+      "uploadStatus": "UPLOADED",
+      "transcriptionStatus": "IN_PROGRESS",
+      "verificationStatus": "PENDING_VERIFICATION",
+      "sourceUploadTimestamp": "2026-08-15T16:30:11.493Z",
+      "lastRetrievedTimestamp": "2026-10-23T16:36:08.904Z",
+      "resultSheetId": "rs-29-17-05-001",
+      "latitude": 7.637702181006297,
+      "longitude": 4.53266061520566
+    },
+    {
+      "id": "pu-29-17-05-004",
+      "code": "29-17-05-004",
+      "name": "ST. MATTHEW PRY. SCHOOL, II",
+      "stateCode": "OSUN",
+      "lgaCode": "ILA",
+      "wardCode": "ILA_RA_05",
+      "registeredVoters": 0,
+      "accreditedVoters": 0,
+      "electionId": "elec-2026-gov-osun",
+      "uploadStatus": "UPLOADED",
+      "transcriptionStatus": "IN_PROGRESS",
+      "verificationStatus": "PENDING_VERIFICATION",
+      "sourceUploadTimestamp": "2026-08-15T16:06:06.404Z",
+      "lastRetrievedTimestamp": "2026-10-23T16:36:08.904Z",
+      "resultSheetId": "rs-29-17-05-004",
+      "latitude": 7.712946296587427,
+      "longitude": 4.536988999509899
+    },
+    {
+      "id": "pu-29-17-05-008",
+      "code": "29-17-05-008",
+      "name": "OJUDE ABALAGEMO",
+      "stateCode": "OSUN",
+      "lgaCode": "ILA",
+      "wardCode": "ILA_RA_05",
+      "registeredVoters": 0,
+      "accreditedVoters": 0,
+      "electionId": "elec-2026-gov-osun",
+      "uploadStatus": "UPLOADED",
+      "transcriptionStatus": "IN_PROGRESS",
+      "verificationStatus": "PENDING_VERIFICATION",
+      "sourceUploadTimestamp": "2026-08-15T16:00:08.692Z",
+      "lastRetrievedTimestamp": "2026-10-23T16:36:08.904Z",
+      "resultSheetId": "rs-29-17-05-008",
+      "latitude": 7.847554350186312,
+      "longitude": 4.643444970632333
+    },
+    {
+      "id": "pu-29-17-05-003",
+      "code": "29-17-05-003",
+      "name": "ST. MATTHEW PRY. SCHOOL, I",
+      "stateCode": "OSUN",
+      "lgaCode": "ILA",
+      "wardCode": "ILA_RA_05",
+      "registeredVoters": 0,
+      "accreditedVoters": 0,
+      "electionId": "elec-2026-gov-osun",
+      "uploadStatus": "UPLOADED",
+      "transcriptionStatus": "IN_PROGRESS",
+      "verificationStatus": "PENDING_VERIFICATION",
+      "sourceUploadTimestamp": "2026-08-15T16:00:05.052Z",
+      "lastRetrievedTimestamp": "2026-10-23T16:36:08.904Z",
+      "resultSheetId": "rs-29-17-05-003",
+      "latitude": 7.663193806598993,
+      "longitude": 4.431396622891653
+    },
+    {
+      "id": "pu-29-17-05-010",
+      "code": "29-17-05-010",
+      "name": "ST. JULIUS PRY. SCHOOL II",
+      "stateCode": "OSUN",
+      "lgaCode": "ILA",
+      "wardCode": "ILA_RA_05",
+      "registeredVoters": 0,
+      "accreditedVoters": 0,
+      "electionId": "elec-2026-gov-osun",
+      "uploadStatus": "UPLOADED",
+      "transcriptionStatus": "IN_PROGRESS",
+      "verificationStatus": "PENDING_VERIFICATION",
+      "sourceUploadTimestamp": "2026-08-15T15:57:05.071Z",
+      "lastRetrievedTimestamp": "2026-10-23T16:36:08.904Z",
+      "resultSheetId": "rs-29-17-05-010",
+      "latitude": 7.564886061462656,
+      "longitude": 4.617765412992124
+    },
+    {
+      "id": "pu-29-17-05-002",
+      "code": "29-17-05-002",
+      "name": "OLUKORI JUNCTION II",
+      "stateCode": "OSUN",
+      "lgaCode": "ILA",
+      "wardCode": "ILA_RA_05",
+      "registeredVoters": 0,
+      "accreditedVoters": 0,
+      "electionId": "elec-2026-gov-osun",
+      "uploadStatus": "UPLOADED",
+      "transcriptionStatus": "IN_PROGRESS",
+      "verificationStatus": "PENDING_VERIFICATION",
+      "sourceUploadTimestamp": "2026-08-15T15:51:02.804Z",
+      "lastRetrievedTimestamp": "2026-10-23T16:36:08.904Z",
+      "resultSheetId": "rs-29-17-05-002",
+      "latitude": 7.8516480572216665,
+      "longitude": 4.591637757599122
+    },
+    {
+      "id": "pu-29-17-05-007",
+      "code": "29-17-05-007",
+      "name": "OJUDE OPOSIN II AKODI OBALUMO O/S IN ODOSIN",
+      "stateCode": "OSUN",
+      "lgaCode": "ILA",
+      "wardCode": "ILA_RA_05",
+      "registeredVoters": 0,
+      "accreditedVoters": 0,
+      "electionId": "elec-2026-gov-osun",
+      "uploadStatus": "UPLOADED",
+      "transcriptionStatus": "IN_PROGRESS",
+      "verificationStatus": "PENDING_VERIFICATION",
+      "sourceUploadTimestamp": "2026-08-15T15:39:07.891Z",
+      "lastRetrievedTimestamp": "2026-10-23T16:36:08.904Z",
+      "resultSheetId": "rs-29-17-05-007",
+      "latitude": 7.504444246264399,
+      "longitude": 4.537427005085912
+    },
+    {
+      "id": "pu-29-17-05-009",
+      "code": "29-17-05-009",
+      "name": "ST. JULIUS PRY. SCHOOL I",
+      "stateCode": "OSUN",
+      "lgaCode": "ILA",
+      "wardCode": "ILA_RA_05",
+      "registeredVoters": 0,
+      "accreditedVoters": 0,
+      "electionId": "elec-2026-gov-osun",
+      "uploadStatus": "UPLOADED",
+      "transcriptionStatus": "IN_PROGRESS",
+      "verificationStatus": "PENDING_VERIFICATION",
+      "sourceUploadTimestamp": "2026-08-15T15:09:04.064Z",
+      "lastRetrievedTimestamp": "2026-10-23T16:36:08.904Z",
+      "resultSheetId": "rs-29-17-05-009",
+      "latitude": 7.6257659922015755,
+      "longitude": 4.455478674924353
+    },
+    {
+      "id": "pu-29-17-05-006",
+      "code": "29-17-05-006",
+      "name": "OJUDE OPOSIN I, BESIDE IDI ODU ODOSIN",
+      "stateCode": "OSUN",
+      "lgaCode": "ILA",
+      "wardCode": "ILA_RA_05",
+      "registeredVoters": 0,
+      "accreditedVoters": 0,
+      "electionId": "elec-2026-gov-osun",
+      "uploadStatus": "UPLOADED",
+      "transcriptionStatus": "IN_PROGRESS",
+      "verificationStatus": "PENDING_VERIFICATION",
+      "sourceUploadTimestamp": "2026-08-15T14:50:23.946Z",
+      "lastRetrievedTimestamp": "2026-10-23T16:36:08.904Z",
+      "resultSheetId": "rs-29-17-05-006",
+      "latitude": 7.578553307378176,
+      "longitude": 4.475337702397384
+    }
+  ],
+  "resultSheets": {
+    "rs-29-17-03-007": {
+      "id": "rs-29-17-03-007",
+      "pollingUnitCode": "29-17-03-007",
+      "electionId": "elec-2026-gov-osun",
+      "formType": "EC8A",
+      "sourceUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7035/97419/4145d15f-0bf1-4eea-9322-6e34fc2225bf.jpg",
+      "fileHash": "21e207c81386e496f1ea40901ec83abbba9dcdb721ddc790a0ae6a2e93a40f88",
+      "imageUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7035/97419/4145d15f-0bf1-4eea-9322-6e34fc2225bf.jpg",
+      "uploadTimestamp": "2026-08-15T22:42:53.705Z",
+      "retrievalTimestamp": "2026-10-23T16:36:05.372Z",
+      "ocrConfidence": 95,
+      "sourceStatus": "ORIGINAL",
+      "version": 1,
+      "transcription": {
+        "validVotes": 586,
+        "rejectedVotes": 6,
+        "totalVotesCast": 592,
+        "partyVotes": {
+          "A": 347,
+          "ADC": 4,
+          "APC": 233,
+          "APM": 1,
+          "ZLP": 1
+        }
+      },
+      "ocrExtraction": {
+        "validVotes": 586,
+        "rejectedVotes": 6,
+        "totalVotesCast": 592,
+        "partyVotes": {
+          "A": 347,
+          "ADC": 4,
+          "APC": 233,
+          "APM": 1,
+          "ZLP": 1
+        },
+        "rawText": "INEC FORM EC8A — STATEMENT OF RESULT OF POLL FROM POLLING UNIT\nS/N: 0001916 | Date: 15/8/2026\nState: OSUN | LGA: E.A | Ward: EJIGBO III\nPolling Unit: OGUNLADE JUNCTION (29-17-03-007)\n#1 Voters on Register: 1027 | #2 Accredited Voters: 594\n#3 Ballots Issued: 1027 | #4 Unused Ballots: 433 | #5 Spoiled Ballots: 2\n#6 Rejected Ballots: 6 | #7 Total Valid Votes: 586 | #8 Total Used Ballots: 594\nParty Votes Scored: A: 347 (THREE HUNDRED AND FORTY SEVEN) | ADC: 4 (FOUR) | APC: 233 (TWO HUNDRED AND THIRTY THREE) | APM: 1 (ONE) | ZLP: 1 (ONE)\nPresiding Officer: OLALEYE TANSO TOJI"
+      },
+      "arithmeticCheck": {
+        "passed": true,
+        "difference": 0,
+        "formula": "Party Sum (586) = Valid (586) + Rejected (6) = Cast (592) | Used Ballots (#5+#6+#7) = 594",
+        "details": "Gemini Vision AI OCR verified: Party votes sum (586) matches Total Valid Votes (586) and is within Accredited Voters (594). Presiding Officer: OLALEYE TANSO TOJI."
+      },
+      "verifiedBy": "Lead Observer Verifier",
+      "verifiedAt": "2026-10-23T16:50:08.937Z",
+      "verifierNotes": "Transcribed from official Form EC8A (S/N 0001916). Presiding Officer: OLALEYE TANSO TOJI.",
+      "versionHistory": [
+        {
+          "versionNumber": 1,
+          "actor": "Lead Observer Verifier",
+          "actionType": "VERIFICATION_SIGN_OFF",
+          "timestamp": "2026-10-23T16:50:08.937Z",
+          "reason": "Transcribed from official Form EC8A (S/N 0001916). Presiding Officer: OLALEYE TANSO TOJI."
+        },
+        {
+          "versionNumber": 1,
+          "actor": "INEC Live Ingestion Pipeline",
+          "actionType": "INITIAL_INGESTION",
+          "timestamp": "2026-10-23T16:36:05.372Z",
+          "reason": "Initial result sheet ingestion from INEC Results Portal (uploaded at 2026-08-15T22:42:53.705Z)"
+        }
+      ],
+      "ballotStatistics": {
+        "registeredVoters": 1027,
+        "accreditedVoters": 594,
+        "ballotsIssued": 1027,
+        "unusedBallots": 433,
+        "spoiledBallots": 2,
+        "rejectedVotes": 6,
+        "validVotes": 586,
+        "totalVotesCast": 592,
+        "totalUsedBallots": 594,
+        "serialNumber": "0001916",
+        "presidingOfficerName": "OLALEYE TANSO TOJI",
+        "electionDateOnForm": "15/8/2026"
+      },
+      "requiresHumanReview": false,
+      "auditLogs": [
+        {
+          "id": "audit-1792774208937",
+          "timestamp": "2026-10-23T16:50:08.937Z",
+          "actor": "user:Lead Observer Verifier",
+          "action": "VERIFY_RESULT",
+          "target": "rs-29-17-03-007",
+          "details": "Decision: APPROVED. Notes: Transcribed from official Form EC8A (S/N 0001916). Presiding Officer: OLALEYE TANSO TOJI."
+        }
+      ]
+    },
+    "rs-29-17-03-002": {
+      "id": "rs-29-17-03-002",
+      "pollingUnitCode": "29-17-03-002",
+      "electionId": "elec-2026-gov-osun",
+      "formType": "EC8A",
+      "sourceUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7035/97414/4d671fb0-3acc-43dc-b51c-c0d2d304a11c.jpg",
+      "fileHash": "6e397e6a1e5e10e4b2ea71c6e4684a1d8aec29cd8c3a259f0a3a8bd3454fe88e",
+      "imageUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7035/97414/4d671fb0-3acc-43dc-b51c-c0d2d304a11c.jpg",
+      "uploadTimestamp": "2026-08-15T22:42:36.941Z",
+      "retrievalTimestamp": "2026-10-23T16:36:05.372Z",
+      "ocrConfidence": 85,
+      "sourceStatus": "ORIGINAL",
+      "version": 1,
+      "transcription": {
+        "validVotes": 439,
+        "rejectedVotes": 2,
+        "totalVotesCast": 441,
+        "partyVotes": {
+          "A": 221,
+          "ADC": 38,
+          "APC": 180
+        }
+      },
+      "ocrExtraction": {
+        "validVotes": 439,
+        "rejectedVotes": 2,
+        "totalVotesCast": 441,
+        "partyVotes": {
+          "A": 221,
+          "ADC": 38,
+          "APC": 180
+        },
+        "rawText": "INEC FORM EC8A — STATEMENT OF RESULT OF POLL FROM POLLING UNIT\nS/N: 0001911 | Date: 15/08/2026\nState: OSUN | LGA: IREE | Ward: EJIGBO III\nPolling Unit: ST. MICHAEL PRY. SCHOOL (29-17-03-002)\n#1 Voters on Register: 945 | #2 Accredited Voters: 441\n#3 Ballots Issued: 945 | #4 Unused Ballots: 504 | #5 Spoiled Ballots: 0\n#6 Rejected Ballots: 2 | #7 Total Valid Votes: 439 | #8 Total Used Ballots: 441\nParty Votes Scored: A: 221 (Two hundred & Twenty-one) | ADC: 38 (Thirty-eight) | APC: 180 (One hundred & Eighty)\nPresiding Officer: ADELEKE AABUKUDR. CO"
+      },
+      "arithmeticCheck": {
+        "passed": true,
+        "difference": 0,
+        "formula": "Party Sum (439) = Valid (439) + Rejected (2) = Cast (441) | Used Ballots (#5+#6+#7) = 441",
+        "details": "Gemini Vision AI OCR verified: Party votes sum (439) matches Total Valid Votes (439) and is within Accredited Voters (441). Presiding Officer: ADELEKE AABUKUDR. CO."
+      },
+      "verifiedBy": "Gemini Vision AI OCR + Ballot Arithmetic Check",
+      "verifiedAt": "2026-10-23T16:36:20.409Z",
+      "verifierNotes": "Transcribed from official Form EC8A (S/N 0001911). Presiding Officer: ADELEKE AABUKUDR. CO.",
+      "versionHistory": [
+        {
+          "versionNumber": 1,
+          "actor": "INEC Live Ingestion Pipeline",
+          "actionType": "INITIAL_INGESTION",
+          "timestamp": "2026-10-23T16:36:05.372Z",
+          "reason": "Initial result sheet ingestion from INEC Results Portal (uploaded at 2026-08-15T22:42:36.941Z)"
+        }
+      ],
+      "ballotStatistics": {
+        "registeredVoters": 945,
+        "accreditedVoters": 441,
+        "ballotsIssued": 945,
+        "unusedBallots": 504,
+        "spoiledBallots": 0,
+        "rejectedVotes": 2,
+        "validVotes": 439,
+        "totalVotesCast": 441,
+        "totalUsedBallots": 441,
+        "serialNumber": "0001911",
+        "presidingOfficerName": "ADELEKE AABUKUDR. CO",
+        "electionDateOnForm": "15/08/2026"
+      },
+      "requiresHumanReview": false
+    },
+    "rs-29-17-03-003": {
+      "id": "rs-29-17-03-003",
+      "pollingUnitCode": "29-17-03-003",
+      "electionId": "elec-2026-gov-osun",
+      "formType": "EC8A",
+      "sourceUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7035/97415/5f113c15-2261-4003-a088-f6aa72329977.jpg",
+      "fileHash": "117156fc979ddd473662cbf5099d6cad42b4868b06c9630d35beb15fce830568",
+      "imageUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7035/97415/5f113c15-2261-4003-a088-f6aa72329977.jpg",
+      "uploadTimestamp": "2026-08-15T18:03:03.142Z",
+      "retrievalTimestamp": "2026-10-23T16:36:05.372Z",
+      "ocrConfidence": 0,
+      "sourceStatus": "ORIGINAL",
+      "version": 1,
+      "transcription": {
+        "validVotes": 0,
+        "rejectedVotes": 0,
+        "totalVotesCast": 0,
+        "partyVotes": {}
+      },
+      "ocrExtraction": {
+        "validVotes": 0,
+        "rejectedVotes": 0,
+        "totalVotesCast": 0,
+        "partyVotes": {},
+        "rawText": "INEC FORM EC8A — AJABA JUNCTION (29/17/03/003). Ready for AI OCR transcription."
+      },
+      "arithmeticCheck": {
+        "passed": true,
+        "difference": 0,
+        "formula": "Awaiting AI OCR extraction",
+        "details": "Form EC8A scan retrieved live from INEC Results Portal (IReV)."
+      },
+      "verifiedBy": "Pending AI OCR Transcription",
+      "verifiedAt": "2026-10-23T16:36:05.372Z",
+      "verifierNotes": "Official Form EC8A document from INEC IReV: https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7035/97415/5f113c15-2261-4003-a088-f6aa72329977.jpg",
+      "versionHistory": [
+        {
+          "versionNumber": 1,
+          "actor": "INEC Live Ingestion Pipeline",
+          "actionType": "INITIAL_INGESTION",
+          "timestamp": "2026-10-23T16:36:05.372Z",
+          "reason": "Initial result sheet ingestion from INEC Results Portal (uploaded at 2026-08-15T18:03:03.142Z)"
+        }
+      ]
+    },
+    "rs-29-17-03-006": {
+      "id": "rs-29-17-03-006",
+      "pollingUnitCode": "29-17-03-006",
+      "electionId": "elec-2026-gov-osun",
+      "formType": "EC8A",
+      "sourceUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7035/97418/3007f5b8-384d-45c0-ba88-48316c6a3e14.jpg",
+      "fileHash": "716f6396801d33b035b671d6dbe62352d9b0a7fda4b29f9a6490370574a5f0cb",
+      "imageUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7035/97418/3007f5b8-384d-45c0-ba88-48316c6a3e14.jpg",
+      "uploadTimestamp": "2026-08-15T17:48:08.219Z",
+      "retrievalTimestamp": "2026-10-23T16:36:05.372Z",
+      "ocrConfidence": 0,
+      "sourceStatus": "ORIGINAL",
+      "version": 1,
+      "transcription": {
+        "validVotes": 0,
+        "rejectedVotes": 0,
+        "totalVotesCast": 0,
+        "partyVotes": {}
+      },
+      "ocrExtraction": {
+        "validVotes": 0,
+        "rejectedVotes": 0,
+        "totalVotesCast": 0,
+        "partyVotes": {},
+        "rawText": "INEC FORM EC8A — NEW GARAGE (29/17/03/006). Ready for AI OCR transcription."
+      },
+      "arithmeticCheck": {
+        "passed": true,
+        "difference": 0,
+        "formula": "Awaiting AI OCR extraction",
+        "details": "Form EC8A scan retrieved live from INEC Results Portal (IReV)."
+      },
+      "verifiedBy": "Pending AI OCR Transcription",
+      "verifiedAt": "2026-10-23T16:36:05.372Z",
+      "verifierNotes": "Official Form EC8A document from INEC IReV: https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7035/97418/3007f5b8-384d-45c0-ba88-48316c6a3e14.jpg",
+      "versionHistory": [
+        {
+          "versionNumber": 1,
+          "actor": "INEC Live Ingestion Pipeline",
+          "actionType": "INITIAL_INGESTION",
+          "timestamp": "2026-10-23T16:36:05.372Z",
+          "reason": "Initial result sheet ingestion from INEC Results Portal (uploaded at 2026-08-15T17:48:08.219Z)"
+        }
+      ]
+    },
+    "rs-29-17-03-005": {
+      "id": "rs-29-17-03-005",
+      "pollingUnitCode": "29-17-03-005",
+      "electionId": "elec-2026-gov-osun",
+      "formType": "EC8A",
+      "sourceUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7035/97417/5248871f-b820-4661-b553-5b2a220cea8c.jpg",
+      "fileHash": "f7ad2804bf81767351e03f1b92dc4965fc2e3f445798f7fcb7f0e24223187c05",
+      "imageUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7035/97417/5248871f-b820-4661-b553-5b2a220cea8c.jpg",
+      "uploadTimestamp": "2026-08-15T17:36:06.876Z",
+      "retrievalTimestamp": "2026-10-23T16:36:05.372Z",
+      "ocrConfidence": 0,
+      "sourceStatus": "ORIGINAL",
+      "version": 1,
+      "transcription": {
+        "validVotes": 0,
+        "rejectedVotes": 0,
+        "totalVotesCast": 0,
+        "partyVotes": {}
+      },
+      "ocrExtraction": {
+        "validVotes": 0,
+        "rejectedVotes": 0,
+        "totalVotesCast": 0,
+        "partyVotes": {},
+        "rawText": "INEC FORM EC8A — ONIFADE JUNCTION (29/17/03/005). Ready for AI OCR transcription."
+      },
+      "arithmeticCheck": {
+        "passed": true,
+        "difference": 0,
+        "formula": "Awaiting AI OCR extraction",
+        "details": "Form EC8A scan retrieved live from INEC Results Portal (IReV)."
+      },
+      "verifiedBy": "Pending AI OCR Transcription",
+      "verifiedAt": "2026-10-23T16:36:05.372Z",
+      "verifierNotes": "Official Form EC8A document from INEC IReV: https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7035/97417/5248871f-b820-4661-b553-5b2a220cea8c.jpg",
+      "versionHistory": [
+        {
+          "versionNumber": 1,
+          "actor": "INEC Live Ingestion Pipeline",
+          "actionType": "INITIAL_INGESTION",
+          "timestamp": "2026-10-23T16:36:05.372Z",
+          "reason": "Initial result sheet ingestion from INEC Results Portal (uploaded at 2026-08-15T17:36:06.876Z)"
+        }
+      ]
+    },
+    "rs-29-17-03-008": {
+      "id": "rs-29-17-03-008",
+      "pollingUnitCode": "29-17-03-008",
+      "electionId": "elec-2026-gov-osun",
+      "formType": "EC8A",
+      "sourceUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7035/97420/f6fb8775-a4df-4537-a032-2f933362edc0.jpg",
+      "fileHash": "efa7b7eece1c8f7dedc3f0818009e35e5125518c3a9453ffc9652515a8c34682",
+      "imageUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7035/97420/f6fb8775-a4df-4537-a032-2f933362edc0.jpg",
+      "uploadTimestamp": "2026-08-15T16:48:03.407Z",
+      "retrievalTimestamp": "2026-10-23T16:36:05.372Z",
+      "ocrConfidence": 0,
+      "sourceStatus": "ORIGINAL",
+      "version": 1,
+      "transcription": {
+        "validVotes": 0,
+        "rejectedVotes": 0,
+        "totalVotesCast": 0,
+        "partyVotes": {}
+      },
+      "ocrExtraction": {
+        "validVotes": 0,
+        "rejectedVotes": 0,
+        "totalVotesCast": 0,
+        "partyVotes": {},
+        "rawText": "INEC FORM EC8A — IYANA IRESI (29/17/03/008). Ready for AI OCR transcription."
+      },
+      "arithmeticCheck": {
+        "passed": true,
+        "difference": 0,
+        "formula": "Awaiting AI OCR extraction",
+        "details": "Form EC8A scan retrieved live from INEC Results Portal (IReV)."
+      },
+      "verifiedBy": "Pending AI OCR Transcription",
+      "verifiedAt": "2026-10-23T16:36:05.372Z",
+      "verifierNotes": "Official Form EC8A document from INEC IReV: https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7035/97420/f6fb8775-a4df-4537-a032-2f933362edc0.jpg",
+      "versionHistory": [
+        {
+          "versionNumber": 1,
+          "actor": "INEC Live Ingestion Pipeline",
+          "actionType": "INITIAL_INGESTION",
+          "timestamp": "2026-10-23T16:36:05.372Z",
+          "reason": "Initial result sheet ingestion from INEC Results Portal (uploaded at 2026-08-15T16:48:03.407Z)"
+        }
+      ]
+    },
+    "rs-29-17-03-001": {
+      "id": "rs-29-17-03-001",
+      "pollingUnitCode": "29-17-03-001",
+      "electionId": "elec-2026-gov-osun",
+      "formType": "EC8A",
+      "sourceUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7035/97413/a25848e6-758d-40a3-b20c-9ffda1ba68e3.jpg",
+      "fileHash": "17310db534a41883018ac6a1991880045c31cedd9dd7a7e47b52a7731fbb0561",
+      "imageUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7035/97413/a25848e6-758d-40a3-b20c-9ffda1ba68e3.jpg",
+      "uploadTimestamp": "2026-08-15T15:54:07.595Z",
+      "retrievalTimestamp": "2026-10-23T16:36:05.372Z",
+      "ocrConfidence": 0,
+      "sourceStatus": "ORIGINAL",
+      "version": 1,
+      "transcription": {
+        "validVotes": 0,
+        "rejectedVotes": 0,
+        "totalVotesCast": 0,
+        "partyVotes": {}
+      },
+      "ocrExtraction": {
+        "validVotes": 0,
+        "rejectedVotes": 0,
+        "totalVotesCast": 0,
+        "partyVotes": {},
+        "rawText": "INEC FORM EC8A — ADEKUNLE JUNCTION (29/17/03/001). Ready for AI OCR transcription."
+      },
+      "arithmeticCheck": {
+        "passed": true,
+        "difference": 0,
+        "formula": "Awaiting AI OCR extraction",
+        "details": "Form EC8A scan retrieved live from INEC Results Portal (IReV)."
+      },
+      "verifiedBy": "Pending AI OCR Transcription",
+      "verifiedAt": "2026-10-23T16:36:05.372Z",
+      "verifierNotes": "Official Form EC8A document from INEC IReV: https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7035/97413/a25848e6-758d-40a3-b20c-9ffda1ba68e3.jpg",
+      "versionHistory": [
+        {
+          "versionNumber": 1,
+          "actor": "INEC Live Ingestion Pipeline",
+          "actionType": "INITIAL_INGESTION",
+          "timestamp": "2026-10-23T16:36:05.372Z",
+          "reason": "Initial result sheet ingestion from INEC Results Portal (uploaded at 2026-08-15T15:54:07.595Z)"
+        }
+      ]
+    },
+    "rs-29-17-03-004": {
+      "id": "rs-29-17-03-004",
+      "pollingUnitCode": "29-17-03-004",
+      "electionId": "elec-2026-gov-osun",
+      "formType": "EC8A",
+      "sourceUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7035/97416/0a1e99a1-5a02-46af-8137-2ee4544d40c3.jpg",
+      "fileHash": "97345ee92458d11e2d3bec4f0ef63dcac53a3ee66b902c3f1ec709c8ecb41d1d",
+      "imageUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7035/97416/0a1e99a1-5a02-46af-8137-2ee4544d40c3.jpg",
+      "uploadTimestamp": "2026-08-15T15:03:10.095Z",
+      "retrievalTimestamp": "2026-10-23T16:36:05.372Z",
+      "ocrConfidence": 0,
+      "sourceStatus": "ORIGINAL",
+      "version": 1,
+      "transcription": {
+        "validVotes": 0,
+        "rejectedVotes": 0,
+        "totalVotesCast": 0,
+        "partyVotes": {}
+      },
+      "ocrExtraction": {
+        "validVotes": 0,
+        "rejectedVotes": 0,
+        "totalVotesCast": 0,
+        "partyVotes": {},
+        "rawText": "INEC FORM EC8A — AJABA GARAGE (29/17/03/004). Ready for AI OCR transcription."
+      },
+      "arithmeticCheck": {
+        "passed": true,
+        "difference": 0,
+        "formula": "Awaiting AI OCR extraction",
+        "details": "Form EC8A scan retrieved live from INEC Results Portal (IReV)."
+      },
+      "verifiedBy": "Pending AI OCR Transcription",
+      "verifiedAt": "2026-10-23T16:36:05.372Z",
+      "verifierNotes": "Official Form EC8A document from INEC IReV: https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7035/97416/0a1e99a1-5a02-46af-8137-2ee4544d40c3.jpg",
+      "versionHistory": [
+        {
+          "versionNumber": 1,
+          "actor": "INEC Live Ingestion Pipeline",
+          "actionType": "INITIAL_INGESTION",
+          "timestamp": "2026-10-23T16:36:05.372Z",
+          "reason": "Initial result sheet ingestion from INEC Results Portal (uploaded at 2026-08-15T15:03:10.095Z)"
+        }
+      ]
+    },
+    "rs-29-17-08-008": {
+      "id": "rs-29-17-08-008",
+      "pollingUnitCode": "29-17-08-008",
+      "electionId": "elec-2026-gov-osun",
+      "formType": "EC8A",
+      "sourceUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7040/97475/a7304d89-ec6f-460a-a727-684297f88713.jpg",
+      "fileHash": "fe98ad3c22a408b07e88b943c9733c88838a43b2935a966aef588a60acac716b",
+      "imageUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7040/97475/a7304d89-ec6f-460a-a727-684297f88713.jpg",
+      "uploadTimestamp": "2026-08-15T22:42:14.982Z",
+      "retrievalTimestamp": "2026-10-23T16:36:06.358Z",
+      "ocrConfidence": 95,
+      "sourceStatus": "ORIGINAL",
+      "version": 1,
+      "transcription": {
+        "validVotes": 315,
+        "rejectedVotes": 0,
+        "totalVotesCast": 315,
+        "partyVotes": {
+          "A": 150,
+          "AA": 2,
+          "ADC": 5,
+          "APC": 157,
+          "APGA": 1
+        }
+      },
+      "ocrExtraction": {
+        "validVotes": 315,
+        "rejectedVotes": 0,
+        "totalVotesCast": 315,
+        "partyVotes": {
+          "A": 150,
+          "AA": 2,
+          "ADC": 5,
+          "APC": 157,
+          "APGA": 1
+        },
+        "rawText": "INEC FORM EC8A — STATEMENT OF RESULT OF POLL FROM POLLING UNIT\nS/N: 0001972 | Date: 15/08/2026\nState: OSUN | LGA: ILA | Ward: OKE OLA\nPolling Unit: AGBAMU JUNCTION (29-17-08-08)\n#1 Voters on Register: 591 | #2 Accredited Voters: 321\n#3 Ballots Issued: 591 | #4 Unused Ballots: 269 | #5 Spoiled Ballots: 0\n#6 Rejected Ballots: 0 | #7 Total Valid Votes: 315 | #8 Total Used Ballots: 322\nParty Votes Scored: A: 150 (ONE HUNDRED AND FIFTY) | AA: 2 (TWO) | ADC: 5 (FIVE) | APC: 157 (ONE HUNDRED AND FIFTY SEVEN) | APGA: 1 (ONE)\nPresiding Officer: OYENIYI IBRAHEM OLADIPO"
+      },
+      "arithmeticCheck": {
+        "passed": true,
+        "difference": 0,
+        "formula": "Party Sum (315) = Valid (315) + Rejected (0) = Cast (315) | Used Ballots (#5+#6+#7) = 322",
+        "details": "Gemini Vision AI OCR verified: Party votes sum (315) matches Total Valid Votes (315) and is within Accredited Voters (321). Presiding Officer: OYENIYI IBRAHEM OLADIPO."
+      },
+      "verifiedBy": "Lead Observer Verifier",
+      "verifiedAt": "2026-10-23T17:11:55.353Z",
+      "verifierNotes": "Transcribed from official Form EC8A (S/N 0001972). Presiding Officer: OYENIYI IBRAHEM OLADIPO.",
+      "versionHistory": [
+        {
+          "versionNumber": 1,
+          "actor": "Lead Observer Verifier",
+          "actionType": "VERIFICATION_SIGN_OFF",
+          "timestamp": "2026-10-23T17:11:55.353Z",
+          "reason": "Transcribed from official Form EC8A (S/N 0001972). Presiding Officer: OYENIYI IBRAHEM OLADIPO."
+        },
+        {
+          "versionNumber": 1,
+          "actor": "INEC Live Ingestion Pipeline",
+          "actionType": "INITIAL_INGESTION",
+          "timestamp": "2026-10-23T16:36:06.358Z",
+          "reason": "Initial result sheet ingestion from INEC Results Portal (uploaded at 2026-08-15T22:42:14.982Z)"
+        }
+      ],
+      "ballotStatistics": {
+        "registeredVoters": 591,
+        "accreditedVoters": 321,
+        "ballotsIssued": 591,
+        "unusedBallots": 269,
+        "spoiledBallots": 0,
+        "rejectedVotes": 0,
+        "validVotes": 315,
+        "totalVotesCast": 315,
+        "totalUsedBallots": 322,
+        "serialNumber": "0001972",
+        "presidingOfficerName": "OYENIYI IBRAHEM OLADIPO",
+        "electionDateOnForm": "15/08/2026"
+      },
+      "requiresHumanReview": false,
+      "auditLogs": [
+        {
+          "id": "audit-1792775515354",
+          "timestamp": "2026-10-23T17:11:55.354Z",
+          "actor": "user:Lead Observer Verifier",
+          "action": "VERIFY_RESULT",
+          "target": "rs-29-17-08-008",
+          "details": "Decision: APPROVED. Notes: Transcribed from official Form EC8A (S/N 0001972). Presiding Officer: OYENIYI IBRAHEM OLADIPO."
+        }
+      ]
+    },
+    "rs-29-17-08-007": {
+      "id": "rs-29-17-08-007",
+      "pollingUnitCode": "29-17-08-007",
+      "electionId": "elec-2026-gov-osun",
+      "formType": "EC8A",
+      "sourceUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7040/97474/0bdc4491-0633-465e-ae26-587fa94a3126.jpg",
+      "fileHash": "995f063b46e1b92288a2a476b912c38aa7e763b19afc3e95fa34280b308d3945",
+      "imageUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7040/97474/0bdc4491-0633-465e-ae26-587fa94a3126.jpg",
+      "uploadTimestamp": "2026-08-15T22:42:09.864Z",
+      "retrievalTimestamp": "2026-10-23T16:36:06.358Z",
+      "ocrConfidence": 95,
+      "sourceStatus": "ORIGINAL",
+      "version": 1,
+      "transcription": {
+        "validVotes": 290,
+        "rejectedVotes": 2,
+        "totalVotesCast": 292,
+        "partyVotes": {
+          "A": 178,
+          "AA": 1,
+          "ADC": 2,
+          "ADP": 1,
+          "APC": 108
+        }
+      },
+      "ocrExtraction": {
+        "validVotes": 290,
+        "rejectedVotes": 2,
+        "totalVotesCast": 292,
+        "partyVotes": {
+          "A": 178,
+          "AA": 1,
+          "ADC": 2,
+          "ADP": 1,
+          "APC": 108
+        },
+        "rawText": "INEC FORM EC8A — STATEMENT OF RESULT OF POLL FROM POLLING UNIT\nS/N: 0001971 | Date: 15-08-2026\nState: OSUN | LGA: ILA | Ward: OKE OLA\nPolling Unit: A.U.D. PRY. SCHOOL, OKE OLA ILL (29-15-08-017)\n#1 Voters on Register: 505 | #2 Accredited Voters: 291\n#3 Ballots Issued: 405 | #4 Unused Ballots: 113 | #5 Spoiled Ballots: 1\n#6 Rejected Ballots: 2 | #7 Total Valid Votes: 290 | #8 Total Used Ballots: 291\nParty Votes Scored: A: 178 (ONE HUNDRED AND SEVENTY EIGHT) | AA: 1 (ONE) | ADC: 2 (TWO) | ADP: 1 (ONE) | APC: 108 (ONE HUNDRED AND EIGHT)\nPresiding Officer: OYE DARE BOLANLE"
+      },
+      "arithmeticCheck": {
+        "passed": true,
+        "difference": 0,
+        "formula": "Party Sum (290) = Valid (290) + Rejected (2) = Cast (292) | Used Ballots (#5+#6+#7) = 291",
+        "details": "Gemini Vision AI OCR verified: Party votes sum (290) matches Total Valid Votes (290) and is within Accredited Voters (291). Presiding Officer: OYE DARE BOLANLE."
+      },
+      "verifiedBy": "Lead Observer Verifier",
+      "verifiedAt": "2026-10-23T17:14:50.250Z",
+      "verifierNotes": "Transcribed from official Form EC8A (S/N 0001971). Presiding Officer: OYE DARE BOLANLE.",
+      "versionHistory": [
+        {
+          "versionNumber": 1,
+          "actor": "Lead Observer Verifier",
+          "actionType": "VERIFICATION_SIGN_OFF",
+          "timestamp": "2026-10-23T17:14:50.250Z",
+          "reason": "Transcribed from official Form EC8A (S/N 0001971). Presiding Officer: OYE DARE BOLANLE."
+        },
+        {
+          "versionNumber": 1,
+          "actor": "INEC Live Ingestion Pipeline",
+          "actionType": "INITIAL_INGESTION",
+          "timestamp": "2026-10-23T16:36:06.358Z",
+          "reason": "Initial result sheet ingestion from INEC Results Portal (uploaded at 2026-08-15T22:42:09.864Z)"
+        }
+      ],
+      "ballotStatistics": {
+        "registeredVoters": 505,
+        "accreditedVoters": 291,
+        "ballotsIssued": 405,
+        "unusedBallots": 113,
+        "spoiledBallots": 1,
+        "rejectedVotes": 2,
+        "validVotes": 290,
+        "totalVotesCast": 292,
+        "totalUsedBallots": 291,
+        "serialNumber": "0001971",
+        "presidingOfficerName": "OYE DARE BOLANLE",
+        "electionDateOnForm": "15-08-2026"
+      },
+      "requiresHumanReview": false,
+      "auditLogs": [
+        {
+          "id": "audit-1792775690250",
+          "timestamp": "2026-10-23T17:14:50.250Z",
+          "actor": "user:Lead Observer Verifier",
+          "action": "VERIFY_RESULT",
+          "target": "rs-29-17-08-007",
+          "details": "Decision: APPROVED. Notes: Transcribed from official Form EC8A (S/N 0001971). Presiding Officer: OYE DARE BOLANLE."
+        }
+      ]
+    },
+    "rs-29-17-08-011": {
+      "id": "rs-29-17-08-011",
+      "pollingUnitCode": "29-17-08-011",
+      "electionId": "elec-2026-gov-osun",
+      "formType": "EC8A",
+      "sourceUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7040/97478/e3d4a853-947c-4810-9d00-4633ec47b10a.jpg",
+      "fileHash": "2e7ad76d96148c3e2daf62bb85f34b2c9e272d0f8edc3fb088b20cc4791d9683",
+      "imageUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7040/97478/e3d4a853-947c-4810-9d00-4633ec47b10a.jpg",
+      "uploadTimestamp": "2026-08-15T18:57:35.473Z",
+      "retrievalTimestamp": "2026-10-23T16:36:06.358Z",
+      "ocrConfidence": 0,
+      "sourceStatus": "ORIGINAL",
+      "version": 1,
+      "transcription": {
+        "validVotes": 0,
+        "rejectedVotes": 0,
+        "totalVotesCast": 0,
+        "partyVotes": {}
+      },
+      "ocrExtraction": {
+        "validVotes": 0,
+        "rejectedVotes": 0,
+        "totalVotesCast": 0,
+        "partyVotes": {},
+        "rawText": "INEC FORM EC8A — ALOYIN (OPP. GENERAL HOSPITAL, ILA) (29/17/08/011). Ready for AI OCR transcription."
+      },
+      "arithmeticCheck": {
+        "passed": true,
+        "difference": 0,
+        "formula": "Awaiting AI OCR extraction",
+        "details": "Form EC8A scan retrieved live from INEC Results Portal (IReV)."
+      },
+      "verifiedBy": "Pending AI OCR Transcription",
+      "verifiedAt": "2026-10-23T16:36:06.358Z",
+      "verifierNotes": "Official Form EC8A document from INEC IReV: https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7040/97478/e3d4a853-947c-4810-9d00-4633ec47b10a.jpg",
+      "versionHistory": [
+        {
+          "versionNumber": 1,
+          "actor": "INEC Live Ingestion Pipeline",
+          "actionType": "INITIAL_INGESTION",
+          "timestamp": "2026-10-23T16:36:06.358Z",
+          "reason": "Initial result sheet ingestion from INEC Results Portal (uploaded at 2026-08-15T18:57:35.473Z)"
+        }
+      ]
+    },
+    "rs-29-17-08-010": {
+      "id": "rs-29-17-08-010",
+      "pollingUnitCode": "29-17-08-010",
+      "electionId": "elec-2026-gov-osun",
+      "formType": "EC8A",
+      "sourceUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7040/97477/2e661dad-68c3-4e73-9937-3e046bd49ee2.jpg",
+      "fileHash": "4a99b4fe2623c688680be98bf1e09cdf5ada45f44e66a5d312ef6fe291123ff7",
+      "imageUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7040/97477/2e661dad-68c3-4e73-9937-3e046bd49ee2.jpg",
+      "uploadTimestamp": "2026-08-15T18:18:11.574Z",
+      "retrievalTimestamp": "2026-10-23T16:36:06.358Z",
+      "ocrConfidence": 0,
+      "sourceStatus": "ORIGINAL",
+      "version": 1,
+      "transcription": {
+        "validVotes": 0,
+        "rejectedVotes": 0,
+        "totalVotesCast": 0,
+        "partyVotes": {}
+      },
+      "ocrExtraction": {
+        "validVotes": 0,
+        "rejectedVotes": 0,
+        "totalVotesCast": 0,
+        "partyVotes": {},
+        "rawText": "INEC FORM EC8A — L.A. PRY. SCHOOL, ALOYIN II (29/17/08/010). Ready for AI OCR transcription."
+      },
+      "arithmeticCheck": {
+        "passed": true,
+        "difference": 0,
+        "formula": "Awaiting AI OCR extraction",
+        "details": "Form EC8A scan retrieved live from INEC Results Portal (IReV)."
+      },
+      "verifiedBy": "Pending AI OCR Transcription",
+      "verifiedAt": "2026-10-23T16:36:06.358Z",
+      "verifierNotes": "Official Form EC8A document from INEC IReV: https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7040/97477/2e661dad-68c3-4e73-9937-3e046bd49ee2.jpg",
+      "versionHistory": [
+        {
+          "versionNumber": 1,
+          "actor": "INEC Live Ingestion Pipeline",
+          "actionType": "INITIAL_INGESTION",
+          "timestamp": "2026-10-23T16:36:06.358Z",
+          "reason": "Initial result sheet ingestion from INEC Results Portal (uploaded at 2026-08-15T18:18:11.574Z)"
+        }
+      ]
+    },
+    "rs-29-17-08-001": {
+      "id": "rs-29-17-08-001",
+      "pollingUnitCode": "29-17-08-001",
+      "electionId": "elec-2026-gov-osun",
+      "formType": "EC8A",
+      "sourceUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7040/97468/76cfa007-a7a7-4c4b-b3e9-5f221b7c1316.jpg",
+      "fileHash": "d1c4fa527629eb9f6104e0e327b8410ec321265de11e2b66bdf930202c0626a5",
+      "imageUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7040/97468/76cfa007-a7a7-4c4b-b3e9-5f221b7c1316.jpg",
+      "uploadTimestamp": "2026-08-15T17:27:10.710Z",
+      "retrievalTimestamp": "2026-10-23T16:36:06.358Z",
+      "ocrConfidence": 0,
+      "sourceStatus": "ORIGINAL",
+      "version": 1,
+      "transcription": {
+        "validVotes": 0,
+        "rejectedVotes": 0,
+        "totalVotesCast": 0,
+        "partyVotes": {}
+      },
+      "ocrExtraction": {
+        "validVotes": 0,
+        "rejectedVotes": 0,
+        "totalVotesCast": 0,
+        "partyVotes": {},
+        "rawText": "INEC FORM EC8A — NO SORROW HOUSE, OKE OLA (29/17/08/001). Ready for AI OCR transcription."
+      },
+      "arithmeticCheck": {
+        "passed": true,
+        "difference": 0,
+        "formula": "Awaiting AI OCR extraction",
+        "details": "Form EC8A scan retrieved live from INEC Results Portal (IReV)."
+      },
+      "verifiedBy": "Pending AI OCR Transcription",
+      "verifiedAt": "2026-10-23T16:36:06.358Z",
+      "verifierNotes": "Official Form EC8A document from INEC IReV: https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7040/97468/76cfa007-a7a7-4c4b-b3e9-5f221b7c1316.jpg",
+      "versionHistory": [
+        {
+          "versionNumber": 1,
+          "actor": "INEC Live Ingestion Pipeline",
+          "actionType": "INITIAL_INGESTION",
+          "timestamp": "2026-10-23T16:36:06.358Z",
+          "reason": "Initial result sheet ingestion from INEC Results Portal (uploaded at 2026-08-15T17:27:10.710Z)"
+        }
+      ]
+    },
+    "rs-29-17-08-012": {
+      "id": "rs-29-17-08-012",
+      "pollingUnitCode": "29-17-08-012",
+      "electionId": "elec-2026-gov-osun",
+      "formType": "EC8A",
+      "sourceUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7040/97479/78f64076-e38e-4c92-bdcc-0caa222c4712.jpg",
+      "fileHash": "d27050c49ce69cd4e4b8b9ce4d65c462795c2d19c35cbc6d600073ef96abe415",
+      "imageUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7040/97479/78f64076-e38e-4c92-bdcc-0caa222c4712.jpg",
+      "uploadTimestamp": "2026-08-15T17:00:32.725Z",
+      "retrievalTimestamp": "2026-10-23T16:36:06.358Z",
+      "ocrConfidence": 0,
+      "sourceStatus": "ORIGINAL",
+      "version": 1,
+      "transcription": {
+        "validVotes": 0,
+        "rejectedVotes": 0,
+        "totalVotesCast": 0,
+        "partyVotes": {}
+      },
+      "ocrExtraction": {
+        "validVotes": 0,
+        "rejectedVotes": 0,
+        "totalVotesCast": 0,
+        "partyVotes": {},
+        "rawText": "INEC FORM EC8A — MATERNITY CENTRE, OKO AWO (29/17/08/012). Ready for AI OCR transcription."
+      },
+      "arithmeticCheck": {
+        "passed": true,
+        "difference": 0,
+        "formula": "Awaiting AI OCR extraction",
+        "details": "Form EC8A scan retrieved live from INEC Results Portal (IReV)."
+      },
+      "verifiedBy": "Pending AI OCR Transcription",
+      "verifiedAt": "2026-10-23T16:36:06.358Z",
+      "verifierNotes": "Official Form EC8A document from INEC IReV: https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7040/97479/78f64076-e38e-4c92-bdcc-0caa222c4712.jpg",
+      "versionHistory": [
+        {
+          "versionNumber": 1,
+          "actor": "INEC Live Ingestion Pipeline",
+          "actionType": "INITIAL_INGESTION",
+          "timestamp": "2026-10-23T16:36:06.358Z",
+          "reason": "Initial result sheet ingestion from INEC Results Portal (uploaded at 2026-08-15T17:00:32.725Z)"
+        }
+      ]
+    },
+    "rs-29-17-08-009": {
+      "id": "rs-29-17-08-009",
+      "pollingUnitCode": "29-17-08-009",
+      "electionId": "elec-2026-gov-osun",
+      "formType": "EC8A",
+      "sourceUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7040/97476/fdd5d586-e683-46db-b285-18a954d75721.jpg",
+      "fileHash": "f6171c00c4b2a1a7889cbc922ba5c44afec9f9062cf369242be0933dbc3d7f93",
+      "imageUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7040/97476/fdd5d586-e683-46db-b285-18a954d75721.jpg",
+      "uploadTimestamp": "2026-08-15T16:45:04.370Z",
+      "retrievalTimestamp": "2026-10-23T16:36:06.358Z",
+      "ocrConfidence": 0,
+      "sourceStatus": "ORIGINAL",
+      "version": 1,
+      "transcription": {
+        "validVotes": 0,
+        "rejectedVotes": 0,
+        "totalVotesCast": 0,
+        "partyVotes": {}
+      },
+      "ocrExtraction": {
+        "validVotes": 0,
+        "rejectedVotes": 0,
+        "totalVotesCast": 0,
+        "partyVotes": {},
+        "rawText": "INEC FORM EC8A — L.A. PRY. SCHOOL, ALOYIN I (29/17/08/009). Ready for AI OCR transcription."
+      },
+      "arithmeticCheck": {
+        "passed": true,
+        "difference": 0,
+        "formula": "Awaiting AI OCR extraction",
+        "details": "Form EC8A scan retrieved live from INEC Results Portal (IReV)."
+      },
+      "verifiedBy": "Pending AI OCR Transcription",
+      "verifiedAt": "2026-10-23T16:36:06.358Z",
+      "verifierNotes": "Official Form EC8A document from INEC IReV: https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7040/97476/fdd5d586-e683-46db-b285-18a954d75721.jpg",
+      "versionHistory": [
+        {
+          "versionNumber": 1,
+          "actor": "INEC Live Ingestion Pipeline",
+          "actionType": "INITIAL_INGESTION",
+          "timestamp": "2026-10-23T16:36:06.358Z",
+          "reason": "Initial result sheet ingestion from INEC Results Portal (uploaded at 2026-08-15T16:45:04.370Z)"
+        }
+      ]
+    },
+    "rs-29-17-08-003": {
+      "id": "rs-29-17-08-003",
+      "pollingUnitCode": "29-17-08-003",
+      "electionId": "elec-2026-gov-osun",
+      "formType": "EC8A",
+      "sourceUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7040/97470/cd503c39-c964-4a1b-9225-0d83ac1ac587.jpg",
+      "fileHash": "6a16c9c78b617af104f341fecf3e11c83a12eb9399b1cd57a60910dc72c56a8b",
+      "imageUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7040/97470/cd503c39-c964-4a1b-9225-0d83ac1ac587.jpg",
+      "uploadTimestamp": "2026-08-15T16:30:17.083Z",
+      "retrievalTimestamp": "2026-10-23T16:36:06.359Z",
+      "ocrConfidence": 0,
+      "sourceStatus": "ORIGINAL",
+      "version": 1,
+      "transcription": {
+        "validVotes": 0,
+        "rejectedVotes": 0,
+        "totalVotesCast": 0,
+        "partyVotes": {}
+      },
+      "ocrExtraction": {
+        "validVotes": 0,
+        "rejectedVotes": 0,
+        "totalVotesCast": 0,
+        "partyVotes": {},
+        "rawText": "INEC FORM EC8A — SWEET MOTHER HOUSE FRONTAGE (29/17/08/003). Ready for AI OCR transcription."
+      },
+      "arithmeticCheck": {
+        "passed": true,
+        "difference": 0,
+        "formula": "Awaiting AI OCR extraction",
+        "details": "Form EC8A scan retrieved live from INEC Results Portal (IReV)."
+      },
+      "verifiedBy": "Pending AI OCR Transcription",
+      "verifiedAt": "2026-10-23T16:36:06.359Z",
+      "verifierNotes": "Official Form EC8A document from INEC IReV: https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7040/97470/cd503c39-c964-4a1b-9225-0d83ac1ac587.jpg",
+      "versionHistory": [
+        {
+          "versionNumber": 1,
+          "actor": "INEC Live Ingestion Pipeline",
+          "actionType": "INITIAL_INGESTION",
+          "timestamp": "2026-10-23T16:36:06.359Z",
+          "reason": "Initial result sheet ingestion from INEC Results Portal (uploaded at 2026-08-15T16:30:17.083Z)"
+        }
+      ]
+    },
+    "rs-29-17-08-005": {
+      "id": "rs-29-17-08-005",
+      "pollingUnitCode": "29-17-08-005",
+      "electionId": "elec-2026-gov-osun",
+      "formType": "EC8A",
+      "sourceUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7040/97472/a37a3b94-82f8-4645-88e1-7edc544d9be1.jpg",
+      "fileHash": "2f3ac7e0f2b5aac8c2693b6a19aa222536c43d9904fea4c85963f12fd9c7d2e1",
+      "imageUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7040/97472/a37a3b94-82f8-4645-88e1-7edc544d9be1.jpg",
+      "uploadTimestamp": "2026-08-15T16:27:04.033Z",
+      "retrievalTimestamp": "2026-10-23T16:36:06.359Z",
+      "ocrConfidence": 0,
+      "sourceStatus": "ORIGINAL",
+      "version": 1,
+      "transcription": {
+        "validVotes": 0,
+        "rejectedVotes": 0,
+        "totalVotesCast": 0,
+        "partyVotes": {}
+      },
+      "ocrExtraction": {
+        "validVotes": 0,
+        "rejectedVotes": 0,
+        "totalVotesCast": 0,
+        "partyVotes": {},
+        "rawText": "INEC FORM EC8A — A.U.D.PRY SCHOOL, OKE OLA I (29/17/08/005). Ready for AI OCR transcription."
+      },
+      "arithmeticCheck": {
+        "passed": true,
+        "difference": 0,
+        "formula": "Awaiting AI OCR extraction",
+        "details": "Form EC8A scan retrieved live from INEC Results Portal (IReV)."
+      },
+      "verifiedBy": "Pending AI OCR Transcription",
+      "verifiedAt": "2026-10-23T16:36:06.359Z",
+      "verifierNotes": "Official Form EC8A document from INEC IReV: https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7040/97472/a37a3b94-82f8-4645-88e1-7edc544d9be1.jpg",
+      "versionHistory": [
+        {
+          "versionNumber": 1,
+          "actor": "INEC Live Ingestion Pipeline",
+          "actionType": "INITIAL_INGESTION",
+          "timestamp": "2026-10-23T16:36:06.359Z",
+          "reason": "Initial result sheet ingestion from INEC Results Portal (uploaded at 2026-08-15T16:27:04.033Z)"
+        }
+      ]
+    },
+    "rs-29-17-08-002": {
+      "id": "rs-29-17-08-002",
+      "pollingUnitCode": "29-17-08-002",
+      "electionId": "elec-2026-gov-osun",
+      "formType": "EC8A",
+      "sourceUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7040/97469/25cfb910-af63-4169-a49c-0b3d49225752.jpg",
+      "fileHash": "85403db0d659b03f40f8533469d6505d0bf34ff68ae938ac9489985d53036cd8",
+      "imageUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7040/97469/25cfb910-af63-4169-a49c-0b3d49225752.jpg",
+      "uploadTimestamp": "2026-08-15T16:18:08.785Z",
+      "retrievalTimestamp": "2026-10-23T16:36:06.359Z",
+      "ocrConfidence": 0,
+      "sourceStatus": "ORIGINAL",
+      "version": 1,
+      "transcription": {
+        "validVotes": 0,
+        "rejectedVotes": 0,
+        "totalVotesCast": 0,
+        "partyVotes": {}
+      },
+      "ocrExtraction": {
+        "validVotes": 0,
+        "rejectedVotes": 0,
+        "totalVotesCast": 0,
+        "partyVotes": {},
+        "rawText": "INEC FORM EC8A — OKE OLA (OPP.C & S CHURCH) (29/17/08/002). Ready for AI OCR transcription."
+      },
+      "arithmeticCheck": {
+        "passed": true,
+        "difference": 0,
+        "formula": "Awaiting AI OCR extraction",
+        "details": "Form EC8A scan retrieved live from INEC Results Portal (IReV)."
+      },
+      "verifiedBy": "Pending AI OCR Transcription",
+      "verifiedAt": "2026-10-23T16:36:06.359Z",
+      "verifierNotes": "Official Form EC8A document from INEC IReV: https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7040/97469/25cfb910-af63-4169-a49c-0b3d49225752.jpg",
+      "versionHistory": [
+        {
+          "versionNumber": 1,
+          "actor": "INEC Live Ingestion Pipeline",
+          "actionType": "INITIAL_INGESTION",
+          "timestamp": "2026-10-23T16:36:06.359Z",
+          "reason": "Initial result sheet ingestion from INEC Results Portal (uploaded at 2026-08-15T16:18:08.785Z)"
+        }
+      ]
+    },
+    "rs-29-17-08-004": {
+      "id": "rs-29-17-08-004",
+      "pollingUnitCode": "29-17-08-004",
+      "electionId": "elec-2026-gov-osun",
+      "formType": "EC8A",
+      "sourceUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7040/97471/89a6494c-b671-4406-aee7-4c37454876ef.jpg",
+      "fileHash": "a417b3630cdcaf7d5b0673d329ea3b98b757700bead3c50ce5c557da3f7367b6",
+      "imageUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7040/97471/89a6494c-b671-4406-aee7-4c37454876ef.jpg",
+      "uploadTimestamp": "2026-08-15T15:48:34.459Z",
+      "retrievalTimestamp": "2026-10-23T16:36:06.359Z",
+      "ocrConfidence": 0,
+      "sourceStatus": "ORIGINAL",
+      "version": 1,
+      "transcription": {
+        "validVotes": 0,
+        "rejectedVotes": 0,
+        "totalVotesCast": 0,
+        "partyVotes": {}
+      },
+      "ocrExtraction": {
+        "validVotes": 0,
+        "rejectedVotes": 0,
+        "totalVotesCast": 0,
+        "partyVotes": {},
+        "rawText": "INEC FORM EC8A — DUROTOLU JUNCTION (29/17/08/004). Ready for AI OCR transcription."
+      },
+      "arithmeticCheck": {
+        "passed": true,
+        "difference": 0,
+        "formula": "Awaiting AI OCR extraction",
+        "details": "Form EC8A scan retrieved live from INEC Results Portal (IReV)."
+      },
+      "verifiedBy": "Pending AI OCR Transcription",
+      "verifiedAt": "2026-10-23T16:36:06.359Z",
+      "verifierNotes": "Official Form EC8A document from INEC IReV: https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7040/97471/89a6494c-b671-4406-aee7-4c37454876ef.jpg",
+      "versionHistory": [
+        {
+          "versionNumber": 1,
+          "actor": "INEC Live Ingestion Pipeline",
+          "actionType": "INITIAL_INGESTION",
+          "timestamp": "2026-10-23T16:36:06.359Z",
+          "reason": "Initial result sheet ingestion from INEC Results Portal (uploaded at 2026-08-15T15:48:34.459Z)"
+        }
+      ]
+    },
+    "rs-29-17-08-006": {
+      "id": "rs-29-17-08-006",
+      "pollingUnitCode": "29-17-08-006",
+      "electionId": "elec-2026-gov-osun",
+      "formType": "EC8A",
+      "sourceUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7040/97473/b8ebc133-f255-45ec-9e1b-8407ddaf1678.jpg",
+      "fileHash": "69775120f37dd0d4d6248cb49b69e091bfc9391824a3bafc8cbd2fec8ad5083f",
+      "imageUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7040/97473/b8ebc133-f255-45ec-9e1b-8407ddaf1678.jpg",
+      "uploadTimestamp": "2026-08-15T15:48:05.648Z",
+      "retrievalTimestamp": "2026-10-23T16:36:06.359Z",
+      "ocrConfidence": 0,
+      "sourceStatus": "ORIGINAL",
+      "version": 1,
+      "transcription": {
+        "validVotes": 0,
+        "rejectedVotes": 0,
+        "totalVotesCast": 0,
+        "partyVotes": {}
+      },
+      "ocrExtraction": {
+        "validVotes": 0,
+        "rejectedVotes": 0,
+        "totalVotesCast": 0,
+        "partyVotes": {},
+        "rawText": "INEC FORM EC8A — A.U.D. PRY. SCHOOL, OKE OLA II (29/17/08/006). Ready for AI OCR transcription."
+      },
+      "arithmeticCheck": {
+        "passed": true,
+        "difference": 0,
+        "formula": "Awaiting AI OCR extraction",
+        "details": "Form EC8A scan retrieved live from INEC Results Portal (IReV)."
+      },
+      "verifiedBy": "Pending AI OCR Transcription",
+      "verifiedAt": "2026-10-23T16:36:06.359Z",
+      "verifierNotes": "Official Form EC8A document from INEC IReV: https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7040/97473/b8ebc133-f255-45ec-9e1b-8407ddaf1678.jpg",
+      "versionHistory": [
+        {
+          "versionNumber": 1,
+          "actor": "INEC Live Ingestion Pipeline",
+          "actionType": "INITIAL_INGESTION",
+          "timestamp": "2026-10-23T16:36:06.359Z",
+          "reason": "Initial result sheet ingestion from INEC Results Portal (uploaded at 2026-08-15T15:48:05.648Z)"
+        }
+      ]
+    },
+    "rs-29-17-02-001": {
+      "id": "rs-29-17-02-001",
+      "pollingUnitCode": "29-17-02-001",
+      "electionId": "elec-2026-gov-osun",
+      "formType": "EC8A",
+      "sourceUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7034/97404/c38e0b7c-96c5-48f2-aaa9-c96411e98287.jpg",
+      "fileHash": "e9b697ac40f58a83c88f2f483d8c486dfce259c2d391b751ee1e7f728da14403",
+      "imageUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7034/97404/c38e0b7c-96c5-48f2-aaa9-c96411e98287.jpg",
+      "uploadTimestamp": "2026-08-15T18:39:06.844Z",
+      "retrievalTimestamp": "2026-10-23T16:36:07.061Z",
+      "ocrConfidence": 0,
+      "sourceStatus": "ORIGINAL",
+      "version": 1,
+      "transcription": {
+        "validVotes": 0,
+        "rejectedVotes": 0,
+        "totalVotesCast": 0,
+        "partyVotes": {}
+      },
+      "ocrExtraction": {
+        "validVotes": 0,
+        "rejectedVotes": 0,
+        "totalVotesCast": 0,
+        "partyVotes": {},
+        "rawText": "INEC FORM EC8A — OJUDE ENARE (29/17/02/001). Ready for AI OCR transcription."
+      },
+      "arithmeticCheck": {
+        "passed": true,
+        "difference": 0,
+        "formula": "Awaiting AI OCR extraction",
+        "details": "Form EC8A scan retrieved live from INEC Results Portal (IReV)."
+      },
+      "verifiedBy": "Pending AI OCR Transcription",
+      "verifiedAt": "2026-10-23T16:36:07.061Z",
+      "verifierNotes": "Official Form EC8A document from INEC IReV: https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7034/97404/c38e0b7c-96c5-48f2-aaa9-c96411e98287.jpg",
+      "versionHistory": [
+        {
+          "versionNumber": 1,
+          "actor": "INEC Live Ingestion Pipeline",
+          "actionType": "INITIAL_INGESTION",
+          "timestamp": "2026-10-23T16:36:07.061Z",
+          "reason": "Initial result sheet ingestion from INEC Results Portal (uploaded at 2026-08-15T18:39:06.844Z)"
+        }
+      ]
+    },
+    "rs-29-17-02-006": {
+      "id": "rs-29-17-02-006",
+      "pollingUnitCode": "29-17-02-006",
+      "electionId": "elec-2026-gov-osun",
+      "formType": "EC8A",
+      "sourceUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7034/97409/544abdd5-8d3a-4442-96bf-9cbfc8b6c8c6.jpg",
+      "fileHash": "a25f021940763456b736697e2cb6aeb891203eb49d51324f9b06539953b9daba",
+      "imageUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7034/97409/544abdd5-8d3a-4442-96bf-9cbfc8b6c8c6.jpg",
+      "uploadTimestamp": "2026-08-15T18:39:06.019Z",
+      "retrievalTimestamp": "2026-10-23T16:36:07.061Z",
+      "ocrConfidence": 0,
+      "sourceStatus": "ORIGINAL",
+      "version": 1,
+      "transcription": {
+        "validVotes": 0,
+        "rejectedVotes": 0,
+        "totalVotesCast": 0,
+        "partyVotes": {}
+      },
+      "ocrExtraction": {
+        "validVotes": 0,
+        "rejectedVotes": 0,
+        "totalVotesCast": 0,
+        "partyVotes": {},
+        "rawText": "INEC FORM EC8A — OJUDE OBAJOKO (29/17/02/006). Ready for AI OCR transcription."
+      },
+      "arithmeticCheck": {
+        "passed": true,
+        "difference": 0,
+        "formula": "Awaiting AI OCR extraction",
+        "details": "Form EC8A scan retrieved live from INEC Results Portal (IReV)."
+      },
+      "verifiedBy": "Pending AI OCR Transcription",
+      "verifiedAt": "2026-10-23T16:36:07.061Z",
+      "verifierNotes": "Official Form EC8A document from INEC IReV: https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7034/97409/544abdd5-8d3a-4442-96bf-9cbfc8b6c8c6.jpg",
+      "versionHistory": [
+        {
+          "versionNumber": 1,
+          "actor": "INEC Live Ingestion Pipeline",
+          "actionType": "INITIAL_INGESTION",
+          "timestamp": "2026-10-23T16:36:07.061Z",
+          "reason": "Initial result sheet ingestion from INEC Results Portal (uploaded at 2026-08-15T18:39:06.019Z)"
+        }
+      ]
+    },
+    "rs-29-17-02-008": {
+      "id": "rs-29-17-02-008",
+      "pollingUnitCode": "29-17-02-008",
+      "electionId": "elec-2026-gov-osun",
+      "formType": "EC8A",
+      "sourceUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7034/97411/59b15426-3871-4485-9974-2bb5a5a85a67.jpg",
+      "fileHash": "0ed8e317d4883fe5175a5cfdef2d105c51751802583da5160430d4f47f765bb3",
+      "imageUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7034/97411/59b15426-3871-4485-9974-2bb5a5a85a67.jpg",
+      "uploadTimestamp": "2026-08-15T17:21:11.605Z",
+      "retrievalTimestamp": "2026-10-23T16:36:07.061Z",
+      "ocrConfidence": 0,
+      "sourceStatus": "ORIGINAL",
+      "version": 1,
+      "transcription": {
+        "validVotes": 0,
+        "rejectedVotes": 0,
+        "totalVotesCast": 0,
+        "partyVotes": {}
+      },
+      "ocrExtraction": {
+        "validVotes": 0,
+        "rejectedVotes": 0,
+        "totalVotesCast": 0,
+        "partyVotes": {},
+        "rawText": "INEC FORM EC8A — AWUGBO (29/17/02/008). Ready for AI OCR transcription."
+      },
+      "arithmeticCheck": {
+        "passed": true,
+        "difference": 0,
+        "formula": "Awaiting AI OCR extraction",
+        "details": "Form EC8A scan retrieved live from INEC Results Portal (IReV)."
+      },
+      "verifiedBy": "Pending AI OCR Transcription",
+      "verifiedAt": "2026-10-23T16:36:07.061Z",
+      "verifierNotes": "Official Form EC8A document from INEC IReV: https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7034/97411/59b15426-3871-4485-9974-2bb5a5a85a67.jpg",
+      "versionHistory": [
+        {
+          "versionNumber": 1,
+          "actor": "INEC Live Ingestion Pipeline",
+          "actionType": "INITIAL_INGESTION",
+          "timestamp": "2026-10-23T16:36:07.061Z",
+          "reason": "Initial result sheet ingestion from INEC Results Portal (uploaded at 2026-08-15T17:21:11.605Z)"
+        }
+      ]
+    },
+    "rs-29-17-02-009": {
+      "id": "rs-29-17-02-009",
+      "pollingUnitCode": "29-17-02-009",
+      "electionId": "elec-2026-gov-osun",
+      "formType": "EC8A",
+      "sourceUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7034/97412/69b687c4-e928-41ba-8cfc-99f67b3efdc9.jpg",
+      "fileHash": "680794360121d0a4310180a27edc8e8ed6d467fe892c2ad6718d38f8ebab5257",
+      "imageUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7034/97412/69b687c4-e928-41ba-8cfc-99f67b3efdc9.jpg",
+      "uploadTimestamp": "2026-08-15T16:18:06.311Z",
+      "retrievalTimestamp": "2026-10-23T16:36:07.061Z",
+      "ocrConfidence": 0,
+      "sourceStatus": "ORIGINAL",
+      "version": 1,
+      "transcription": {
+        "validVotes": 0,
+        "rejectedVotes": 0,
+        "totalVotesCast": 0,
+        "partyVotes": {}
+      },
+      "ocrExtraction": {
+        "validVotes": 0,
+        "rejectedVotes": 0,
+        "totalVotesCast": 0,
+        "partyVotes": {},
+        "rawText": "INEC FORM EC8A — AJIONI (29/17/02/009). Ready for AI OCR transcription."
+      },
+      "arithmeticCheck": {
+        "passed": true,
+        "difference": 0,
+        "formula": "Awaiting AI OCR extraction",
+        "details": "Form EC8A scan retrieved live from INEC Results Portal (IReV)."
+      },
+      "verifiedBy": "Pending AI OCR Transcription",
+      "verifiedAt": "2026-10-23T16:36:07.061Z",
+      "verifierNotes": "Official Form EC8A document from INEC IReV: https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7034/97412/69b687c4-e928-41ba-8cfc-99f67b3efdc9.jpg",
+      "versionHistory": [
+        {
+          "versionNumber": 1,
+          "actor": "INEC Live Ingestion Pipeline",
+          "actionType": "INITIAL_INGESTION",
+          "timestamp": "2026-10-23T16:36:07.061Z",
+          "reason": "Initial result sheet ingestion from INEC Results Portal (uploaded at 2026-08-15T16:18:06.311Z)"
+        }
+      ]
+    },
+    "rs-29-17-02-007": {
+      "id": "rs-29-17-02-007",
+      "pollingUnitCode": "29-17-02-007",
+      "electionId": "elec-2026-gov-osun",
+      "formType": "EC8A",
+      "sourceUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7034/97410/8ec9d708-3030-416f-9328-63b73b6c24dd.jpg",
+      "fileHash": "773b8a9e178b8956af682a123c58eb902f5be3f9259f0627ab7883240e8b1780",
+      "imageUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7034/97410/8ec9d708-3030-416f-9328-63b73b6c24dd.jpg",
+      "uploadTimestamp": "2026-08-15T15:15:24.375Z",
+      "retrievalTimestamp": "2026-10-23T16:36:07.061Z",
+      "ocrConfidence": 0,
+      "sourceStatus": "ORIGINAL",
+      "version": 1,
+      "transcription": {
+        "validVotes": 0,
+        "rejectedVotes": 0,
+        "totalVotesCast": 0,
+        "partyVotes": {}
+      },
+      "ocrExtraction": {
+        "validVotes": 0,
+        "rejectedVotes": 0,
+        "totalVotesCast": 0,
+        "partyVotes": {},
+        "rawText": "INEC FORM EC8A — OJUDE OBAALE (29/17/02/007). Ready for AI OCR transcription."
+      },
+      "arithmeticCheck": {
+        "passed": true,
+        "difference": 0,
+        "formula": "Awaiting AI OCR extraction",
+        "details": "Form EC8A scan retrieved live from INEC Results Portal (IReV)."
+      },
+      "verifiedBy": "Pending AI OCR Transcription",
+      "verifiedAt": "2026-10-23T16:36:07.061Z",
+      "verifierNotes": "Official Form EC8A document from INEC IReV: https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7034/97410/8ec9d708-3030-416f-9328-63b73b6c24dd.jpg",
+      "versionHistory": [
+        {
+          "versionNumber": 1,
+          "actor": "INEC Live Ingestion Pipeline",
+          "actionType": "INITIAL_INGESTION",
+          "timestamp": "2026-10-23T16:36:07.061Z",
+          "reason": "Initial result sheet ingestion from INEC Results Portal (uploaded at 2026-08-15T15:15:24.375Z)"
+        }
+      ]
+    },
+    "rs-29-17-02-003": {
+      "id": "rs-29-17-02-003",
+      "pollingUnitCode": "29-17-02-003",
+      "electionId": "elec-2026-gov-osun",
+      "formType": "EC8A",
+      "sourceUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7034/97406/f189d9d8-7c06-494a-b97f-f11125c2ecd8.jpg",
+      "fileHash": "b8e8c24079038ea65e2b486487af72b506eae9548f7485a6044714413724bde9",
+      "imageUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7034/97406/f189d9d8-7c06-494a-b97f-f11125c2ecd8.jpg",
+      "uploadTimestamp": "2026-08-15T15:12:20.682Z",
+      "retrievalTimestamp": "2026-10-23T16:36:07.061Z",
+      "ocrConfidence": 0,
+      "sourceStatus": "ORIGINAL",
+      "version": 1,
+      "transcription": {
+        "validVotes": 0,
+        "rejectedVotes": 0,
+        "totalVotesCast": 0,
+        "partyVotes": {}
+      },
+      "ocrExtraction": {
+        "validVotes": 0,
+        "rejectedVotes": 0,
+        "totalVotesCast": 0,
+        "partyVotes": {},
+        "rawText": "INEC FORM EC8A — COOPERATIVE STORE II (29/17/02/003). Ready for AI OCR transcription."
+      },
+      "arithmeticCheck": {
+        "passed": true,
+        "difference": 0,
+        "formula": "Awaiting AI OCR extraction",
+        "details": "Form EC8A scan retrieved live from INEC Results Portal (IReV)."
+      },
+      "verifiedBy": "Pending AI OCR Transcription",
+      "verifiedAt": "2026-10-23T16:36:07.061Z",
+      "verifierNotes": "Official Form EC8A document from INEC IReV: https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7034/97406/f189d9d8-7c06-494a-b97f-f11125c2ecd8.jpg",
+      "versionHistory": [
+        {
+          "versionNumber": 1,
+          "actor": "INEC Live Ingestion Pipeline",
+          "actionType": "INITIAL_INGESTION",
+          "timestamp": "2026-10-23T16:36:07.061Z",
+          "reason": "Initial result sheet ingestion from INEC Results Portal (uploaded at 2026-08-15T15:12:20.682Z)"
+        }
+      ]
+    },
+    "rs-29-17-02-002": {
+      "id": "rs-29-17-02-002",
+      "pollingUnitCode": "29-17-02-002",
+      "electionId": "elec-2026-gov-osun",
+      "formType": "EC8A",
+      "sourceUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7034/97405/496985ff-aeb7-4c64-bce8-40e322f835fa.jpg",
+      "fileHash": "bec3147bbb4be829d9de1398c9d6315ed229f92f86b795282dcc28a8aa094765",
+      "imageUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7034/97405/496985ff-aeb7-4c64-bce8-40e322f835fa.jpg",
+      "uploadTimestamp": "2026-08-15T15:03:07.477Z",
+      "retrievalTimestamp": "2026-10-23T16:36:07.061Z",
+      "ocrConfidence": 0,
+      "sourceStatus": "ORIGINAL",
+      "version": 1,
+      "transcription": {
+        "validVotes": 0,
+        "rejectedVotes": 0,
+        "totalVotesCast": 0,
+        "partyVotes": {}
+      },
+      "ocrExtraction": {
+        "validVotes": 0,
+        "rejectedVotes": 0,
+        "totalVotesCast": 0,
+        "partyVotes": {},
+        "rawText": "INEC FORM EC8A — COOPERATIVE STORE I (29/17/02/002). Ready for AI OCR transcription."
+      },
+      "arithmeticCheck": {
+        "passed": true,
+        "difference": 0,
+        "formula": "Awaiting AI OCR extraction",
+        "details": "Form EC8A scan retrieved live from INEC Results Portal (IReV)."
+      },
+      "verifiedBy": "Pending AI OCR Transcription",
+      "verifiedAt": "2026-10-23T16:36:07.061Z",
+      "verifierNotes": "Official Form EC8A document from INEC IReV: https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7034/97405/496985ff-aeb7-4c64-bce8-40e322f835fa.jpg",
+      "versionHistory": [
+        {
+          "versionNumber": 1,
+          "actor": "INEC Live Ingestion Pipeline",
+          "actionType": "INITIAL_INGESTION",
+          "timestamp": "2026-10-23T16:36:07.061Z",
+          "reason": "Initial result sheet ingestion from INEC Results Portal (uploaded at 2026-08-15T15:03:07.477Z)"
+        }
+      ]
+    },
+    "rs-29-17-02-005": {
+      "id": "rs-29-17-02-005",
+      "pollingUnitCode": "29-17-02-005",
+      "electionId": "elec-2026-gov-osun",
+      "formType": "EC8A",
+      "sourceUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7034/97408/c2dec434-b30d-40d1-b263-70bed08c20d3.jpg",
+      "fileHash": "cb9438b7152109b86ff66bc30f3ac4cf7276132b90c5bef406cabcdd30d21087",
+      "imageUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7034/97408/c2dec434-b30d-40d1-b263-70bed08c20d3.jpg",
+      "uploadTimestamp": "2026-08-15T14:54:03.951Z",
+      "retrievalTimestamp": "2026-10-23T16:36:07.061Z",
+      "ocrConfidence": 0,
+      "sourceStatus": "ORIGINAL",
+      "version": 1,
+      "transcription": {
+        "validVotes": 0,
+        "rejectedVotes": 0,
+        "totalVotesCast": 0,
+        "partyVotes": {}
+      },
+      "ocrExtraction": {
+        "validVotes": 0,
+        "rejectedVotes": 0,
+        "totalVotesCast": 0,
+        "partyVotes": {},
+        "rawText": "INEC FORM EC8A — DISPENSARY (29/17/02/005). Ready for AI OCR transcription."
+      },
+      "arithmeticCheck": {
+        "passed": true,
+        "difference": 0,
+        "formula": "Awaiting AI OCR extraction",
+        "details": "Form EC8A scan retrieved live from INEC Results Portal (IReV)."
+      },
+      "verifiedBy": "Pending AI OCR Transcription",
+      "verifiedAt": "2026-10-23T16:36:07.061Z",
+      "verifierNotes": "Official Form EC8A document from INEC IReV: https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7034/97408/c2dec434-b30d-40d1-b263-70bed08c20d3.jpg",
+      "versionHistory": [
+        {
+          "versionNumber": 1,
+          "actor": "INEC Live Ingestion Pipeline",
+          "actionType": "INITIAL_INGESTION",
+          "timestamp": "2026-10-23T16:36:07.061Z",
+          "reason": "Initial result sheet ingestion from INEC Results Portal (uploaded at 2026-08-15T14:54:03.951Z)"
+        }
+      ]
+    },
+    "rs-29-17-02-004": {
+      "id": "rs-29-17-02-004",
+      "pollingUnitCode": "29-17-02-004",
+      "electionId": "elec-2026-gov-osun",
+      "formType": "EC8A",
+      "sourceUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7034/97407/0b5dc6f9-410d-4196-a06d-0765c2e0934b.jpg",
+      "fileHash": "01994e42187d612373c837f90a67510da2ef9515e1be464d89bfd830e0691c8d",
+      "imageUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7034/97407/0b5dc6f9-410d-4196-a06d-0765c2e0934b.jpg",
+      "uploadTimestamp": "2026-08-15T14:49:02.823Z",
+      "retrievalTimestamp": "2026-10-23T16:36:07.061Z",
+      "ocrConfidence": 0,
+      "sourceStatus": "ORIGINAL",
+      "version": 1,
+      "transcription": {
+        "validVotes": 0,
+        "rejectedVotes": 0,
+        "totalVotesCast": 0,
+        "partyVotes": {}
+      },
+      "ocrExtraction": {
+        "validVotes": 0,
+        "rejectedVotes": 0,
+        "totalVotesCast": 0,
+        "partyVotes": {},
+        "rawText": "INEC FORM EC8A — OLOOTU (29/17/02/004). Ready for AI OCR transcription."
+      },
+      "arithmeticCheck": {
+        "passed": true,
+        "difference": 0,
+        "formula": "Awaiting AI OCR extraction",
+        "details": "Form EC8A scan retrieved live from INEC Results Portal (IReV)."
+      },
+      "verifiedBy": "Pending AI OCR Transcription",
+      "verifiedAt": "2026-10-23T16:36:07.061Z",
+      "verifierNotes": "Official Form EC8A document from INEC IReV: https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7034/97407/0b5dc6f9-410d-4196-a06d-0765c2e0934b.jpg",
+      "versionHistory": [
+        {
+          "versionNumber": 1,
+          "actor": "INEC Live Ingestion Pipeline",
+          "actionType": "INITIAL_INGESTION",
+          "timestamp": "2026-10-23T16:36:07.061Z",
+          "reason": "Initial result sheet ingestion from INEC Results Portal (uploaded at 2026-08-15T14:49:02.823Z)"
+        }
+      ]
+    },
+    "rs-29-17-10-008": {
+      "id": "rs-29-17-10-008",
+      "pollingUnitCode": "29-17-10-008",
+      "electionId": "elec-2026-gov-osun",
+      "formType": "EC8A",
+      "sourceUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7042/97499/8cf50544-691f-4db5-8cba-bfce6aa369b0.jpg",
+      "fileHash": "0ed54410131d6e373284b7049c8fc374a20921bacb52b271940d737e8df58f01",
+      "imageUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7042/97499/8cf50544-691f-4db5-8cba-bfce6aa369b0.jpg",
+      "uploadTimestamp": "2026-08-16T04:52:43.837Z",
+      "retrievalTimestamp": "2026-10-23T16:36:07.743Z",
+      "ocrConfidence": 95,
+      "sourceStatus": "ORIGINAL",
+      "version": 1,
+      "transcription": {
+        "validVotes": 249,
+        "rejectedVotes": 5,
+        "totalVotesCast": 254,
+        "partyVotes": {
+          "A": 141,
+          "ADC": 3,
+          "APC": 105
+        }
+      },
+      "ocrExtraction": {
+        "validVotes": 249,
+        "rejectedVotes": 5,
+        "totalVotesCast": 254,
+        "partyVotes": {
+          "A": 141,
+          "ADC": 3,
+          "APC": 105
+        },
+        "rawText": "INEC FORM EC8A — STATEMENT OF RESULT OF POLL FROM POLLING UNIT\nS/N: 0001996 | Date: 15/08/2026\nState: OSUN | LGA: ILA | Ward: EYINDO/PERIN\nPolling Unit: ODOODE (JANGI ROAD) (29-17-08-10)\n#1 Voters on Register: 434 | #2 Accredited Voters: 254\n#3 Ballots Issued: 434 | #4 Unused Ballots: 176 | #5 Spoiled Ballots: 4\n#6 Rejected Ballots: 5 | #7 Total Valid Votes: 249 | #8 Total Used Ballots: 258\nParty Votes Scored: A: 141 (ONE HUNDRED AND FORTY ONE) | ADC: 3 (THREE) | APC: 105 (ONE HUNDRED AND FIVE)\nPresiding Officer: ALABI ELIJAH SAMUEL"
+      },
+      "arithmeticCheck": {
+        "passed": true,
+        "difference": 0,
+        "formula": "Party Sum (249) = Valid (249) + Rejected (5) = Cast (254) | Used Ballots (#5+#6+#7) = 258",
+        "details": "Gemini Vision AI OCR verified: Party votes sum (249) matches Total Valid Votes (249) and is within Accredited Voters (254). Presiding Officer: ALABI ELIJAH SAMUEL."
+      },
+      "verifiedBy": "Gemini Vision AI OCR + Ballot Arithmetic Check",
+      "verifiedAt": "2026-10-23T17:03:05.135Z",
+      "verifierNotes": "Transcribed from official Form EC8A (S/N 0001996). Presiding Officer: ALABI ELIJAH SAMUEL.",
+      "versionHistory": [
+        {
+          "versionNumber": 1,
+          "actor": "INEC Live Ingestion Pipeline",
+          "actionType": "INITIAL_INGESTION",
+          "timestamp": "2026-10-23T16:36:07.743Z",
+          "reason": "Initial result sheet ingestion from INEC Results Portal (uploaded at 2026-08-16T04:52:43.837Z)"
+        }
+      ],
+      "ballotStatistics": {
+        "registeredVoters": 434,
+        "accreditedVoters": 254,
+        "ballotsIssued": 434,
+        "unusedBallots": 176,
+        "spoiledBallots": 4,
+        "rejectedVotes": 5,
+        "validVotes": 249,
+        "totalVotesCast": 254,
+        "totalUsedBallots": 258,
+        "serialNumber": "0001996",
+        "presidingOfficerName": "ALABI ELIJAH SAMUEL",
+        "electionDateOnForm": "15/08/2026"
+      },
+      "requiresHumanReview": false
+    },
+    "rs-29-17-10-007": {
+      "id": "rs-29-17-10-007",
+      "pollingUnitCode": "29-17-10-007",
+      "electionId": "elec-2026-gov-osun",
+      "formType": "EC8A",
+      "sourceUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7042/97498/9e6f08f6-2b80-4452-a6ee-dc9e525faac4.jpg",
+      "fileHash": "905e9937abcf2f7cccfa2ad5ff2eb37ecafc8947b91450bdc42f2664a9fe8678",
+      "imageUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7042/97498/9e6f08f6-2b80-4452-a6ee-dc9e525faac4.jpg",
+      "uploadTimestamp": "2026-08-15T15:57:05.214Z",
+      "retrievalTimestamp": "2026-10-23T16:36:07.743Z",
+      "ocrConfidence": 0,
+      "sourceStatus": "ORIGINAL",
+      "version": 1,
+      "transcription": {
+        "validVotes": 0,
+        "rejectedVotes": 0,
+        "totalVotesCast": 0,
+        "partyVotes": {}
+      },
+      "ocrExtraction": {
+        "validVotes": 0,
+        "rejectedVotes": 0,
+        "totalVotesCast": 0,
+        "partyVotes": {},
+        "rawText": "INEC FORM EC8A — ODOODE (OPP. ODOODE MOSQUE) (29/17/10/007). Ready for AI OCR transcription."
+      },
+      "arithmeticCheck": {
+        "passed": true,
+        "difference": 0,
+        "formula": "Awaiting AI OCR extraction",
+        "details": "Form EC8A scan retrieved live from INEC Results Portal (IReV)."
+      },
+      "verifiedBy": "Pending AI OCR Transcription",
+      "verifiedAt": "2026-10-23T16:36:07.743Z",
+      "verifierNotes": "Official Form EC8A document from INEC IReV: https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7042/97498/9e6f08f6-2b80-4452-a6ee-dc9e525faac4.jpg",
+      "versionHistory": [
+        {
+          "versionNumber": 1,
+          "actor": "INEC Live Ingestion Pipeline",
+          "actionType": "INITIAL_INGESTION",
+          "timestamp": "2026-10-23T16:36:07.743Z",
+          "reason": "Initial result sheet ingestion from INEC Results Portal (uploaded at 2026-08-15T15:57:05.214Z)"
+        }
+      ]
+    },
+    "rs-29-17-10-002": {
+      "id": "rs-29-17-10-002",
+      "pollingUnitCode": "29-17-10-002",
+      "electionId": "elec-2026-gov-osun",
+      "formType": "EC8A",
+      "sourceUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7042/97493/f2b24a24-a30d-44ef-b25d-eb91af0daa8f.jpg",
+      "fileHash": "2f1bd2605194acf73054a4da37575783dc816f03a4d55c6b5b5f049fb390c3cc",
+      "imageUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7042/97493/f2b24a24-a30d-44ef-b25d-eb91af0daa8f.jpg",
+      "uploadTimestamp": "2026-08-15T15:33:15.788Z",
+      "retrievalTimestamp": "2026-10-23T16:36:07.743Z",
+      "ocrConfidence": 0,
+      "sourceStatus": "ORIGINAL",
+      "version": 1,
+      "transcription": {
+        "validVotes": 0,
+        "rejectedVotes": 0,
+        "totalVotesCast": 0,
+        "partyVotes": {}
+      },
+      "ocrExtraction": {
+        "validVotes": 0,
+        "rejectedVotes": 0,
+        "totalVotesCast": 0,
+        "partyVotes": {},
+        "rawText": "INEC FORM EC8A — OJUDE AWOROII (29/17/10/002). Ready for AI OCR transcription."
+      },
+      "arithmeticCheck": {
+        "passed": true,
+        "difference": 0,
+        "formula": "Awaiting AI OCR extraction",
+        "details": "Form EC8A scan retrieved live from INEC Results Portal (IReV)."
+      },
+      "verifiedBy": "Pending AI OCR Transcription",
+      "verifiedAt": "2026-10-23T16:36:07.743Z",
+      "verifierNotes": "Official Form EC8A document from INEC IReV: https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7042/97493/f2b24a24-a30d-44ef-b25d-eb91af0daa8f.jpg",
+      "versionHistory": [
+        {
+          "versionNumber": 1,
+          "actor": "INEC Live Ingestion Pipeline",
+          "actionType": "INITIAL_INGESTION",
+          "timestamp": "2026-10-23T16:36:07.743Z",
+          "reason": "Initial result sheet ingestion from INEC Results Portal (uploaded at 2026-08-15T15:33:15.788Z)"
+        }
+      ]
+    },
+    "rs-29-17-10-003": {
+      "id": "rs-29-17-10-003",
+      "pollingUnitCode": "29-17-10-003",
+      "electionId": "elec-2026-gov-osun",
+      "formType": "EC8A",
+      "sourceUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7042/97494/a2d683e8-1fe5-4d78-88a1-f6a984269a94.jpg",
+      "fileHash": "f1d8920206dcd222e4f463434dbd0b738d3a884cd3a24545057fdb6cbfeab3d9",
+      "imageUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7042/97494/a2d683e8-1fe5-4d78-88a1-f6a984269a94.jpg",
+      "uploadTimestamp": "2026-08-15T15:24:26.630Z",
+      "retrievalTimestamp": "2026-10-23T16:36:07.743Z",
+      "ocrConfidence": 0,
+      "sourceStatus": "ORIGINAL",
+      "version": 1,
+      "transcription": {
+        "validVotes": 0,
+        "rejectedVotes": 0,
+        "totalVotesCast": 0,
+        "partyVotes": {}
+      },
+      "ocrExtraction": {
+        "validVotes": 0,
+        "rejectedVotes": 0,
+        "totalVotesCast": 0,
+        "partyVotes": {},
+        "rawText": "INEC FORM EC8A — OJUDE ALAPINNI I (29/17/10/003). Ready for AI OCR transcription."
+      },
+      "arithmeticCheck": {
+        "passed": true,
+        "difference": 0,
+        "formula": "Awaiting AI OCR extraction",
+        "details": "Form EC8A scan retrieved live from INEC Results Portal (IReV)."
+      },
+      "verifiedBy": "Pending AI OCR Transcription",
+      "verifiedAt": "2026-10-23T16:36:07.743Z",
+      "verifierNotes": "Official Form EC8A document from INEC IReV: https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7042/97494/a2d683e8-1fe5-4d78-88a1-f6a984269a94.jpg",
+      "versionHistory": [
+        {
+          "versionNumber": 1,
+          "actor": "INEC Live Ingestion Pipeline",
+          "actionType": "INITIAL_INGESTION",
+          "timestamp": "2026-10-23T16:36:07.743Z",
+          "reason": "Initial result sheet ingestion from INEC Results Portal (uploaded at 2026-08-15T15:24:26.630Z)"
+        }
+      ]
+    },
+    "rs-29-17-10-004": {
+      "id": "rs-29-17-10-004",
+      "pollingUnitCode": "29-17-10-004",
+      "electionId": "elec-2026-gov-osun",
+      "formType": "EC8A",
+      "sourceUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7042/97495/6bbba3f9-3f03-428d-8edd-d356a9a69d48.jpg",
+      "fileHash": "c9785e06b952d7d8653b7029dd81eb98b21d1e76ffd14fc1a4522bfc06a9eb99",
+      "imageUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7042/97495/6bbba3f9-3f03-428d-8edd-d356a9a69d48.jpg",
+      "uploadTimestamp": "2026-08-15T15:18:46.757Z",
+      "retrievalTimestamp": "2026-10-23T16:36:07.743Z",
+      "ocrConfidence": 0,
+      "sourceStatus": "ORIGINAL",
+      "version": 1,
+      "transcription": {
+        "validVotes": 0,
+        "rejectedVotes": 0,
+        "totalVotesCast": 0,
+        "partyVotes": {}
+      },
+      "ocrExtraction": {
+        "validVotes": 0,
+        "rejectedVotes": 0,
+        "totalVotesCast": 0,
+        "partyVotes": {},
+        "rawText": "INEC FORM EC8A — OJUDE ALAPINNI II (29/17/10/004). Ready for AI OCR transcription."
+      },
+      "arithmeticCheck": {
+        "passed": true,
+        "difference": 0,
+        "formula": "Awaiting AI OCR extraction",
+        "details": "Form EC8A scan retrieved live from INEC Results Portal (IReV)."
+      },
+      "verifiedBy": "Pending AI OCR Transcription",
+      "verifiedAt": "2026-10-23T16:36:07.743Z",
+      "verifierNotes": "Official Form EC8A document from INEC IReV: https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7042/97495/6bbba3f9-3f03-428d-8edd-d356a9a69d48.jpg",
+      "versionHistory": [
+        {
+          "versionNumber": 1,
+          "actor": "INEC Live Ingestion Pipeline",
+          "actionType": "INITIAL_INGESTION",
+          "timestamp": "2026-10-23T16:36:07.743Z",
+          "reason": "Initial result sheet ingestion from INEC Results Portal (uploaded at 2026-08-15T15:18:46.757Z)"
+        }
+      ]
+    },
+    "rs-29-17-10-006": {
+      "id": "rs-29-17-10-006",
+      "pollingUnitCode": "29-17-10-006",
+      "electionId": "elec-2026-gov-osun",
+      "formType": "EC8A",
+      "sourceUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7042/97497/e4f43a68-da3c-4e3b-813b-596325e92101.jpg",
+      "fileHash": "c372ebc40a9737eaa8b2253b36f46097f4844ca43656f04f9a067b5d06b982a3",
+      "imageUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7042/97497/e4f43a68-da3c-4e3b-813b-596325e92101.jpg",
+      "uploadTimestamp": "2026-08-15T15:12:06.582Z",
+      "retrievalTimestamp": "2026-10-23T16:36:07.743Z",
+      "ocrConfidence": 0,
+      "sourceStatus": "ORIGINAL",
+      "version": 1,
+      "transcription": {
+        "validVotes": 0,
+        "rejectedVotes": 0,
+        "totalVotesCast": 0,
+        "partyVotes": {}
+      },
+      "ocrExtraction": {
+        "validVotes": 0,
+        "rejectedVotes": 0,
+        "totalVotesCast": 0,
+        "partyVotes": {},
+        "rawText": "INEC FORM EC8A — OJUDE ALAA (29/17/10/006). Ready for AI OCR transcription."
+      },
+      "arithmeticCheck": {
+        "passed": true,
+        "difference": 0,
+        "formula": "Awaiting AI OCR extraction",
+        "details": "Form EC8A scan retrieved live from INEC Results Portal (IReV)."
+      },
+      "verifiedBy": "Pending AI OCR Transcription",
+      "verifiedAt": "2026-10-23T16:36:07.743Z",
+      "verifierNotes": "Official Form EC8A document from INEC IReV: https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7042/97497/e4f43a68-da3c-4e3b-813b-596325e92101.jpg",
+      "versionHistory": [
+        {
+          "versionNumber": 1,
+          "actor": "INEC Live Ingestion Pipeline",
+          "actionType": "INITIAL_INGESTION",
+          "timestamp": "2026-10-23T16:36:07.743Z",
+          "reason": "Initial result sheet ingestion from INEC Results Portal (uploaded at 2026-08-15T15:12:06.582Z)"
+        }
+      ]
+    },
+    "rs-29-17-10-005": {
+      "id": "rs-29-17-10-005",
+      "pollingUnitCode": "29-17-10-005",
+      "electionId": "elec-2026-gov-osun",
+      "formType": "EC8A",
+      "sourceUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7042/97496/421ac1f5-defd-42c5-89be-21cb9c0d51e3.jpg",
+      "fileHash": "3b8ce23cdf8effe58a9db1b6cbd56ad108f1d6d18fc2f5f8efe537f02eaa4707",
+      "imageUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7042/97496/421ac1f5-defd-42c5-89be-21cb9c0d51e3.jpg",
+      "uploadTimestamp": "2026-08-15T14:49:50.143Z",
+      "retrievalTimestamp": "2026-10-23T16:36:07.743Z",
+      "ocrConfidence": 0,
+      "sourceStatus": "ORIGINAL",
+      "version": 1,
+      "transcription": {
+        "validVotes": 0,
+        "rejectedVotes": 0,
+        "totalVotesCast": 0,
+        "partyVotes": {}
+      },
+      "ocrExtraction": {
+        "validVotes": 0,
+        "rejectedVotes": 0,
+        "totalVotesCast": 0,
+        "partyVotes": {},
+        "rawText": "INEC FORM EC8A — OJUDE ALAPINNI III (29/17/10/005). Ready for AI OCR transcription."
+      },
+      "arithmeticCheck": {
+        "passed": true,
+        "difference": 0,
+        "formula": "Awaiting AI OCR extraction",
+        "details": "Form EC8A scan retrieved live from INEC Results Portal (IReV)."
+      },
+      "verifiedBy": "Pending AI OCR Transcription",
+      "verifiedAt": "2026-10-23T16:36:07.743Z",
+      "verifierNotes": "Official Form EC8A document from INEC IReV: https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7042/97496/421ac1f5-defd-42c5-89be-21cb9c0d51e3.jpg",
+      "versionHistory": [
+        {
+          "versionNumber": 1,
+          "actor": "INEC Live Ingestion Pipeline",
+          "actionType": "INITIAL_INGESTION",
+          "timestamp": "2026-10-23T16:36:07.743Z",
+          "reason": "Initial result sheet ingestion from INEC Results Portal (uploaded at 2026-08-15T14:49:50.143Z)"
+        }
+      ]
+    },
+    "rs-29-17-10-010": {
+      "id": "rs-29-17-10-010",
+      "pollingUnitCode": "29-17-10-010",
+      "electionId": "elec-2026-gov-osun",
+      "formType": "EC8A",
+      "sourceUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7042/97501/fbcdb9c2-366b-49af-b03c-60c4cd6b750b.jpg",
+      "fileHash": "a17edaecf153e02b86e787fb5a459c78c933bcba820d3f2339a34773f49b22c3",
+      "imageUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7042/97501/fbcdb9c2-366b-49af-b03c-60c4cd6b750b.jpg",
+      "uploadTimestamp": "2026-08-15T14:49:41.241Z",
+      "retrievalTimestamp": "2026-10-23T16:36:07.743Z",
+      "ocrConfidence": 0,
+      "sourceStatus": "ORIGINAL",
+      "version": 1,
+      "transcription": {
+        "validVotes": 0,
+        "rejectedVotes": 0,
+        "totalVotesCast": 0,
+        "partyVotes": {}
+      },
+      "ocrExtraction": {
+        "validVotes": 0,
+        "rejectedVotes": 0,
+        "totalVotesCast": 0,
+        "partyVotes": {},
+        "rawText": "INEC FORM EC8A — ODOODE (IDI LAMGBODO) II (29/17/10/010). Ready for AI OCR transcription."
+      },
+      "arithmeticCheck": {
+        "passed": true,
+        "difference": 0,
+        "formula": "Awaiting AI OCR extraction",
+        "details": "Form EC8A scan retrieved live from INEC Results Portal (IReV)."
+      },
+      "verifiedBy": "Pending AI OCR Transcription",
+      "verifiedAt": "2026-10-23T16:36:07.743Z",
+      "verifierNotes": "Official Form EC8A document from INEC IReV: https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7042/97501/fbcdb9c2-366b-49af-b03c-60c4cd6b750b.jpg",
+      "versionHistory": [
+        {
+          "versionNumber": 1,
+          "actor": "INEC Live Ingestion Pipeline",
+          "actionType": "INITIAL_INGESTION",
+          "timestamp": "2026-10-23T16:36:07.743Z",
+          "reason": "Initial result sheet ingestion from INEC Results Portal (uploaded at 2026-08-15T14:49:41.241Z)"
+        }
+      ]
+    },
+    "rs-29-17-10-001": {
+      "id": "rs-29-17-10-001",
+      "pollingUnitCode": "29-17-10-001",
+      "electionId": "elec-2026-gov-osun",
+      "formType": "EC8A",
+      "sourceUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7042/97492/95350bc0-c5e6-441c-b198-6d7f92f4e9cd.jpg",
+      "fileHash": "5139ab613543d71d0f7770c66adf3ba721fe3ccd296bd3739fcfd6cdf462da4c",
+      "imageUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7042/97492/95350bc0-c5e6-441c-b198-6d7f92f4e9cd.jpg",
+      "uploadTimestamp": "2026-08-15T14:49:17.308Z",
+      "retrievalTimestamp": "2026-10-23T16:36:07.743Z",
+      "ocrConfidence": 0,
+      "sourceStatus": "ORIGINAL",
+      "version": 1,
+      "transcription": {
+        "validVotes": 0,
+        "rejectedVotes": 0,
+        "totalVotesCast": 0,
+        "partyVotes": {}
+      },
+      "ocrExtraction": {
+        "validVotes": 0,
+        "rejectedVotes": 0,
+        "totalVotesCast": 0,
+        "partyVotes": {},
+        "rawText": "INEC FORM EC8A — OJUDE AWORO I (29/17/10/001). Ready for AI OCR transcription."
+      },
+      "arithmeticCheck": {
+        "passed": true,
+        "difference": 0,
+        "formula": "Awaiting AI OCR extraction",
+        "details": "Form EC8A scan retrieved live from INEC Results Portal (IReV)."
+      },
+      "verifiedBy": "Pending AI OCR Transcription",
+      "verifiedAt": "2026-10-23T16:36:07.743Z",
+      "verifierNotes": "Official Form EC8A document from INEC IReV: https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7042/97492/95350bc0-c5e6-441c-b198-6d7f92f4e9cd.jpg",
+      "versionHistory": [
+        {
+          "versionNumber": 1,
+          "actor": "INEC Live Ingestion Pipeline",
+          "actionType": "INITIAL_INGESTION",
+          "timestamp": "2026-10-23T16:36:07.743Z",
+          "reason": "Initial result sheet ingestion from INEC Results Portal (uploaded at 2026-08-15T14:49:17.308Z)"
+        }
+      ]
+    },
+    "rs-29-17-10-009": {
+      "id": "rs-29-17-10-009",
+      "pollingUnitCode": "29-17-10-009",
+      "electionId": "elec-2026-gov-osun",
+      "formType": "EC8A",
+      "sourceUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7042/97500/ed87bc83-ddb1-487e-9d8b-ac62f1a49032.jpg",
+      "fileHash": "e6300b867f61248796aa17a4d0dd185a86a0a9400241eea2ff56ce9e27a20a50",
+      "imageUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7042/97500/ed87bc83-ddb1-487e-9d8b-ac62f1a49032.jpg",
+      "uploadTimestamp": "2026-08-15T14:47:00.412Z",
+      "retrievalTimestamp": "2026-10-23T16:36:07.743Z",
+      "ocrConfidence": 0,
+      "sourceStatus": "ORIGINAL",
+      "version": 1,
+      "transcription": {
+        "validVotes": 0,
+        "rejectedVotes": 0,
+        "totalVotesCast": 0,
+        "partyVotes": {}
+      },
+      "ocrExtraction": {
+        "validVotes": 0,
+        "rejectedVotes": 0,
+        "totalVotesCast": 0,
+        "partyVotes": {},
+        "rawText": "INEC FORM EC8A — ODOODE (IDI LANGBODO) I (29/17/10/009). Ready for AI OCR transcription."
+      },
+      "arithmeticCheck": {
+        "passed": true,
+        "difference": 0,
+        "formula": "Awaiting AI OCR extraction",
+        "details": "Form EC8A scan retrieved live from INEC Results Portal (IReV)."
+      },
+      "verifiedBy": "Pending AI OCR Transcription",
+      "verifiedAt": "2026-10-23T16:36:07.743Z",
+      "verifierNotes": "Official Form EC8A document from INEC IReV: https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7042/97500/ed87bc83-ddb1-487e-9d8b-ac62f1a49032.jpg",
+      "versionHistory": [
+        {
+          "versionNumber": 1,
+          "actor": "INEC Live Ingestion Pipeline",
+          "actionType": "INITIAL_INGESTION",
+          "timestamp": "2026-10-23T16:36:07.743Z",
+          "reason": "Initial result sheet ingestion from INEC Results Portal (uploaded at 2026-08-15T14:47:00.412Z)"
+        }
+      ]
+    },
+    "rs-29-17-05-005": {
+      "id": "rs-29-17-05-005",
+      "pollingUnitCode": "29-17-05-005",
+      "electionId": "elec-2026-gov-osun",
+      "formType": "EC8A",
+      "sourceUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7037/97438/3537b258-c936-441c-a10c-be569a1d1cf9.jpg",
+      "fileHash": "3237573a67db4ed2040823c8933d0bd6101c37065ba1c82cd62b80b20d1a29f4",
+      "imageUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7037/97438/3537b258-c936-441c-a10c-be569a1d1cf9.jpg",
+      "uploadTimestamp": "2026-08-15T17:15:05.042Z",
+      "retrievalTimestamp": "2026-10-23T16:36:08.904Z",
+      "ocrConfidence": 0,
+      "sourceStatus": "ORIGINAL",
+      "version": 1,
+      "transcription": {
+        "validVotes": 0,
+        "rejectedVotes": 0,
+        "totalVotesCast": 0,
+        "partyVotes": {}
+      },
+      "ocrExtraction": {
+        "validVotes": 0,
+        "rejectedVotes": 0,
+        "totalVotesCast": 0,
+        "partyVotes": {},
+        "rawText": "INEC FORM EC8A — ST. MATTHEW PRY. SCHOOL III (29/17/05/005). Ready for AI OCR transcription."
+      },
+      "arithmeticCheck": {
+        "passed": true,
+        "difference": 0,
+        "formula": "Awaiting AI OCR extraction",
+        "details": "Form EC8A scan retrieved live from INEC Results Portal (IReV)."
+      },
+      "verifiedBy": "Pending AI OCR Transcription",
+      "verifiedAt": "2026-10-23T16:36:08.904Z",
+      "verifierNotes": "Official Form EC8A document from INEC IReV: https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7037/97438/3537b258-c936-441c-a10c-be569a1d1cf9.jpg",
+      "versionHistory": [
+        {
+          "versionNumber": 1,
+          "actor": "INEC Live Ingestion Pipeline",
+          "actionType": "INITIAL_INGESTION",
+          "timestamp": "2026-10-23T16:36:08.904Z",
+          "reason": "Initial result sheet ingestion from INEC Results Portal (uploaded at 2026-08-15T17:15:05.042Z)"
+        }
+      ]
+    },
+    "rs-29-17-05-001": {
+      "id": "rs-29-17-05-001",
+      "pollingUnitCode": "29-17-05-001",
+      "electionId": "elec-2026-gov-osun",
+      "formType": "EC8A",
+      "sourceUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7037/97434/b99ade04-ef99-4cfb-86eb-5afe5ef17426.jpg",
+      "fileHash": "8953d88b447e4540bf3383defb0cb5801209845b4a4850d85e820b1e3d322dd1",
+      "imageUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7037/97434/b99ade04-ef99-4cfb-86eb-5afe5ef17426.jpg",
+      "uploadTimestamp": "2026-08-15T16:30:11.493Z",
+      "retrievalTimestamp": "2026-10-23T16:36:08.904Z",
+      "ocrConfidence": 0,
+      "sourceStatus": "ORIGINAL",
+      "version": 1,
+      "transcription": {
+        "validVotes": 0,
+        "rejectedVotes": 0,
+        "totalVotesCast": 0,
+        "partyVotes": {}
+      },
+      "ocrExtraction": {
+        "validVotes": 0,
+        "rejectedVotes": 0,
+        "totalVotesCast": 0,
+        "partyVotes": {},
+        "rawText": "INEC FORM EC8A — OLUKORI JUNCTION I (29/17/05/001). Ready for AI OCR transcription."
+      },
+      "arithmeticCheck": {
+        "passed": true,
+        "difference": 0,
+        "formula": "Awaiting AI OCR extraction",
+        "details": "Form EC8A scan retrieved live from INEC Results Portal (IReV)."
+      },
+      "verifiedBy": "Pending AI OCR Transcription",
+      "verifiedAt": "2026-10-23T16:36:08.904Z",
+      "verifierNotes": "Official Form EC8A document from INEC IReV: https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7037/97434/b99ade04-ef99-4cfb-86eb-5afe5ef17426.jpg",
+      "versionHistory": [
+        {
+          "versionNumber": 1,
+          "actor": "INEC Live Ingestion Pipeline",
+          "actionType": "INITIAL_INGESTION",
+          "timestamp": "2026-10-23T16:36:08.904Z",
+          "reason": "Initial result sheet ingestion from INEC Results Portal (uploaded at 2026-08-15T16:30:11.493Z)"
+        }
+      ]
+    },
+    "rs-29-17-05-004": {
+      "id": "rs-29-17-05-004",
+      "pollingUnitCode": "29-17-05-004",
+      "electionId": "elec-2026-gov-osun",
+      "formType": "EC8A",
+      "sourceUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7037/97437/0c75dfba-918a-4ff4-8528-76b7af583f75.jpg",
+      "fileHash": "d5244f7a92135ea6c11d060e8e15801b48f919878375b249f9d880b07a7d8173",
+      "imageUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7037/97437/0c75dfba-918a-4ff4-8528-76b7af583f75.jpg",
+      "uploadTimestamp": "2026-08-15T16:06:06.404Z",
+      "retrievalTimestamp": "2026-10-23T16:36:08.904Z",
+      "ocrConfidence": 0,
+      "sourceStatus": "ORIGINAL",
+      "version": 1,
+      "transcription": {
+        "validVotes": 0,
+        "rejectedVotes": 0,
+        "totalVotesCast": 0,
+        "partyVotes": {}
+      },
+      "ocrExtraction": {
+        "validVotes": 0,
+        "rejectedVotes": 0,
+        "totalVotesCast": 0,
+        "partyVotes": {},
+        "rawText": "INEC FORM EC8A — ST. MATTHEW PRY. SCHOOL, II (29/17/05/004). Ready for AI OCR transcription."
+      },
+      "arithmeticCheck": {
+        "passed": true,
+        "difference": 0,
+        "formula": "Awaiting AI OCR extraction",
+        "details": "Form EC8A scan retrieved live from INEC Results Portal (IReV)."
+      },
+      "verifiedBy": "Pending AI OCR Transcription",
+      "verifiedAt": "2026-10-23T16:36:08.904Z",
+      "verifierNotes": "Official Form EC8A document from INEC IReV: https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7037/97437/0c75dfba-918a-4ff4-8528-76b7af583f75.jpg",
+      "versionHistory": [
+        {
+          "versionNumber": 1,
+          "actor": "INEC Live Ingestion Pipeline",
+          "actionType": "INITIAL_INGESTION",
+          "timestamp": "2026-10-23T16:36:08.904Z",
+          "reason": "Initial result sheet ingestion from INEC Results Portal (uploaded at 2026-08-15T16:06:06.404Z)"
+        }
+      ]
+    },
+    "rs-29-17-05-008": {
+      "id": "rs-29-17-05-008",
+      "pollingUnitCode": "29-17-05-008",
+      "electionId": "elec-2026-gov-osun",
+      "formType": "EC8A",
+      "sourceUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7037/97441/d809e5db-3146-45c8-a712-f1fd312ecf32.jpg",
+      "fileHash": "8f0c936a9c89f723ad1e377abdec51180771e817cb6f6b4d25446529a932ba80",
+      "imageUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7037/97441/d809e5db-3146-45c8-a712-f1fd312ecf32.jpg",
+      "uploadTimestamp": "2026-08-15T16:00:08.692Z",
+      "retrievalTimestamp": "2026-10-23T16:36:08.904Z",
+      "ocrConfidence": 0,
+      "sourceStatus": "ORIGINAL",
+      "version": 1,
+      "transcription": {
+        "validVotes": 0,
+        "rejectedVotes": 0,
+        "totalVotesCast": 0,
+        "partyVotes": {}
+      },
+      "ocrExtraction": {
+        "validVotes": 0,
+        "rejectedVotes": 0,
+        "totalVotesCast": 0,
+        "partyVotes": {},
+        "rawText": "INEC FORM EC8A — OJUDE ABALAGEMO (29/17/05/008). Ready for AI OCR transcription."
+      },
+      "arithmeticCheck": {
+        "passed": true,
+        "difference": 0,
+        "formula": "Awaiting AI OCR extraction",
+        "details": "Form EC8A scan retrieved live from INEC Results Portal (IReV)."
+      },
+      "verifiedBy": "Pending AI OCR Transcription",
+      "verifiedAt": "2026-10-23T16:36:08.904Z",
+      "verifierNotes": "Official Form EC8A document from INEC IReV: https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7037/97441/d809e5db-3146-45c8-a712-f1fd312ecf32.jpg",
+      "versionHistory": [
+        {
+          "versionNumber": 1,
+          "actor": "INEC Live Ingestion Pipeline",
+          "actionType": "INITIAL_INGESTION",
+          "timestamp": "2026-10-23T16:36:08.904Z",
+          "reason": "Initial result sheet ingestion from INEC Results Portal (uploaded at 2026-08-15T16:00:08.692Z)"
+        }
+      ]
+    },
+    "rs-29-17-05-003": {
+      "id": "rs-29-17-05-003",
+      "pollingUnitCode": "29-17-05-003",
+      "electionId": "elec-2026-gov-osun",
+      "formType": "EC8A",
+      "sourceUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7037/97436/07239345-efd5-45f6-97a2-93133fa8e0a2.jpg",
+      "fileHash": "e8c254b42b74b9a5342f0a02c0472248b8cecfd9ab18148ea83b77df64ac3c79",
+      "imageUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7037/97436/07239345-efd5-45f6-97a2-93133fa8e0a2.jpg",
+      "uploadTimestamp": "2026-08-15T16:00:05.052Z",
+      "retrievalTimestamp": "2026-10-23T16:36:08.904Z",
+      "ocrConfidence": 0,
+      "sourceStatus": "ORIGINAL",
+      "version": 1,
+      "transcription": {
+        "validVotes": 0,
+        "rejectedVotes": 0,
+        "totalVotesCast": 0,
+        "partyVotes": {}
+      },
+      "ocrExtraction": {
+        "validVotes": 0,
+        "rejectedVotes": 0,
+        "totalVotesCast": 0,
+        "partyVotes": {},
+        "rawText": "INEC FORM EC8A — ST. MATTHEW PRY. SCHOOL, I (29/17/05/003). Ready for AI OCR transcription."
+      },
+      "arithmeticCheck": {
+        "passed": true,
+        "difference": 0,
+        "formula": "Awaiting AI OCR extraction",
+        "details": "Form EC8A scan retrieved live from INEC Results Portal (IReV)."
+      },
+      "verifiedBy": "Pending AI OCR Transcription",
+      "verifiedAt": "2026-10-23T16:36:08.904Z",
+      "verifierNotes": "Official Form EC8A document from INEC IReV: https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7037/97436/07239345-efd5-45f6-97a2-93133fa8e0a2.jpg",
+      "versionHistory": [
+        {
+          "versionNumber": 1,
+          "actor": "INEC Live Ingestion Pipeline",
+          "actionType": "INITIAL_INGESTION",
+          "timestamp": "2026-10-23T16:36:08.904Z",
+          "reason": "Initial result sheet ingestion from INEC Results Portal (uploaded at 2026-08-15T16:00:05.052Z)"
+        }
+      ]
+    },
+    "rs-29-17-05-010": {
+      "id": "rs-29-17-05-010",
+      "pollingUnitCode": "29-17-05-010",
+      "electionId": "elec-2026-gov-osun",
+      "formType": "EC8A",
+      "sourceUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7037/97443/dc377ee3-9d6c-478d-8649-1351163aba65.jpg",
+      "fileHash": "fa3efc42d06491c83bdc06f98bf88a5c9677ee0f2fb8f5f882dd7ec90dae990d",
+      "imageUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7037/97443/dc377ee3-9d6c-478d-8649-1351163aba65.jpg",
+      "uploadTimestamp": "2026-08-15T15:57:05.071Z",
+      "retrievalTimestamp": "2026-10-23T16:36:08.904Z",
+      "ocrConfidence": 0,
+      "sourceStatus": "ORIGINAL",
+      "version": 1,
+      "transcription": {
+        "validVotes": 0,
+        "rejectedVotes": 0,
+        "totalVotesCast": 0,
+        "partyVotes": {}
+      },
+      "ocrExtraction": {
+        "validVotes": 0,
+        "rejectedVotes": 0,
+        "totalVotesCast": 0,
+        "partyVotes": {},
+        "rawText": "INEC FORM EC8A — ST. JULIUS PRY. SCHOOL II (29/17/05/010). Ready for AI OCR transcription."
+      },
+      "arithmeticCheck": {
+        "passed": true,
+        "difference": 0,
+        "formula": "Awaiting AI OCR extraction",
+        "details": "Form EC8A scan retrieved live from INEC Results Portal (IReV)."
+      },
+      "verifiedBy": "Pending AI OCR Transcription",
+      "verifiedAt": "2026-10-23T16:36:08.904Z",
+      "verifierNotes": "Official Form EC8A document from INEC IReV: https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7037/97443/dc377ee3-9d6c-478d-8649-1351163aba65.jpg",
+      "versionHistory": [
+        {
+          "versionNumber": 1,
+          "actor": "INEC Live Ingestion Pipeline",
+          "actionType": "INITIAL_INGESTION",
+          "timestamp": "2026-10-23T16:36:08.904Z",
+          "reason": "Initial result sheet ingestion from INEC Results Portal (uploaded at 2026-08-15T15:57:05.071Z)"
+        }
+      ]
+    },
+    "rs-29-17-05-002": {
+      "id": "rs-29-17-05-002",
+      "pollingUnitCode": "29-17-05-002",
+      "electionId": "elec-2026-gov-osun",
+      "formType": "EC8A",
+      "sourceUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7037/97435/dcc79bd4-7a8d-430a-bd10-9056c3a6f854.jpg",
+      "fileHash": "60577c6538476dff662a24716c8a020abbd887069ba63c480d7176684b70319b",
+      "imageUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7037/97435/dcc79bd4-7a8d-430a-bd10-9056c3a6f854.jpg",
+      "uploadTimestamp": "2026-08-15T15:51:02.804Z",
+      "retrievalTimestamp": "2026-10-23T16:36:08.904Z",
+      "ocrConfidence": 0,
+      "sourceStatus": "ORIGINAL",
+      "version": 1,
+      "transcription": {
+        "validVotes": 0,
+        "rejectedVotes": 0,
+        "totalVotesCast": 0,
+        "partyVotes": {}
+      },
+      "ocrExtraction": {
+        "validVotes": 0,
+        "rejectedVotes": 0,
+        "totalVotesCast": 0,
+        "partyVotes": {},
+        "rawText": "INEC FORM EC8A — OLUKORI JUNCTION II (29/17/05/002). Ready for AI OCR transcription."
+      },
+      "arithmeticCheck": {
+        "passed": true,
+        "difference": 0,
+        "formula": "Awaiting AI OCR extraction",
+        "details": "Form EC8A scan retrieved live from INEC Results Portal (IReV)."
+      },
+      "verifiedBy": "Pending AI OCR Transcription",
+      "verifiedAt": "2026-10-23T16:36:08.904Z",
+      "verifierNotes": "Official Form EC8A document from INEC IReV: https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7037/97435/dcc79bd4-7a8d-430a-bd10-9056c3a6f854.jpg",
+      "versionHistory": [
+        {
+          "versionNumber": 1,
+          "actor": "INEC Live Ingestion Pipeline",
+          "actionType": "INITIAL_INGESTION",
+          "timestamp": "2026-10-23T16:36:08.904Z",
+          "reason": "Initial result sheet ingestion from INEC Results Portal (uploaded at 2026-08-15T15:51:02.804Z)"
+        }
+      ]
+    },
+    "rs-29-17-05-007": {
+      "id": "rs-29-17-05-007",
+      "pollingUnitCode": "29-17-05-007",
+      "electionId": "elec-2026-gov-osun",
+      "formType": "EC8A",
+      "sourceUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7037/97440/94ab0d31-f719-4329-964c-cf9dd8423d97.jpg",
+      "fileHash": "dedc7949e48aae090700b5e7b0a16a73b9688a59402abd3972ae292529fdf041",
+      "imageUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7037/97440/94ab0d31-f719-4329-964c-cf9dd8423d97.jpg",
+      "uploadTimestamp": "2026-08-15T15:39:07.891Z",
+      "retrievalTimestamp": "2026-10-23T16:36:08.904Z",
+      "ocrConfidence": 0,
+      "sourceStatus": "ORIGINAL",
+      "version": 1,
+      "transcription": {
+        "validVotes": 0,
+        "rejectedVotes": 0,
+        "totalVotesCast": 0,
+        "partyVotes": {}
+      },
+      "ocrExtraction": {
+        "validVotes": 0,
+        "rejectedVotes": 0,
+        "totalVotesCast": 0,
+        "partyVotes": {},
+        "rawText": "INEC FORM EC8A — OJUDE OPOSIN II AKODI OBALUMO O/S IN ODOSIN (29/17/05/007). Ready for AI OCR transcription."
+      },
+      "arithmeticCheck": {
+        "passed": true,
+        "difference": 0,
+        "formula": "Awaiting AI OCR extraction",
+        "details": "Form EC8A scan retrieved live from INEC Results Portal (IReV)."
+      },
+      "verifiedBy": "Pending AI OCR Transcription",
+      "verifiedAt": "2026-10-23T16:36:08.904Z",
+      "verifierNotes": "Official Form EC8A document from INEC IReV: https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7037/97440/94ab0d31-f719-4329-964c-cf9dd8423d97.jpg",
+      "versionHistory": [
+        {
+          "versionNumber": 1,
+          "actor": "INEC Live Ingestion Pipeline",
+          "actionType": "INITIAL_INGESTION",
+          "timestamp": "2026-10-23T16:36:08.904Z",
+          "reason": "Initial result sheet ingestion from INEC Results Portal (uploaded at 2026-08-15T15:39:07.891Z)"
+        }
+      ]
+    },
+    "rs-29-17-05-009": {
+      "id": "rs-29-17-05-009",
+      "pollingUnitCode": "29-17-05-009",
+      "electionId": "elec-2026-gov-osun",
+      "formType": "EC8A",
+      "sourceUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7037/97442/58952591-5875-4125-993e-9f0e5e8836c3.jpg",
+      "fileHash": "942b862f80ae48650c12b64e0e39c91ea458f5133c5fb81652e7f2788fea6b90",
+      "imageUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7037/97442/58952591-5875-4125-993e-9f0e5e8836c3.jpg",
+      "uploadTimestamp": "2026-08-15T15:09:04.064Z",
+      "retrievalTimestamp": "2026-10-23T16:36:08.904Z",
+      "ocrConfidence": 0,
+      "sourceStatus": "ORIGINAL",
+      "version": 1,
+      "transcription": {
+        "validVotes": 0,
+        "rejectedVotes": 0,
+        "totalVotesCast": 0,
+        "partyVotes": {}
+      },
+      "ocrExtraction": {
+        "validVotes": 0,
+        "rejectedVotes": 0,
+        "totalVotesCast": 0,
+        "partyVotes": {},
+        "rawText": "INEC FORM EC8A — ST. JULIUS PRY. SCHOOL I (29/17/05/009). Ready for AI OCR transcription."
+      },
+      "arithmeticCheck": {
+        "passed": true,
+        "difference": 0,
+        "formula": "Awaiting AI OCR extraction",
+        "details": "Form EC8A scan retrieved live from INEC Results Portal (IReV)."
+      },
+      "verifiedBy": "Pending AI OCR Transcription",
+      "verifiedAt": "2026-10-23T16:36:08.904Z",
+      "verifierNotes": "Official Form EC8A document from INEC IReV: https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7037/97442/58952591-5875-4125-993e-9f0e5e8836c3.jpg",
+      "versionHistory": [
+        {
+          "versionNumber": 1,
+          "actor": "INEC Live Ingestion Pipeline",
+          "actionType": "INITIAL_INGESTION",
+          "timestamp": "2026-10-23T16:36:08.904Z",
+          "reason": "Initial result sheet ingestion from INEC Results Portal (uploaded at 2026-08-15T15:09:04.064Z)"
+        }
+      ]
+    },
+    "rs-29-17-05-006": {
+      "id": "rs-29-17-05-006",
+      "pollingUnitCode": "29-17-05-006",
+      "electionId": "elec-2026-gov-osun",
+      "formType": "EC8A",
+      "sourceUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7037/97439/986e63df-092d-4275-ac04-5a634b47aa61.jpg",
+      "fileHash": "dcde6da11342202112d8f5aef33db10da61766be869b4be80e4ccc4435d489e7",
+      "imageUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7037/97439/986e63df-092d-4275-ac04-5a634b47aa61.jpg",
+      "uploadTimestamp": "2026-08-15T14:50:23.946Z",
+      "retrievalTimestamp": "2026-10-23T16:36:08.904Z",
+      "ocrConfidence": 0,
+      "sourceStatus": "ORIGINAL",
+      "version": 1,
+      "transcription": {
+        "validVotes": 0,
+        "rejectedVotes": 0,
+        "totalVotesCast": 0,
+        "partyVotes": {}
+      },
+      "ocrExtraction": {
+        "validVotes": 0,
+        "rejectedVotes": 0,
+        "totalVotesCast": 0,
+        "partyVotes": {},
+        "rawText": "INEC FORM EC8A — OJUDE OPOSIN I, BESIDE IDI ODU ODOSIN (29/17/05/006). Ready for AI OCR transcription."
+      },
+      "arithmeticCheck": {
+        "passed": true,
+        "difference": 0,
+        "formula": "Awaiting AI OCR extraction",
+        "details": "Form EC8A scan retrieved live from INEC Results Portal (IReV)."
+      },
+      "verifiedBy": "Pending AI OCR Transcription",
+      "verifiedAt": "2026-10-23T16:36:08.904Z",
+      "verifierNotes": "Official Form EC8A document from INEC IReV: https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7037/97439/986e63df-092d-4275-ac04-5a634b47aa61.jpg",
+      "versionHistory": [
+        {
+          "versionNumber": 1,
+          "actor": "INEC Live Ingestion Pipeline",
+          "actionType": "INITIAL_INGESTION",
+          "timestamp": "2026-10-23T16:36:08.904Z",
+          "reason": "Initial result sheet ingestion from INEC Results Portal (uploaded at 2026-08-15T14:50:23.946Z)"
+        }
+      ]
+    }
+  },
+  "users": [
+    {
+      "id": "usr-super-idris",
+      "email": "drisatech@gmail.com",
+      "fullName": "Engr. Idris A.",
+      "role": "SUPER_ADMIN",
+      "isActive": true,
+      "badge": "NERAMP-DEV-001",
+      "jurisdiction": "National Infrastructure & Security (Full System Access)",
+      "lastLogin": "2026-10-23T09:36:54.256Z",
+      "createdAt": "2026-06-01T08:00:00Z",
+      "updatedAt": "2026-10-23T09:36:49.108Z",
+      "approvalStatus": "APPROVED"
+    },
+    {
+      "id": "usr-proj-amina",
+      "email": "amina.bello@neramp.org.ng",
+      "fullName": "Dr. Amina Bello",
+      "role": "PROJECT_ADMIN",
+      "isActive": true,
+      "badge": "NERAMP-ADM-002",
+      "jurisdiction": "National Operations & Policy Oversight",
+      "lastLogin": "2026-10-23T09:36:49.109Z",
+      "createdAt": "2026-06-15T09:00:00Z",
+      "updatedAt": "2026-10-23T09:36:49.109Z",
+      "approvalStatus": "APPROVED"
+    },
+    {
+      "id": "usr-analyst-chinedu",
+      "email": "c.okafor@neramp.org.ng",
+      "fullName": "Chinedu Okafor",
+      "role": "ELECTION_ANALYST",
+      "isActive": true,
+      "badge": "NERAMP-ANA-014",
+      "jurisdiction": "Analytics, Data Ingestion & Turnout Modeling",
+      "lastLogin": "2026-10-23T09:36:49.109Z",
+      "createdAt": "2026-08-01T10:00:00Z",
+      "updatedAt": "2026-10-23T09:36:49.109Z",
+      "approvalStatus": "APPROVED"
+    },
+    {
+      "id": "usr-coord-adeyemi",
+      "email": "adeyemi.a@neramp.org.ng",
+      "fullName": "Adeyemi Adeleke",
+      "role": "STATE_COORDINATOR",
+      "isActive": true,
+      "assignedStateCode": "OSUN",
+      "badge": "NERAMP-ST-029",
+      "jurisdiction": "Osun & Ekiti State Joint Operations",
+      "lastLogin": "2026-10-23T09:36:49.109Z",
+      "createdAt": "2026-09-01T11:00:00Z",
+      "updatedAt": "2026-10-23T09:36:49.109Z",
+      "approvalStatus": "APPROVED"
+    },
+    {
+      "id": "usr-verif-funmi",
+      "email": "f.adebayo@neramp.org.ng",
+      "fullName": "Funmilayo Adebayo",
+      "role": "RESULT_VERIFIER",
+      "isActive": true,
+      "badge": "NERAMP-VER-088",
+      "jurisdiction": "Form EC8A Dual-Transcriber Queue",
+      "lastLogin": "2026-10-23T09:36:49.109Z",
+      "createdAt": "2026-10-15T14:00:00Z",
+      "updatedAt": "2026-10-23T09:36:49.109Z",
+      "approvalStatus": "APPROVED"
+    },
+    {
+      "id": "usr-obs-tunde",
+      "email": "t.oladipo@electionwatch.ng",
+      "fullName": "Tunde Oladipo",
+      "role": "REGISTERED_OBSERVER",
+      "isActive": true,
+      "badge": "OBS-SW-042",
+      "jurisdiction": "Osogbo LGA & Ife North LGA",
+      "lastLogin": "2026-10-23T09:36:49.109Z",
+      "createdAt": "2026-11-15T16:00:00Z",
+      "updatedAt": "2026-10-23T09:36:49.109Z",
+      "approvalStatus": "APPROVED"
+    },
+    {
+      "id": "usr-1792757113629-0092cb",
+      "email": "babajide.staff@neramp.org.ng",
+      "fullName": "Babajide Sanwo-Olu Staff",
+      "role": "RESULT_VERIFIER",
+      "isActive": true,
+      "approvalStatus": "APPROVED",
+      "badge": "NERAMP-ST-207",
+      "jurisdiction": "National Monitoring Headquarters",
+      "createdAt": "2026-10-23T12:05:13.629Z",
+      "updatedAt": "2026-10-23T12:08:04.718Z",
+      "approvedBy": "drisatech@gmail.com",
+      "approvedAt": "2026-10-23T12:08:04.718Z",
+      "lastLogin": "2026-10-23T12:08:14.670Z"
+    }
+  ],
+  "discrepancies": [],
+  "incidents": [],
+  "auditLogs": [
+    {
+      "id": "audit-1792776016971",
+      "timestamp": "2026-10-23T17:20:16.971Z",
+      "actor": "admin:backup",
+      "action": "EXPORT_DATABASE_BACKUP",
+      "target": "neramp_database",
+      "details": "Exported full database backup containing 49 Polling Units and 49 Result Sheets. SHA-256 Checksum: 786a7237a78df5ce..."
+    },
+    {
+      "id": "audit-1792775944702",
+      "timestamp": "2026-10-23T17:19:04.702Z",
+      "actor": "admin:config_manager",
+      "action": "CREATE_ELECTION_CONFIG",
+      "target": "elec-1792775944696",
+      "details": "Added new election configuration: \"Presidential Election - 2027\" (PRESIDENTIAL) for 2027-01-16. Held: No."
+    },
+    {
+      "id": "audit-1792775690250",
+      "timestamp": "2026-10-23T17:14:50.250Z",
+      "actor": "user:Lead Observer Verifier",
+      "action": "VERIFY_RESULT",
+      "target": "rs-29-17-08-007",
+      "details": "Decision: APPROVED. Notes: Transcribed from official Form EC8A (S/N 0001971). Presiding Officer: OYE DARE BOLANLE."
+    },
+    {
+      "id": "audit-1792775515354",
+      "timestamp": "2026-10-23T17:11:55.354Z",
+      "actor": "user:Lead Observer Verifier",
+      "action": "VERIFY_RESULT",
+      "target": "rs-29-17-08-008",
+      "details": "Decision: APPROVED. Notes: Transcribed from official Form EC8A (S/N 0001972). Presiding Officer: OYENIYI IBRAHEM OLADIPO."
+    },
+    {
+      "id": "audit-1792774208937",
+      "timestamp": "2026-10-23T16:50:08.937Z",
+      "actor": "user:Lead Observer Verifier",
+      "action": "VERIFY_RESULT",
+      "target": "rs-29-17-03-007",
+      "details": "Decision: APPROVED. Notes: Transcribed from official Form EC8A (S/N 0001916). Presiding Officer: OLALEYE TANSO TOJI."
+    },
+    {
+      "id": "audit-1792773381617",
+      "timestamp": "2026-10-23T16:36:21.617Z",
+      "actor": "admin:manual_trigger",
+      "action": "TRIGGER_INGESTION_JOB",
+      "target": "job-1001",
+      "details": "Manual batch ingestion executed for elec-2026-gov-osun. 49 new Polling Units uploaded, 0 duplicate records skipped, 0 altered results updated with version history."
+    },
+    {
+      "id": "audit-1792772293253",
+      "timestamp": "2026-10-23T16:18:13.253Z",
+      "actor": "admin:config_manager",
+      "action": "DELETE_ELECTION_CONFIG",
+      "target": "elec-2027-presidential",
+      "details": "Deleted election configuration: \"Presidential Election - 2027\" (ID: elec-2027-presidential)."
+    },
+    {
+      "id": "audit-1792772289735",
+      "timestamp": "2026-10-23T16:18:09.735Z",
+      "actor": "admin:config_manager",
+      "action": "DELETE_ELECTION_CONFIG",
+      "target": "elec-2027-sen-osun-central",
+      "details": "Deleted election configuration: \"Senate Election - Osun Central Senatorial District\" (ID: elec-2027-sen-osun-central)."
+    },
+    {
+      "id": "audit-1792772282904",
+      "timestamp": "2026-10-23T16:18:02.904Z",
+      "actor": "admin:config_manager",
+      "action": "DELETE_ELECTION_CONFIG",
+      "target": "elec-2027-sen-lagos-west",
+      "details": "Deleted election configuration: \"Senate Election - Lagos West Senatorial District\" (ID: elec-2027-sen-lagos-west)."
+    },
+    {
+      "id": "audit-1792772279694",
+      "timestamp": "2026-10-23T16:17:59.695Z",
+      "actor": "admin:config_manager",
+      "action": "DELETE_ELECTION_CONFIG",
+      "target": "elec-2027-reps-osun-osogbo",
+      "details": "Deleted election configuration: \"House of Representative Election - Osogbo/Olorunda/Irepodun/Orolu Federal Constituency\" (ID: elec-2027-reps-osun-osogbo)."
+    },
+    {
+      "id": "audit-1792772276434",
+      "timestamp": "2026-10-23T16:17:56.434Z",
+      "actor": "admin:config_manager",
+      "action": "DELETE_ELECTION_CONFIG",
+      "target": "elec-2027-assembly-osun-osogbo",
+      "details": "Deleted election configuration: \"House of Assembly - Osogbo State Constituency\" (ID: elec-2027-assembly-osun-osogbo)."
+    },
+    {
+      "id": "audit-1792757294671",
+      "timestamp": "2026-10-23T12:08:14.671Z",
+      "actor": "babajide.staff@neramp.org.ng",
+      "actorName": "Babajide Sanwo-Olu Staff",
+      "actorRole": "RESULT_VERIFIER",
+      "action": "MANAGEMENT_LOGIN_SUCCESS",
+      "target": "usr-1792757113629-0092cb",
+      "details": "Management user Babajide Sanwo-Olu Staff (babajide.staff@neramp.org.ng) logged in. Role: RESULT_VERIFIER, Badge: NERAMP-ST-207. Session: sess-1792757294670-ba4acf6352e7"
+    },
+    {
+      "id": "audit-1792757284718",
+      "timestamp": "2026-10-23T12:08:04.718Z",
+      "actor": "drisatech@gmail.com",
+      "action": "STAFF_REGISTRATION_APPROVED",
+      "target": "usr-1792757113629-0092cb",
+      "details": "Staff member Babajide Sanwo-Olu Staff (babajide.staff@neramp.org.ng) authorized by drisatech@gmail.com. Access granted for role: RESULT_VERIFIER."
+    },
+    {
+      "id": "audit-1792757113629",
+      "timestamp": "2026-10-23T12:05:13.629Z",
+      "actor": "babajide.staff@neramp.org.ng",
+      "actorName": "Babajide Sanwo-Olu Staff",
+      "actorRole": "RESULT_VERIFIER",
+      "action": "STAFF_REGISTRATION_SUBMITTED",
+      "target": "usr-1792757113629-0092cb",
+      "details": "Staff member Babajide Sanwo-Olu Staff (babajide.staff@neramp.org.ng) registered with requested role RESULT_VERIFIER. Status: PENDING_APPROVAL. Requires Super or Project Admin approval."
+    },
+    {
+      "id": "audit-1792748214257",
+      "timestamp": "2026-10-23T09:36:54.257Z",
+      "actor": "drisatech@gmail.com",
+      "actorName": "Engr. Idris A.",
+      "actorRole": "SUPER_ADMIN",
+      "action": "MANAGEMENT_LOGIN_SUCCESS",
+      "target": "usr-super-idris",
+      "details": "Management user Engr. Idris A. (drisatech@gmail.com) logged in. Role: SUPER_ADMIN, Badge: NERAMP-DEV-001. Session: sess-1792748214256-0fccfa98caab"
+    }
+  ]
+}

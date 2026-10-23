@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { ResultSheet } from '../types';
 import { triggerOcrTranscription } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 
 interface Props {
   resultSheet: ResultSheet;
@@ -23,6 +24,17 @@ interface Props {
 }
 
 export const SourceDocumentViewer: React.FC<Props> = ({ resultSheet, pollingUnitCode, onRefreshOcr }) => {
+  const { role, isAuthenticated, isSuperOrProjectAdmin } = useAuth();
+  const canRunOcr =
+    isAuthenticated &&
+    role !== 'PUBLIC_USER' &&
+    (isSuperOrProjectAdmin ||
+      role === 'RESULT_VERIFIER' ||
+      role === 'ELECTION_ANALYST' ||
+      role === 'STATE_COORDINATOR' ||
+      role === 'LGA_COORDINATOR' ||
+      role === 'MONITORING_COORDINATOR');
+
   const [zoom, setZoom] = useState(1);
   const [rotation, setRotation] = useState(0);
   const [copiedHash, setCopiedHash] = useState(false);
@@ -94,20 +106,22 @@ export const SourceDocumentViewer: React.FC<Props> = ({ resultSheet, pollingUnit
 
         {/* Action Controls */}
         <div className="flex items-center gap-2 flex-wrap">
-          {/* AI OCR Transcription Trigger */}
-          <button
-            onClick={handleRunOcr}
-            disabled={isTranscribing}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-gradient-to-r from-emerald-700 to-teal-800 hover:from-emerald-800 hover:to-teal-900 text-white rounded text-xs font-bold transition-all shadow-2xs disabled:opacity-50 cursor-pointer"
-            title="Transcribe handwritten numbers and party scores with AI OCR"
-          >
-            {isTranscribing ? (
-              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-            ) : (
-              <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-            )}
-            <span>{isTranscribing ? 'Transcribing...' : 'Run AI OCR'}</span>
-          </button>
+          {/* AI OCR Transcription Trigger (Authorised Staff Only) */}
+          {canRunOcr && (
+            <button
+              onClick={handleRunOcr}
+              disabled={isTranscribing}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-gradient-to-r from-emerald-700 to-teal-800 hover:from-emerald-800 hover:to-teal-900 text-white rounded text-xs font-bold transition-all shadow-2xs disabled:opacity-50 cursor-pointer"
+              title="Transcribe handwritten numbers and party scores with AI OCR"
+            >
+              {isTranscribing ? (
+                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+              )}
+              <span>{isTranscribing ? 'Transcribing...' : 'Run AI OCR'}</span>
+            </button>
+          )}
 
           {/* View Zoom & Rotate Controls */}
           <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-md p-1">

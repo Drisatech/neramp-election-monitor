@@ -204,11 +204,16 @@ export async function deleteIncidentReport(id: string): Promise<{ message: strin
   return res.json();
 }
 
-export async function reviewVerificationRecord(resultSheetId: string, decision: 'APPROVED' | 'DISCREPANCY_FLAGGED', notes: string) {
+export async function reviewVerificationRecord(
+  resultSheetId: string,
+  decision: 'APPROVED' | 'DISCREPANCY_FLAGGED',
+  notes: string,
+  verifierName?: string
+) {
   const res = await fetch(`${API_BASE}/verification/${resultSheetId}/review`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ decision, notes }),
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ decision, notes, verifierName }),
   });
   if (!res.ok) throw new Error('Failed to submit verification review');
   return res.json();
@@ -222,11 +227,12 @@ export async function correctTranscription(
     totalVotesCast: number;
     partyVotes: Record<string, number>;
     correctionReason: string;
+    verifierName?: string;
   }
 ) {
   const res = await fetch(`${API_BASE}/verification/${resultSheetId}/correct-transcription`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders(),
     body: JSON.stringify(data),
   });
   if (!res.ok) throw new Error('Failed to correct transcription');
@@ -759,12 +765,12 @@ export async function importRegisteredVotersFile(payload: {
 export async function triggerOcrTranscription(resultSheetId: string, forceRefresh = true) {
   const res = await fetch(`${API_BASE}/ocr/transcribe-sheet/${encodeURIComponent(resultSheetId)}`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders(),
     body: JSON.stringify({ forceRefresh }),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error(err.error || 'Gemini AI OCR transcription failed');
+    throw new Error(err.error || 'AI OCR transcription failed');
   }
   return res.json();
 }
@@ -772,12 +778,12 @@ export async function triggerOcrTranscription(resultSheetId: string, forceRefres
 export async function triggerBatchOcrTranscription(electionId = 'elec-2026-gov-osun', limit = 6) {
   const res = await fetch(`${API_BASE}/ocr/transcribe-batch`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders(),
     body: JSON.stringify({ electionId, limit }),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error(err.error || 'Batch Gemini AI OCR failed');
+    throw new Error(err.error || 'Batch AI OCR failed');
   }
   return res.json();
 }
@@ -790,7 +796,7 @@ export async function uploadAndTranscribeFormEc8a(payload: {
 }) {
   const res = await fetch(`${API_BASE}/ocr/upload-and-transcribe`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders(),
     body: JSON.stringify(payload),
   });
   if (!res.ok) {
@@ -912,6 +918,7 @@ export function getAuthHeaders(): Record<string, string> {
       const u = JSON.parse(userJson);
       if (u?.email) headers['x-actor-email'] = u.email;
       if (u?.role) headers['x-actor-role'] = u.role;
+      if (u?.name || u?.fullName) headers['x-actor-name'] = u.name || u.fullName;
     }
   } catch {}
   return headers;

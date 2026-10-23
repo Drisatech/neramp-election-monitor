@@ -19,6 +19,7 @@ import { ResultSheet } from '../types';
 import { reviewVerificationRecord, correctTranscription } from '../services/api';
 import { SourceDocumentViewer } from './SourceDocumentViewer';
 import { getPartyInfo } from '../constants/parties';
+import { useAuth } from '../context/AuthContext';
 
 interface Props {
   resultSheet: ResultSheet;
@@ -27,6 +28,7 @@ interface Props {
 }
 
 export const VerificationWorkspace: React.FC<Props> = ({ resultSheet, pollingUnitCode, onUpdate }) => {
+  const { user } = useAuth();
   const [validVotes, setValidVotes] = useState(resultSheet.transcription.validVotes);
   const [rejectedVotes, setRejectedVotes] = useState(resultSheet.transcription.rejectedVotes);
   const [totalVotesCast, setTotalVotesCast] = useState(resultSheet.transcription.totalVotesCast);
@@ -70,6 +72,7 @@ export const VerificationWorkspace: React.FC<Props> = ({ resultSheet, pollingUni
         totalVotesCast,
         partyVotes,
         correctionReason,
+        verifierName: user?.name,
       });
       setStatusMessage({ type: 'success', text: `Transcription v${resultSheet.version + 1} saved with immutable audit log.` });
       setCorrectionReason('');
@@ -85,7 +88,7 @@ export const VerificationWorkspace: React.FC<Props> = ({ resultSheet, pollingUni
     try {
       setIsSubmitting(true);
       setStatusMessage(null);
-      await reviewVerificationRecord(resultSheet.id, decision, notes);
+      await reviewVerificationRecord(resultSheet.id, decision, notes, user?.name);
       setStatusMessage({
         type: 'success',
         text: decision === 'APPROVED' ? 'Result marked as Verified.' : 'Discrepancy flagged and logged for secondary review.',
