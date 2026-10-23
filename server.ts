@@ -576,6 +576,9 @@ export interface UserItem {
   fullName: string;
   role: string;
   isActive: boolean;
+  approvalStatus?: 'APPROVED' | 'PENDING_APPROVAL' | 'REJECTED';
+  approvedBy?: string;
+  approvedAt?: string;
   passwordHash?: string;
   salt?: string;
   assignedStateCode?: string;
@@ -617,6 +620,9 @@ const DEFAULT_MANAGEMENT_USERS: UserItem[] = [
     fullName: 'Engr. Idris A.',
     role: 'SUPER_ADMIN',
     isActive: true,
+    approvalStatus: 'APPROVED',
+    approvedBy: 'SYSTEM_ROOT',
+    approvedAt: '2026-06-01T08:00:00Z',
     passwordHash: defaultCreds.hash,
     salt: defaultCreds.salt,
     badge: 'NERAMP-DEV-001',
@@ -631,6 +637,7 @@ const DEFAULT_MANAGEMENT_USERS: UserItem[] = [
     fullName: 'Dr. Amina Bello',
     role: 'PROJECT_ADMIN',
     isActive: true,
+    approvalStatus: 'APPROVED',
     passwordHash: defaultCreds.hash,
     salt: defaultCreds.salt,
     badge: 'NERAMP-ADM-002',
@@ -645,6 +652,7 @@ const DEFAULT_MANAGEMENT_USERS: UserItem[] = [
     fullName: 'Chinedu Okafor',
     role: 'ELECTION_ANALYST',
     isActive: true,
+    approvalStatus: 'APPROVED',
     passwordHash: defaultCreds.hash,
     salt: defaultCreds.salt,
     badge: 'NERAMP-ANA-014',
@@ -659,6 +667,7 @@ const DEFAULT_MANAGEMENT_USERS: UserItem[] = [
     fullName: 'Adeyemi Adeleke',
     role: 'STATE_COORDINATOR',
     isActive: true,
+    approvalStatus: 'APPROVED',
     passwordHash: defaultCreds.hash,
     salt: defaultCreds.salt,
     assignedStateCode: 'OSUN',
@@ -674,6 +683,7 @@ const DEFAULT_MANAGEMENT_USERS: UserItem[] = [
     fullName: 'Funmilayo Adebayo',
     role: 'RESULT_VERIFIER',
     isActive: true,
+    approvalStatus: 'APPROVED',
     passwordHash: defaultCreds.hash,
     salt: defaultCreds.salt,
     badge: 'NERAMP-VER-088',
@@ -688,6 +698,7 @@ const DEFAULT_MANAGEMENT_USERS: UserItem[] = [
     fullName: 'Tunde Oladipo',
     role: 'REGISTERED_OBSERVER',
     isActive: true,
+    approvalStatus: 'APPROVED',
     passwordHash: defaultCreds.hash,
     salt: defaultCreds.salt,
     badge: 'OBS-SW-042',
@@ -743,7 +754,10 @@ function loadDatabaseFromDisk() {
       const content = fs.readFileSync(USERS_FILE, 'utf-8');
       const loadedUsers = JSON.parse(content);
       if (Array.isArray(loadedUsers) && loadedUsers.length > 0) {
-        USERS = loadedUsers;
+        USERS = loadedUsers.map((u: any) => ({
+          ...u,
+          approvalStatus: u.approvalStatus || (u.isActive ? 'APPROVED' : 'PENDING_APPROVAL'),
+        }));
         console.log(`[DATABASE PERSISTENCE] Loaded ${USERS.length} Management Users from disk.`);
       }
     } else {
@@ -2773,12 +2787,6 @@ app.post('/api/v1/auth/login', (req: Request, res: Response) => {
     return;
   }
 
-  if (!user.isActive) {
-    recordAttempt(lockoutKey, false);
-    res.status(403).json({ error: 'This management account has been deactivated. Please contact the Super Administrator.' });
-    return;
-  }
-
   // 3. Password Verification
   if (user.passwordHash && user.salt) {
     if (!password) {
@@ -2799,11 +2807,37 @@ app.post('/api/v1/auth/login', (req: Request, res: Response) => {
     user.updatedAt = new Date().toISOString();
   }
 
+  // 4. Staff Authorization Check: Super Admin or Project Admin must approve new staff registrations
+  const isSuperAdminEmail = user.email.toLowerCase() === 'drisatech@gmail.com' || user.role === 'SUPER_ADMIN';
+  if (user.approvalStatus === 'PENDING_APPROVAL') {
+    recordAttempt(lockoutKey, false);
+    res.status(403).json({
+      error: 'Registration Pending Approval: Your account has been registered but is awaiting authorization by the Super Administrator (Engr. Idris A.) or Project Admin before access beyond public pages is permitted.',
+      approvalPending: true,
+    });
+    return;
+  }
+
+  if (user.approvalStatus === 'REJECTED') {
+    recordAttempt(lockoutKey, false);
+    res.status(403).json({
+      error: 'Registration Declined: This staff account registration was declined by the administrator.',
+      approvalPending: false,
+    });
+    return;
+  }
+
+  if (!user.isActive && !isSuperAdminEmail) {
+    recordAttempt(lockoutKey, false);
+    res.status(403).json({ error: 'This management account has been deactivated. Please contact the Super Administrator.' });
+    return;
+  }
+
   // Clear rate limit counter on success
   recordAttempt(lockoutKey, true);
   user.lastLogin = new Date().toISOString();
 
-  // 4. Create and persist User Session for Super Admin monitoring
+  // 5. Create and persist User Session for Super Admin monitoring
   const sessionId = 'sess-' + Date.now() + '-' + crypto.randomBytes(6).toString('hex');
   const sessionRecord: UserSession = {
     id: sessionId,
@@ -2854,7 +2888,7 @@ app.post('/api/v1/auth/login', (req: Request, res: Response) => {
   });
 });
 
-// First-Timer Management Registration with Permanent Password Creation
+// First-Timer Management Registration: New staff accounts require Super/Project Admin approval
 app.post('/api/v1/auth/register', (req: Request, res: Response) => {
   const { fullName, email, password, role = 'RESULT_VERIFIER', badge, jurisdiction } = req.body;
 
@@ -2875,42 +2909,27 @@ app.post('/api/v1/auth/register', (req: Request, res: Response) => {
     return;
   }
 
+  const isSuperAdminUser = cleanEmail === 'drisatech@gmail.com';
   const hashed = hashPassword(password);
   const newUser: UserItem = {
     id: 'usr-' + Date.now() + '-' + crypto.randomBytes(3).toString('hex'),
     email: cleanEmail,
     fullName: fullName.trim(),
     role: role,
-    isActive: true,
+    isActive: isSuperAdminUser, // Only root super admin is active; all other new staff require Super or Project Admin approval
+    approvalStatus: isSuperAdminUser ? 'APPROVED' : 'PENDING_APPROVAL',
+    approvedBy: isSuperAdminUser ? 'SYSTEM_ROOT' : undefined,
+    approvedAt: isSuperAdminUser ? new Date().toISOString() : undefined,
     passwordHash: hashed.hash,
     salt: hashed.salt,
     badge: badge?.trim() || `NERAMP-ST-${Math.floor(100 + Math.random() * 900)}`,
     jurisdiction: jurisdiction?.trim() || 'National Monitoring Headquarters',
-    lastLogin: new Date().toISOString(),
+    lastLogin: isSuperAdminUser ? new Date().toISOString() : undefined,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };
 
   USERS.push(newUser);
-
-  const ip = req.ip || req.socket.remoteAddress || '127.0.0.1';
-  const sessionId = 'sess-' + Date.now() + '-' + crypto.randomBytes(6).toString('hex');
-  const sessionRecord: UserSession = {
-    id: sessionId,
-    userId: newUser.id,
-    userName: newUser.fullName,
-    userEmail: newUser.email,
-    role: newUser.role,
-    badge: newUser.badge,
-    loginAt: new Date().toISOString(),
-    lastActiveAt: new Date().toISOString(),
-    logoutAt: null,
-    durationSeconds: 0,
-    ipAddress: String(ip),
-    userAgent: String(req.headers['user-agent'] || 'Management Portal Client'),
-    status: 'ACTIVE',
-  };
-  USER_SESSIONS.unshift(sessionRecord);
 
   AUDIT_LOGS.unshift({
     id: 'audit-' + Date.now(),
@@ -2918,27 +2937,47 @@ app.post('/api/v1/auth/register', (req: Request, res: Response) => {
     actor: newUser.email,
     actorName: newUser.fullName,
     actorRole: newUser.role,
-    action: 'MANAGEMENT_FIRST_TIME_REGISTRATION',
+    action: isSuperAdminUser ? 'SUPER_ADMIN_INITIALIZED' : 'STAFF_REGISTRATION_SUBMITTED',
     target: newUser.id,
-    details: `New management personnel registered: ${newUser.fullName} (${newUser.email}). Role: ${newUser.role}, Badge: ${newUser.badge}.`,
+    details: `Staff member ${newUser.fullName} (${newUser.email}) registered with requested role ${newUser.role}. Status: ${newUser.approvalStatus}. Requires Super or Project Admin approval.`,
   });
 
   saveDatabaseToDisk(true);
 
-  const token = 'jwt-sec2027-' + crypto.randomBytes(24).toString('hex');
-  res.json({
-    token,
-    sessionId,
-    user: {
-      id: newUser.id,
-      name: newUser.fullName,
-      email: newUser.email,
-      role: newUser.role,
-      badge: newUser.badge,
-      jurisdiction: newUser.jurisdiction,
-    },
-    message: `Account created successfully. You are now logged in as ${newUser.fullName}.`,
-  });
+  if (isSuperAdminUser) {
+    const sessionId = 'sess-' + Date.now() + '-' + crypto.randomBytes(6).toString('hex');
+    const token = 'jwt-sec2027-' + crypto.randomBytes(24).toString('hex');
+    res.json({
+      token,
+      sessionId,
+      requiresApproval: false,
+      user: {
+        id: newUser.id,
+        name: newUser.fullName,
+        email: newUser.email,
+        role: newUser.role,
+        badge: newUser.badge,
+        jurisdiction: newUser.jurisdiction,
+      },
+      message: `Account created successfully. Welcome, ${newUser.fullName}.`,
+    });
+  } else {
+    // New staff registration: must be approved by Super Admin or Project Admin before access beyond public pages is permitted
+    res.json({
+      status: 'PENDING_APPROVAL',
+      requiresApproval: true,
+      message: `Registration submitted for ${newUser.fullName}. Your account is awaiting review and authorization by the Super Administrator (Engr. Idris A.) or Project Admin before access to internal management tools is granted.`,
+      user: {
+        id: newUser.id,
+        name: newUser.fullName,
+        email: newUser.email,
+        role: newUser.role,
+        badge: newUser.badge,
+        jurisdiction: newUser.jurisdiction,
+        approvalStatus: 'PENDING_APPROVAL',
+      },
+    });
+  }
 });
 
 // Session Heartbeat Endpoint: Updates duration and last active time
@@ -6722,6 +6761,11 @@ app.post('/api/v1/admin/users/:id/toggle-status', (req: Request, res: Response) 
   }
 
   user.isActive = !user.isActive;
+  if (user.isActive && user.approvalStatus !== 'APPROVED') {
+    user.approvalStatus = 'APPROVED';
+    user.approvedBy = (req.headers['x-actor-email'] as string) || 'Super Admin';
+    user.approvedAt = new Date().toISOString();
+  }
   user.updatedAt = new Date().toISOString();
 
   AUDIT_LOGS.unshift({
@@ -6733,7 +6777,92 @@ app.post('/api/v1/admin/users/:id/toggle-status', (req: Request, res: Response) 
     details: `Account ${user.email} status toggled to active=${user.isActive}.`,
   });
 
+  saveDatabaseToDisk(true);
   res.json({ message: `User status set to ${user.isActive ? 'Active' : 'Inactive'}`, data: user });
+});
+
+// Authorize / Approve New Staff Member (Restricted to SUPER_ADMIN or PROJECT_ADMIN)
+app.post('/api/v1/admin/users/:id/approve', (req: Request, res: Response) => {
+  const actorRole = (req.headers['x-actor-role'] as string) || '';
+  const actorEmail = (req.headers['x-actor-email'] as string) || '';
+  const isAuthorized =
+    actorRole === 'SUPER_ADMIN' ||
+    actorRole === 'PROJECT_ADMIN' ||
+    actorEmail.toLowerCase() === 'drisatech@gmail.com';
+
+  if (!isAuthorized) {
+    res.status(403).json({
+      error: 'Restricted Action: Only Super Administrators (Engr. Idris A.) or Project Administrators can approve registered staff.',
+    });
+    return;
+  }
+
+  const { id } = req.params;
+  const user = USERS.find((u) => u.id === id);
+  if (!user) {
+    res.status(404).json({ error: 'User not found' });
+    return;
+  }
+
+  user.isActive = true;
+  user.approvalStatus = 'APPROVED';
+  user.approvedBy = actorEmail || 'Engr. Idris A.';
+  user.approvedAt = new Date().toISOString();
+  user.updatedAt = new Date().toISOString();
+
+  AUDIT_LOGS.unshift({
+    id: 'audit-' + Date.now(),
+    timestamp: new Date().toISOString(),
+    actor: actorEmail || 'Engr. Idris A.',
+    action: 'STAFF_REGISTRATION_APPROVED',
+    target: user.id,
+    details: `Staff member ${user.fullName} (${user.email}) authorized by ${actorEmail || 'Super Admin'}. Access granted for role: ${user.role}.`,
+  });
+
+  saveDatabaseToDisk(true);
+  res.json({ message: `Staff member ${user.fullName} authorized successfully. Full role access granted.`, data: user });
+});
+
+// Reject New Staff Registration
+app.post('/api/v1/admin/users/:id/reject', (req: Request, res: Response) => {
+  const actorRole = (req.headers['x-actor-role'] as string) || '';
+  const actorEmail = (req.headers['x-actor-email'] as string) || '';
+  const isAuthorized =
+    actorRole === 'SUPER_ADMIN' ||
+    actorRole === 'PROJECT_ADMIN' ||
+    actorEmail.toLowerCase() === 'drisatech@gmail.com';
+
+  if (!isAuthorized) {
+    res.status(403).json({
+      error: 'Restricted Action: Only Super Administrators or Project Administrators can decline staff registrations.',
+    });
+    return;
+  }
+
+  const { id } = req.params;
+  const user = USERS.find((u) => u.id === id);
+  if (!user) {
+    res.status(404).json({ error: 'User not found' });
+    return;
+  }
+
+  user.isActive = false;
+  user.approvalStatus = 'REJECTED';
+  user.approvedBy = actorEmail || 'Engr. Idris A.';
+  user.approvedAt = new Date().toISOString();
+  user.updatedAt = new Date().toISOString();
+
+  AUDIT_LOGS.unshift({
+    id: 'audit-' + Date.now(),
+    timestamp: new Date().toISOString(),
+    actor: actorEmail || 'Engr. Idris A.',
+    action: 'STAFF_REGISTRATION_REJECTED',
+    target: user.id,
+    details: `Staff registration for ${user.fullName} (${user.email}) declined by ${actorEmail || 'Super Admin'}.`,
+  });
+
+  saveDatabaseToDisk(true);
+  res.json({ message: `Staff registration for ${user.fullName} declined.`, data: user });
 });
 
 app.post('/api/v1/admin/users/:id/reset-access', (req: Request, res: Response) => {

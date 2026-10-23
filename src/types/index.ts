@@ -462,11 +462,15 @@ export interface AdminUser {
   fullName: string;
   role: UserRole;
   isActive: boolean;
+  approvalStatus?: 'APPROVED' | 'PENDING_APPROVAL' | 'REJECTED';
+  approvedBy?: string;
+  approvedAt?: string;
   assignedStateCode?: string;
   assignedLgaCode?: string;
   assignedWardCode?: string;
   assignedPus?: string[];
   badge?: string;
+  jurisdiction?: string;
   lastLogin?: string;
   createdAt: string;
   updatedAt: string;

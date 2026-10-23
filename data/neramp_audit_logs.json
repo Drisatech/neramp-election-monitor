@@ -1,5 +1,33 @@
 [
   {
+    "id": "audit-1792757294671",
+    "timestamp": "2026-10-23T12:08:14.671Z",
+    "actor": "babajide.staff@neramp.org.ng",
+    "actorName": "Babajide Sanwo-Olu Staff",
+    "actorRole": "RESULT_VERIFIER",
+    "action": "MANAGEMENT_LOGIN_SUCCESS",
+    "target": "usr-1792757113629-0092cb",
+    "details": "Management user Babajide Sanwo-Olu Staff (babajide.staff@neramp.org.ng) logged in. Role: RESULT_VERIFIER, Badge: NERAMP-ST-207. Session: sess-1792757294670-ba4acf6352e7"
+  },
+  {
+    "id": "audit-1792757284718",
+    "timestamp": "2026-10-23T12:08:04.718Z",
+    "actor": "drisatech@gmail.com",
+    "action": "STAFF_REGISTRATION_APPROVED",
+    "target": "usr-1792757113629-0092cb",
+    "details": "Staff member Babajide Sanwo-Olu Staff (babajide.staff@neramp.org.ng) authorized by drisatech@gmail.com. Access granted for role: RESULT_VERIFIER."
+  },
+  {
+    "id": "audit-1792757113629",
+    "timestamp": "2026-10-23T12:05:13.629Z",
+    "actor": "babajide.staff@neramp.org.ng",
+    "actorName": "Babajide Sanwo-Olu Staff",
+    "actorRole": "RESULT_VERIFIER",
+    "action": "STAFF_REGISTRATION_SUBMITTED",
+    "target": "usr-1792757113629-0092cb",
+    "details": "Staff member Babajide Sanwo-Olu Staff (babajide.staff@neramp.org.ng) registered with requested role RESULT_VERIFIER. Status: PENDING_APPROVAL. Requires Super or Project Admin approval."
+  },
+  {
     "id": "audit-1792748214257",
     "timestamp": "2026-10-23T09:36:54.257Z",
     "actor": "drisatech@gmail.com",

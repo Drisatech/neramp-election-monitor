@@ -471,8 +471,42 @@ export async function updateAdminUser(id: string, data: any) {
 export async function toggleUserStatus(id: string) {
   const res = await fetch(`${API_BASE}/admin/users/${id}/toggle-status`, {
     method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...getAuthHeaders(),
+    },
   });
   if (!res.ok) throw new Error('Failed to toggle user status');
+  return res.json();
+}
+
+export async function approveStaffUser(id: string) {
+  const res = await fetch(`${API_BASE}/admin/users/${id}/approve`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...getAuthHeaders(),
+    },
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Failed to approve staff user');
+  }
+  return res.json();
+}
+
+export async function rejectStaffUser(id: string) {
+  const res = await fetch(`${API_BASE}/admin/users/${id}/reject`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...getAuthHeaders(),
+    },
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Failed to reject staff user');
+  }
   return res.json();
 }
 

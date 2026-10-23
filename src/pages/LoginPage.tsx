@@ -103,7 +103,7 @@ export const LoginPage: React.FC = () => {
 
   // Login Form States
   const [loginEmail, setLoginEmail] = useState('drisatech@gmail.com');
-  const [loginPassword, setLoginPassword] = useState('Admin@Neramp2026!');
+  const [loginPassword, setLoginPassword] = useState('');
   const [showLoginPassword, setShowLoginPassword] = useState(false);
 
   // Register Form States
@@ -122,7 +122,7 @@ export const LoginPage: React.FC = () => {
   // Quick fill helper for recognized management personnel
   const handleQuickSelect = (profile: TeamMemberProfile) => {
     setLoginEmail(profile.email);
-    setLoginPassword('Admin@Neramp2026!');
+    setLoginPassword('');
     setErrorMsg(null);
   };
 
@@ -174,7 +174,7 @@ export const LoginPage: React.FC = () => {
     setIsSubmitting(true);
 
     try {
-      const authUser = await registerWithCredentials({
+      const res = await registerWithCredentials({
         fullName: regFullName,
         email: regEmail,
         password: regPassword,
@@ -182,11 +182,21 @@ export const LoginPage: React.FC = () => {
         jurisdiction: regJurisdiction || 'National Monitoring',
       });
 
-      setSuccessMsg(`Account created and registered permanently. Welcome, ${authUser.name}!`);
-
-      setTimeout(() => {
-        navigate(authUser.role === 'SUPER_ADMIN' ? '/admin-ingestion' : '/admin');
-      }, 500);
+      if (res.requiresApproval) {
+        setSuccessMsg(
+          `Registration submitted for ${regFullName.trim()}. Your account is awaiting review and authorization by the Super Administrator (Engr. Idris A.) or Project Admin before access to internal management tools can be granted.`
+        );
+        setRegFullName('');
+        setRegEmail('');
+        setRegPassword('');
+        setRegConfirmPassword('');
+        setRegJurisdiction('');
+      } else {
+        setSuccessMsg(`Account created and registered permanently. Welcome, ${res.user?.name || regFullName}!`);
+        setTimeout(() => {
+          navigate(res.user?.role === 'SUPER_ADMIN' ? '/admin-ingestion' : '/admin');
+        }, 500);
+      }
     } catch (err: any) {
       setErrorMsg(err.message || 'Registration failed.');
     } finally {
@@ -335,7 +345,6 @@ export const LoginPage: React.FC = () => {
             <div>
               <div className="flex items-center justify-between mb-1">
                 <label className="text-xs font-semibold text-slate-700">Management Password</label>
-                <span className="text-[10px] text-slate-400 font-mono">Default: Admin@Neramp2026!</span>
               </div>
               <div className="relative">
                 <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -406,7 +415,7 @@ export const LoginPage: React.FC = () => {
             <div className="p-3 bg-amber-50 border border-amber-200 rounded text-xs text-amber-900 flex items-start gap-2">
               <BadgeAlert className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
               <div>
-                <strong>First-Time Management Registration:</strong> Create your permanent password and profile. Once registered, your account is stored permanently on the server and survives redeployments.
+                <strong>First-Time Staff Registration:</strong> To protect electoral data integrity, new registrations require authorization by the Super Administrator (Engr. Idris A.) or Project Admin before access beyond public pages is permitted.
               </div>
             </div>
 

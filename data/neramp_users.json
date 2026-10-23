@@ -11,7 +11,8 @@
     "jurisdiction": "National Infrastructure & Security (Full System Access)",
     "lastLogin": "2026-10-23T09:36:54.256Z",
     "createdAt": "2026-06-01T08:00:00Z",
-    "updatedAt": "2026-10-23T09:36:49.108Z"
+    "updatedAt": "2026-10-23T09:36:49.108Z",
+    "approvalStatus": "APPROVED"
   },
   {
     "id": "usr-proj-amina",
@@ -25,7 +26,8 @@
     "jurisdiction": "National Operations & Policy Oversight",
     "lastLogin": "2026-10-23T09:36:49.109Z",
     "createdAt": "2026-06-15T09:00:00Z",
-    "updatedAt": "2026-10-23T09:36:49.109Z"
+    "updatedAt": "2026-10-23T09:36:49.109Z",
+    "approvalStatus": "APPROVED"
   },
   {
     "id": "usr-analyst-chinedu",
@@ -39,7 +41,8 @@
     "jurisdiction": "Analytics, Data Ingestion & Turnout Modeling",
     "lastLogin": "2026-10-23T09:36:49.109Z",
     "createdAt": "2026-08-01T10:00:00Z",
-    "updatedAt": "2026-10-23T09:36:49.109Z"
+    "updatedAt": "2026-10-23T09:36:49.109Z",
+    "approvalStatus": "APPROVED"
   },
   {
     "id": "usr-coord-adeyemi",
@@ -54,7 +57,8 @@
     "jurisdiction": "Osun & Ekiti State Joint Operations",
     "lastLogin": "2026-10-23T09:36:49.109Z",
     "createdAt": "2026-09-01T11:00:00Z",
-    "updatedAt": "2026-10-23T09:36:49.109Z"
+    "updatedAt": "2026-10-23T09:36:49.109Z",
+    "approvalStatus": "APPROVED"
   },
   {
     "id": "usr-verif-funmi",
@@ -68,7 +72,8 @@
     "jurisdiction": "Form EC8A Dual-Transcriber Queue",
     "lastLogin": "2026-10-23T09:36:49.109Z",
     "createdAt": "2026-10-15T14:00:00Z",
-    "updatedAt": "2026-10-23T09:36:49.109Z"
+    "updatedAt": "2026-10-23T09:36:49.109Z",
+    "approvalStatus": "APPROVED"
   },
   {
     "id": "usr-obs-tunde",
@@ -82,6 +87,24 @@
     "jurisdiction": "Osogbo LGA & Ife North LGA",
     "lastLogin": "2026-10-23T09:36:49.109Z",
     "createdAt": "2026-11-15T16:00:00Z",
-    "updatedAt": "2026-10-23T09:36:49.109Z"
+    "updatedAt": "2026-10-23T09:36:49.109Z",
+    "approvalStatus": "APPROVED"
+  },
+  {
+    "id": "usr-1792757113629-0092cb",
+    "email": "babajide.staff@neramp.org.ng",
+    "fullName": "Babajide Sanwo-Olu Staff",
+    "role": "RESULT_VERIFIER",
+    "isActive": true,
+    "approvalStatus": "APPROVED",
+    "passwordHash": "ada87904ed71c0c3b397aa08a0cc0a9310e6d650142c139942232f48c941314dedb68940efd9b2f90e229a3780be343de943a9706f5ddd4779a0c0852c3bbd79",
+    "salt": "8f4d24f052c5a373bbe533baf820a61d",
+    "badge": "NERAMP-ST-207",
+    "jurisdiction": "National Monitoring Headquarters",
+    "createdAt": "2026-10-23T12:05:13.629Z",
+    "updatedAt": "2026-10-23T12:08:04.718Z",
+    "approvedBy": "drisatech@gmail.com",
+    "approvedAt": "2026-10-23T12:08:04.718Z",
+    "lastLogin": "2026-10-23T12:08:14.670Z"
   }
 ]

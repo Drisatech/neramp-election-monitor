@@ -69,6 +69,8 @@ import {
   fetchConfigParties,
   testSourceConnection,
   triggerIngestionRun,
+  approveStaffUser,
+  rejectStaffUser,
 } from '../services/api';
 import {
   AdminUser,
@@ -348,6 +350,33 @@ export const AdminCommandCentrePage: React.FC = () => {
     }
   };
 
+  const handleApproveStaff = async (user: AdminUser) => {
+    try {
+      await approveStaffUser(user.id);
+      showNotification('success', `Staff registration for ${user.fullName} (${user.email}) approved and activated.`);
+      const updated = await fetchAdminUsers();
+      setUsers(updated.data);
+      const updatedMetrics = await fetchCommandCenterMetrics();
+      setMetrics(updatedMetrics.data);
+    } catch (err: any) {
+      showNotification('error', err.message || 'Failed to approve staff user');
+    }
+  };
+
+  const handleRejectStaff = async (user: AdminUser) => {
+    if (!window.confirm(`Are you sure you want to decline staff registration for ${user.fullName} (${user.email})?`)) return;
+    try {
+      await rejectStaffUser(user.id);
+      showNotification('success', `Staff registration for ${user.fullName} (${user.email}) declined.`);
+      const updated = await fetchAdminUsers();
+      setUsers(updated.data);
+      const updatedMetrics = await fetchCommandCenterMetrics();
+      setMetrics(updatedMetrics.data);
+    } catch (err: any) {
+      showNotification('error', err.message || 'Failed to decline registration');
+    }
+  };
+
   // Operational Controls
   const handleToggleScheduler = async (paused: boolean) => {
     try {
@@ -455,12 +484,21 @@ export const AdminCommandCentrePage: React.FC = () => {
     }
   };
 
+  // Pending Staff Awaiting Admin Authorization
+  const pendingStaffUsers = users.filter((u) => u.approvalStatus === 'PENDING_APPROVAL');
+
   // Filtered Users
   const filteredUsers = users.filter((u) => {
     if (userRoleFilter && u.role !== userRoleFilter) return false;
     if (userStatusFilter !== '') {
-      const isActiveBool = userStatusFilter === 'active';
-      if (u.isActive !== isActiveBool) return false;
+      if (userStatusFilter === 'pending') {
+        if (u.approvalStatus !== 'PENDING_APPROVAL') return false;
+      } else if (userStatusFilter === 'rejected') {
+        if (u.approvalStatus !== 'REJECTED') return false;
+      } else {
+        const isActiveBool = userStatusFilter === 'active';
+        if (u.isActive !== isActiveBool) return false;
+      }
     }
     if (userSearchQuery) {
       const q = userSearchQuery.toLowerCase();
@@ -589,6 +627,11 @@ export const AdminCommandCentrePage: React.FC = () => {
           >
             <Users className="w-4 h-4" />
             <span>User & Role Governance</span>
+            {pendingStaffUsers.length > 0 && (
+              <span className="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-amber-500 text-white animate-pulse">
+                {pendingStaffUsers.length}
+              </span>
+            )}
           </button>
         )}
 
@@ -907,6 +950,69 @@ export const AdminCommandCentrePage: React.FC = () => {
       {/* ======================================================== */}
       {activeTab === 'users' && isSuperOrProjectAdmin && (
         <div className="space-y-4">
+          {/* Pending Registrations Authorization Banner */}
+          {pendingStaffUsers.length > 0 && (
+            <div className="bg-amber-50/90 border-2 border-amber-300 rounded-xl p-4 shadow-xs">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex items-start gap-3">
+                  <div className="p-2 rounded-lg bg-amber-100 text-amber-800">
+                    <AlertTriangle className="w-5 h-5 text-amber-700" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-sm font-bold text-amber-950">
+                        Pending Staff Registrations Awaiting Authorization ({pendingStaffUsers.length})
+                      </h3>
+                      <span className="text-[10px] font-mono uppercase font-bold px-2 py-0.5 rounded bg-amber-200 text-amber-900 border border-amber-300">
+                        Authorization Required
+                      </span>
+                    </div>
+                    <p className="text-xs text-amber-800 mt-1">
+                      New staff members have registered but cannot access operational portals (Verification Queue, Observer Portal, Ingestion Command, Analytics) until authorized by the Super Admin or Project Admin.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {pendingStaffUsers.map((u) => (
+                  <div key={u.id} className="bg-white rounded-lg p-3.5 border border-amber-200 shadow-2xs flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs font-bold text-slate-900 truncate">{u.fullName}</span>
+                        <span className="text-[10px] font-mono uppercase font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 shrink-0">
+                          {u.role}
+                        </span>
+                      </div>
+                      <div className="text-[11px] text-slate-500 font-mono mt-0.5 truncate">{u.email}</div>
+                      <div className="text-[11px] text-slate-600 mt-1.5 flex items-center gap-1">
+                        <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                        <span className="truncate">{u.assignedStateCode || 'National Scope'} {u.assignedLgaCode ? `· ${u.assignedLgaCode}` : ''}</span>
+                        {u.badge && <span className="text-slate-400 font-mono">({u.badge})</span>}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 mt-3.5 pt-2.5 border-t border-slate-100">
+                      <button
+                        onClick={() => handleApproveStaff(u)}
+                        className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-emerald-700 hover:bg-emerald-600 rounded-md transition-colors shadow-2xs"
+                      >
+                        <Check className="w-3.5 h-3.5" />
+                        <span>Authorize Access</span>
+                      </button>
+                      <button
+                        onClick={() => handleRejectStaff(u)}
+                        className="px-2.5 py-1.5 text-xs font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 rounded-md transition-colors"
+                      >
+                        <XCircle className="w-3.5 h-3.5" />
+                        <span>Decline</span>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="flex flex-wrap items-center gap-3">
               {/* Search */}
@@ -948,6 +1054,8 @@ export const AdminCommandCentrePage: React.FC = () => {
                 <option value="">All Statuses</option>
                 <option value="active">Active Only</option>
                 <option value="inactive">Inactive Only</option>
+                <option value="pending">Pending Authorization ({pendingStaffUsers.length})</option>
+                <option value="rejected">Rejected Only</option>
               </select>
             </div>
 
@@ -1007,18 +1115,38 @@ export const AdminCommandCentrePage: React.FC = () => {
                         {u.lastLogin ? new Date(u.lastLogin).toLocaleDateString() : 'Never'}
                       </td>
                       <td className="py-3 px-4 text-center">
-                        <span
-                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                            u.isActive
-                              ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-                              : 'bg-slate-200 text-slate-600 border border-slate-300'
-                          }`}
-                        >
-                          {u.isActive ? 'Active' : 'Inactive'}
-                        </span>
+                        {u.approvalStatus === 'PENDING_APPROVAL' ? (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300">
+                            Pending Approval
+                          </span>
+                        ) : u.approvalStatus === 'REJECTED' ? (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-300">
+                            Rejected
+                          </span>
+                        ) : (
+                          <span
+                            className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                              u.isActive
+                                ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                                : 'bg-slate-200 text-slate-600 border border-slate-300'
+                            }`}
+                          >
+                            {u.isActive ? 'Active' : 'Inactive'}
+                          </span>
+                        )}
                       </td>
                       <td className="py-3 px-4 text-right">
                         <div className="flex items-center justify-end gap-1.5">
+                          {u.approvalStatus === 'PENDING_APPROVAL' && (
+                            <button
+                              onClick={() => handleApproveStaff(u)}
+                              className="p-1.5 text-emerald-700 hover:text-emerald-900 hover:bg-emerald-50 rounded"
+                              title="Authorize Staff Access"
+                            >
+                              <UserCheck className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+
                           <button
                             onClick={() => setEditingUser(u)}
                             className="p-1.5 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded"

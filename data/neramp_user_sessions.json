@@ -1,5 +1,20 @@
 [
   {
+    "id": "sess-1792757294670-ba4acf6352e7",
+    "userId": "usr-1792757113629-0092cb",
+    "userName": "Babajide Sanwo-Olu Staff",
+    "userEmail": "babajide.staff@neramp.org.ng",
+    "role": "RESULT_VERIFIER",
+    "badge": "NERAMP-ST-207",
+    "loginAt": "2026-10-23T12:08:14.671Z",
+    "lastActiveAt": "2026-10-23T12:08:14.671Z",
+    "logoutAt": null,
+    "durationSeconds": 0,
+    "ipAddress": "127.0.0.1",
+    "userAgent": "curl/7.88.1",
+    "status": "ACTIVE"
+  },
+  {
     "id": "sess-1792748214256-0fccfa98caab",
     "userId": "usr-super-idris",
     "userName": "Engr. Idris A.",

@@ -103,14 +103,14 @@ export const VerificationQueuePage: React.FC = () => {
             onClick={handleBatchOcr}
             disabled={isBatchOcrRunning}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-emerald-700 to-teal-800 hover:from-emerald-800 hover:to-teal-900 text-white rounded text-xs font-bold transition-all shadow-2xs disabled:opacity-50 cursor-pointer"
-            title="Batch transcribe pending Form EC8A result sheets using Gemini Vision AI OCR"
+            title="Batch transcribe pending Form EC8A result sheets using AI OCR"
           >
             {isBatchOcrRunning ? (
               <RefreshCw className="w-3.5 h-3.5 animate-spin" />
             ) : (
               <Sparkles className="w-3.5 h-3.5 text-amber-300" />
             )}
-            <span>{isBatchOcrRunning ? 'Running OCR...' : 'Batch Transcribe with Gemini AI'}</span>
+            <span>{isBatchOcrRunning ? 'Running OCR...' : 'Batch Transcribe with AI'}</span>
           </button>
 
           <button

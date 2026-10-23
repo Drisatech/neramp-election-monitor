@@ -24,7 +24,7 @@ interface AuthContextType {
     role?: string;
     badge?: string;
     jurisdiction?: string;
-  }) => Promise<AuthUser>;
+  }) => Promise<{ user?: AuthUser; requiresApproval?: boolean; message: string }>;
   switchRole: (newRole: UserRole) => void;
   logout: () => void;
   isAuthenticated: boolean;
@@ -119,11 +119,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     role?: string;
     badge?: string;
     jurisdiction?: string;
-  }): Promise<AuthUser> => {
+  }): Promise<{ user?: AuthUser; requiresApproval?: boolean; message: string }> => {
     const res = await registerManagement(data);
-    const authUser: AuthUser = res.user;
-    login(authUser, res.token, res.sessionId);
-    return authUser;
+    if (res.token && res.sessionId && !res.requiresApproval) {
+      const authUser: AuthUser = res.user;
+      login(authUser, res.token, res.sessionId);
+      return { user: authUser, requiresApproval: false, message: res.message };
+    }
+    return {
+      user: res.user,
+      requiresApproval: true,
+      message:
+        res.message ||
+        'Registration submitted successfully. Your account is pending review and authorization by the Super Admin (Engr. Idris A.) or Project Admin before access is granted.',
+    };
   };
 
   const switchRole = (newRole: UserRole) => {
