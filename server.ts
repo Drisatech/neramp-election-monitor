@@ -20,9 +20,15 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 const portArgIndex = process.argv.indexOf('--port');
-const PORT = portArgIndex !== -1 && process.argv[portArgIndex + 1]
-  ? Number(process.argv[portArgIndex + 1]) || 3000
-  : Number(process.env.PORT) || 3000;
+let PORT = 3000;
+if (portArgIndex !== -1 && process.argv[portArgIndex + 1]) {
+  PORT = Number(process.argv[portArgIndex + 1]) || 3000;
+} else if (process.env.NODE_ENV === 'production' && process.env.PORT) {
+  const p = Number(process.env.PORT);
+  if (p && p !== 8080) {
+    PORT = p;
+  }
+}
 
 // Google Cloud Storage & Cloud SQL Configuration
 const GCS_BUCKET_NAME = process.env.GCS_BUCKET_NAME || 'neramp-election-evidence-0652072827';
@@ -3479,11 +3485,11 @@ const AI_PROVIDERS: Record<AiProvider, ProviderConfig> = {
     keyPlaceholder: 'sk-proj-...',
   },
   groq: {
-    name: 'Groq (Llama 3.2 Vision)',
-    description: 'Ultra-low latency LPU inference using open-weights Llama 3.2 Vision models',
+    name: 'Groq (Qwen Vision)',
+    description: 'Ultra-low latency LPU inference using open-weights Qwen models (qwen/qwen3.8-27b)',
     envVar: 'GROQ_API_KEY',
-    defaultModel: 'llama-3.2-11b-vision-preview',
-    models: ['llama-3.2-11b-vision-preview', 'llama-3.2-90b-vision-preview'],
+    defaultModel: 'qwen/qwen3.8-27b',
+    models: ['qwen/qwen3.8-27b'],
     docUrl: 'https://console.groq.com/keys',
     keyPlaceholder: 'gsk_...',
   },
@@ -3510,7 +3516,7 @@ let customProviderKeys: Record<AiProvider, string> = {
 let selectedProviderModels: Record<AiProvider, string> = {
   gemini: 'gemini-3.5-flash-lite',
   openai: 'gpt-4o-mini',
-  groq: 'llama-3.2-11b-vision-preview',
+  groq: 'qwen/qwen3.8-27b',
   claude: 'claude-3-5-sonnet-20241022',
 };
 
@@ -3871,20 +3877,16 @@ async function transcribeWithOpenAi(finalBase64: string, finalMime: string, mode
 }
 
 async function transcribeWithGroq(finalBase64: string, finalMime: string, model: string, apiKey: string) {
-  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: model || 'llama-3.2-11b-vision-preview',
-      response_format: { type: 'json_object' },
+  const targetModel = model || selectedProviderModels.groq || 'qwen/qwen3.8-27b';
+
+  const makeGroqRequest = async (useJsonMode: boolean) => {
+    const payload: any = {
+      model: targetModel,
       messages: [
         {
           role: 'user',
           content: [
-            { type: 'text', text: FORM_EC8A_OCR_PROMPT + '\nRespond with raw JSON only.' },
+            { type: 'text', text: FORM_EC8A_OCR_PROMPT + '\nRespond strictly with valid raw JSON only conforming to the schema.' },
             {
               type: 'image_url',
               image_url: {
@@ -3895,12 +3897,37 @@ async function transcribeWithGroq(finalBase64: string, finalMime: string, model:
         },
       ],
       max_tokens: 2500,
-    }),
-  });
+    };
+    if (useJsonMode) {
+      payload.response_format = { type: 'json_object' };
+    }
+    return fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify(payload),
+    });
+  };
+
+  let res = await makeGroqRequest(true);
   if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err?.error?.message || `Groq API returned HTTP ${res.status}`);
+    const errText = await res.text();
+    let parsedErr: any = null;
+    try { parsedErr = JSON.parse(errText); } catch {}
+    // If json_object response_format was rejected by model, retry without it
+    if (errText.includes('response_format') || errText.includes('json_object')) {
+      res = await makeGroqRequest(false);
+      if (!res.ok) {
+        const retryErr = await res.json().catch(() => ({}));
+        throw new Error(retryErr?.error?.message || `Groq API returned HTTP ${res.status}`);
+      }
+    } else {
+      throw new Error(parsedErr?.error?.message || `Groq API returned HTTP ${res.status}`);
+    }
   }
+
   const data = await res.json();
   const rawText = data.choices?.[0]?.message?.content || '';
   return cleanAndParseEc8aJson(rawText);
@@ -6882,7 +6909,7 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, '0.0.0.0', () => {
+  const serverInstance = app.listen(PORT, '0.0.0.0', () => {
     console.log(`=======================================================`);
     console.log(`Nigeria Election Watch Platform API & Web Server ready`);
     console.log(`Listening on http://0.0.0.0:${PORT}`);
@@ -6891,6 +6918,14 @@ async function startServer() {
 
     console.log('[STARTUP] Platform initialized in CLEAN mode (0 pre-populated demo records).');
     console.log(`[STORAGE] GCS Bucket: gs://${GCS_BUCKET_NAME} | Cloud SQL Instance: ${CLOUD_SQL_INSTANCE}`);
+  });
+
+  serverInstance.on('error', (err: any) => {
+    if (err.code === 'EADDRINUSE') {
+      console.error(`[SERVER] Port ${PORT} is in use.`);
+    } else {
+      console.error('[SERVER] Server listen error:', err);
+    }
   });
 }
 
