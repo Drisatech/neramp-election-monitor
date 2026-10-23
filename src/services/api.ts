@@ -1040,4 +1040,31 @@ export async function triggerLoopExtractionNow() {
   return res.json();
 }
 
+// Database Backup, Snapshot & Disaster Recovery
+export function getDatabaseBackupUrl() {
+  return `${API_BASE}/admin/data/backup`;
+}
+
+export async function fetchStorageStatus() {
+  const res = await fetch(`${API_BASE}/admin/data/storage-status`, {
+    headers: getAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('Failed to fetch storage status');
+  return res.json();
+}
+
+export async function restoreDatabaseSnapshot(snapshotPayload: any) {
+  const res = await fetch(`${API_BASE}/admin/data/restore`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ snapshot: snapshotPayload }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Failed to restore database from snapshot');
+  }
+  return res.json();
+}
+
+
 

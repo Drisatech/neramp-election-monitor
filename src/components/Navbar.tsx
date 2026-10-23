@@ -36,11 +36,21 @@ export function formatMenuElectionTitle(elec: Election): string {
   const stateClean = stateRaw ? stateRaw.replace(/\s+State/i, '').trim() : '';
 
   // Elections that have been held (Osun and Ekiti Governorship) have the state name added and date attached
-  if (id === 'elec-2026-gov-osun' || (type === 'GOVERNORSHIP' && (elec.stateCode === 'OSUN' || stateClean.toUpperCase() === 'OSUN'))) {
+  if (id === 'elec-2026-gov-osun') {
     return 'Governorship Election - Osun - 2026-08-15';
   }
-  if (id === 'elec-2026-gov-ekiti' || (type === 'GOVERNORSHIP' && (elec.stateCode === 'EKITI' || stateClean.toUpperCase() === 'EKITI'))) {
+  if (id === 'elec-2026-gov-ekiti') {
     return 'Governorship Election - Ekiti - 2026-06-20';
+  }
+
+  // If this is a custom-created election with its own explicit title, display its title (with state/date if not already in title)
+  if (elec.title && !id.startsWith('elec-2026-') && !id.startsWith('elec-2027-')) {
+    const t = elec.title.trim();
+    const hasState = stateClean && t.toLowerCase().includes(stateClean.toLowerCase());
+    const hasDate = elec.date && t.includes(elec.date);
+    const stateSuffix = stateClean && !hasState ? ` - ${stateClean}` : '';
+    const dateSuffix = elec.date && !hasDate ? ` - ${elec.date}` : '';
+    return `${t}${stateSuffix}${dateSuffix}`;
   }
 
   if (type === 'GOVERNORSHIP') {
@@ -74,7 +84,6 @@ export function formatMenuElectionTitle(elec: Election): string {
   }
 
   if (type === 'PRESIDENTIAL' || id.includes('presidential')) {
-    // Only year since election has not held yet
     const yearPart = elec.date ? elec.date.slice(0, 4) : '2027';
     return `Presidential Election - ${yearPart}`;
   }
@@ -99,18 +108,8 @@ export const Navbar: React.FC = () => {
     return () => window.removeEventListener('open-ai-ocr-settings', handleOpenOcr);
   }, []);
 
-  // Contest Switcher: strictly only elections that have been held (e.g. Osun & Ekiti, or concluded)
-  const heldElections = elections.filter((elec) => {
-    const status = String(elec.status || '').toUpperCase();
-    return (
-      status === 'CONCLUDED' ||
-      status === 'COMPLETED' ||
-      elec.hasBeenHeld === true ||
-      elec.id === 'elec-2026-gov-osun' ||
-      elec.id === 'elec-2026-gov-ekiti'
-    );
-  });
-  const contestSwitcherElections = heldElections.length > 0 ? heldElections : elections;
+  // Election Switcher: show all configured and newly created elections
+  const electionSwitcherList = elections;
 
   interface NavItem {
     to: string;
@@ -223,13 +222,13 @@ export const Navbar: React.FC = () => {
           <div className="hidden lg:flex items-center gap-4">
             {/* Election Selector */}
             <div className="flex items-center gap-2 text-xs">
-              <span className="text-slate-500 font-medium">Contest:</span>
+              <span className="text-slate-500 font-medium">Election:</span>
               <select
                 value={selectedElectionId}
                 onChange={(e) => setSelectedElectionId(e.target.value)}
                 className="bg-slate-50 border border-slate-300 text-slate-900 font-medium text-xs rounded-md px-2.5 py-1.5 focus:outline-emerald-600 cursor-pointer max-w-[240px] truncate"
               >
-                {contestSwitcherElections.map((elec) => (
+                {electionSwitcherList.map((elec) => (
                   <option key={elec.id} value={elec.id}>
                     {formatMenuElectionTitle(elec)}
                   </option>
@@ -405,13 +404,13 @@ export const Navbar: React.FC = () => {
       {mobileMenuOpen && (
         <div className="lg:hidden border-b border-slate-200 bg-white px-4 pt-2 pb-4 space-y-2">
           <div className="py-2 border-b border-slate-100">
-            <label className="text-xs font-semibold text-slate-500 block mb-1">Election Contest:</label>
+            <label className="text-xs font-semibold text-slate-500 block mb-1">Election:</label>
             <select
               value={selectedElectionId}
               onChange={(e) => setSelectedElectionId(e.target.value)}
               className="w-full bg-slate-50 border border-slate-300 text-slate-900 font-medium text-xs rounded-md p-2"
             >
-              {contestSwitcherElections.map((elec) => (
+              {electionSwitcherList.map((elec) => (
                 <option key={elec.id} value={elec.id}>
                   {formatMenuElectionTitle(elec)}
                 </option>

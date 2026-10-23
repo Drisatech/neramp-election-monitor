@@ -26,6 +26,7 @@ COPY --from=build /app/src ./src
 COPY --from=build /app/public ./public
 COPY --from=build /app/server.ts ./server.ts
 COPY --from=build /app/docs ./docs
+COPY --from=build /app/data ./data
 
 # Create writable data directory and ensure non-root node user permissions
 RUN mkdir -p /app/data && chown -R node:node /app

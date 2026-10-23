@@ -99,7 +99,7 @@ export const PublicDashboardPage: React.FC = () => {
     if (type === 'ASSEMBLY' || type === 'HOUSE_OF_ASSEMBLY' || type === 'STATE_ASSEMBLY') {
       return `House of Assembly - ${stName} - ${constName}`;
     }
-    return selectedElection.title || 'Contest Election Result';
+    return selectedElection.title || 'Election Result';
   };
 
   const contestTitle = getContestDisplayTitle();
@@ -116,7 +116,7 @@ export const PublicDashboardPage: React.FC = () => {
       {/* Platform Legal Disclaimer */}
       <DisclaimerBanner />
 
-      {/* Bold, Colourful, & Attractive Contest Election Result Banner */}
+      {/* Bold, Colourful, & Attractive Election Result Banner */}
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-emerald-900 via-teal-900 to-amber-900 p-6 md:p-8 text-white shadow-xl border-2 border-amber-400">
         {/* Decorative Ambient Radial Glows */}
         <div className="absolute -right-10 -bottom-10 w-64 h-64 bg-amber-400/20 rounded-full blur-3xl pointer-events-none"></div>
@@ -127,7 +127,7 @@ export const PublicDashboardPage: React.FC = () => {
           <div className="flex flex-wrap items-center gap-2">
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-amber-400 to-amber-300 text-slate-950 font-black text-[11px] tracking-wider uppercase shadow-md animate-pulse">
               <Sparkles className="w-3.5 h-3.5 text-slate-950" />
-              <span>OFFICIAL CONTEST RESULTS</span>
+              <span>OFFICIAL ELECTION RESULTS</span>
             </span>
             <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/15 backdrop-blur-xs text-white border border-white/20 text-xs font-mono">
               <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
@@ -196,7 +196,7 @@ export const PublicDashboardPage: React.FC = () => {
               onChange={(e) => setSelectedStateCode(e.target.value)}
               className="bg-slate-50 border border-slate-300 text-slate-900 text-xs rounded-md px-2.5 py-1.5 focus:outline-emerald-600 font-medium"
             >
-              <option value="">Contest Default Scope ({summary?.scope || 'State: Osun'})</option>
+              <option value="">Election Default Scope ({summary?.scope || 'State: Osun'})</option>
               {states.map((st) => (
                 <option key={st.code} value={st.code}>
                   {st.name} ({st.totalLgas} LGAs · {st.totalWards ?? 0} Wards · {st.totalPus.toLocaleString()} PUs)
@@ -241,7 +241,7 @@ export const PublicDashboardPage: React.FC = () => {
                 onClick={resetFilters}
                 className="text-xs text-rose-700 hover:text-rose-900 font-semibold underline px-1"
               >
-                Reset Contest Scope
+                Reset Election Scope
               </button>
             )}
           </div>

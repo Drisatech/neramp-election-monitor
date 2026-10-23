@@ -12,6 +12,8 @@ services:
         value: production
       - key: PORT
         value: 10000
+      - key: DATA_DIR
+        value: /var/data
       - key: GEMINI_API_KEY
         sync: false
       - key: OPENAI_API_KEY
@@ -20,3 +22,10 @@ services:
         sync: false
       - key: ANTHROPIC_API_KEY
         sync: false
+    # To permanently prevent data from resetting on deployment, attach a Render Persistent Disk:
+    # (Requires Render Starter plan or above: Render Dashboard -> Your Service -> Disks -> Add Disk: Mount Path /var/data)
+    # disk:
+    #   name: neramp-data
+    #   mountPath: /var/data
+    #   sizeGB: 1
+

@@ -22,6 +22,11 @@ import {
   Upload,
   FileUp,
   Key,
+  Download,
+  UploadCloud,
+  RotateCcw,
+  FileArchive,
+  ShieldCheck,
 } from 'lucide-react';
 import {
   fetchStorageSummary,
@@ -30,6 +35,9 @@ import {
   editStorageFile,
   initGcsFolders,
   uploadAndTranscribeFormEc8a,
+  getDatabaseBackupUrl,
+  fetchStorageStatus,
+  restoreDatabaseSnapshot,
 } from '../services/api';
 
 interface StorageMetrics {
@@ -120,6 +128,14 @@ export const StorageContentManagementTab: React.FC = () => {
   const [actionSuccessNotice, setActionSuccessNotice] = useState<string | null>(null);
   const [showIamGuide, setShowIamGuide] = useState(false);
 
+  // Backup & Disaster Recovery state
+  const [storageStatus, setStorageStatus] = useState<any | null>(null);
+  const [isRestoring, setIsRestoring] = useState(false);
+  const [isRestoreModalOpen, setIsRestoreModalOpen] = useState(false);
+  const [restorePayloadJson, setRestorePayloadJson] = useState<string>('');
+  const [restoreFileName, setRestoreFileName] = useState<string>('');
+  const [showRenderGuide, setShowRenderGuide] = useState(false);
+
   // Upload modal state
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [uploadFile, setUploadFile] = useState<File | null>(null);
@@ -138,6 +154,39 @@ export const StorageContentManagementTab: React.FC = () => {
       setUploadPreview(reader.result as string);
     };
     reader.readAsDataURL(file);
+  };
+
+  const handleRestoreFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setRestoreFileName(file.name);
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      setRestorePayloadJson((ev.target?.result as string) || '');
+    };
+    reader.readAsText(file);
+  };
+
+  const handleExecuteRestore = async () => {
+    if (!restorePayloadJson.trim()) {
+      alert('Please select a valid .json backup file to restore.');
+      return;
+    }
+    try {
+      setIsRestoring(true);
+      const parsed = JSON.parse(restorePayloadJson);
+      const res = await restoreDatabaseSnapshot(parsed);
+      setActionSuccessNotice(res.message || 'Database restored successfully!');
+      setIsRestoreModalOpen(false);
+      setRestorePayloadJson('');
+      setRestoreFileName('');
+      await loadData();
+      setTimeout(() => setActionSuccessNotice(null), 6000);
+    } catch (err: any) {
+      alert(`Restore failed: ${err.message}`);
+    } finally {
+      setIsRestoring(false);
+    }
   };
 
   const handleUploadSubmit = async (e: React.FormEvent) => {
@@ -183,7 +232,7 @@ export const StorageContentManagementTab: React.FC = () => {
     setIsLoading(true);
     setError(null);
     try {
-      const [sumRes, filesRes] = await Promise.all([
+      const [sumRes, filesRes, statusRes] = await Promise.all([
         fetchStorageSummary(),
         fetchStorageFiles({
           search: searchQuery || undefined,
@@ -191,10 +240,12 @@ export const StorageContentManagementTab: React.FC = () => {
           status: selectedStatus || undefined,
           limit: 100,
         }),
+        fetchStorageStatus().catch(() => ({ data: null })),
       ]);
       setSummary(sumRes.data);
       setFiles(filesRes.data || []);
       setTotalFiles(filesRes.pagination?.total || 0);
+      if (statusRes?.data) setStorageStatus(statusRes.data);
     } catch (err: any) {
       console.error('[STORAGE CMS] Failed to load data:', err);
       setError(err.message || 'Failed to connect to storage service.');
@@ -293,30 +344,38 @@ export const StorageContentManagementTab: React.FC = () => {
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          <a
+            href={getDatabaseBackupUrl()}
+            download
+            className="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-800 hover:bg-emerald-900 text-white text-xs font-semibold rounded-lg transition-colors shadow-2xs"
+            title="Download full certified JSON snapshot of all uploaded INEC results, sheets, and verifications"
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span>Download Backup (.json)</span>
+          </a>
+          <button
+            onClick={() => setIsRestoreModalOpen(true)}
+            className="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold rounded-lg transition-colors shadow-2xs"
+            title="Restore database from a saved backup JSON file"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            <span>Restore Database</span>
+          </button>
           <button
             onClick={() => setIsUploadModalOpen(true)}
             className="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold rounded-lg transition-colors shadow-2xs"
-            title="Upload Form EC8A document or incident photo directly into GC storage"
+            title="Upload Form EC8A document or incident photo directly into storage"
           >
             <Upload className="w-3.5 h-3.5" />
             <span>Upload Document</span>
           </button>
           <button
-            onClick={handleInitFolders}
-            disabled={isInitializingFolders}
-            title="Create standard ec8a-result-sheets/, observer-evidence/, ocr-cache/ folders in GCS"
-            className="inline-flex items-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold rounded-lg transition-colors shadow-2xs disabled:opacity-50"
+            onClick={() => setShowRenderGuide(!showRenderGuide)}
+            className="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-xs font-semibold rounded-lg transition-colors"
+            title="How to permanently prevent Render.com from resetting uploaded results on deploy"
           >
-            <FolderPlus className={`w-3.5 h-3.5 ${isInitializingFolders ? 'animate-pulse' : ''}`} />
-            <span>{isInitializingFolders ? 'Creating Folders...' : 'Init GCS Folders'}</span>
-          </button>
-          <button
-            onClick={() => setShowIamGuide(!showIamGuide)}
-            className="inline-flex items-center gap-1.5 px-3 py-2 bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-200 text-xs font-semibold rounded-lg transition-colors"
-            title="View GCP IAM Permissions & Service Account Binding instructions"
-          >
-            <Key className="w-3.5 h-3.5" />
-            <span>GCS IAM Guide</span>
+            <Server className="w-3.5 h-3.5" />
+            <span>Render.com Persistence Guide</span>
           </button>
           <button
             onClick={loadData}
@@ -327,6 +386,91 @@ export const StorageContentManagementTab: React.FC = () => {
             <span>Refresh Storage</span>
           </button>
         </div>
+      </div>
+
+      {/* Render.com Inbuilt Storage Status & Anti-Reset Protection Banner */}
+      <div className={`p-4 rounded-xl border ${storageStatus?.isPersistentDisk ? 'bg-emerald-50/70 border-emerald-300' : 'bg-amber-50/80 border-amber-300'} shadow-2xs space-y-3`}>
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div className="flex items-start gap-3">
+            <div className={`p-2 rounded-lg ${storageStatus?.isPersistentDisk ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>
+              <Database className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <h3 className="text-sm font-bold text-slate-900">
+                  Inbuilt App Database Storage Status ({storageStatus?.isPersistentDisk ? 'Render Persistent Disk Active' : 'Container Local Storage'})
+                </h3>
+                <span className={`text-[10px] font-mono uppercase font-bold px-2 py-0.5 rounded border ${
+                  storageStatus?.isPersistentDisk
+                    ? 'bg-emerald-200 text-emerald-900 border-emerald-400'
+                    : 'bg-amber-200 text-amber-900 border-amber-400'
+                }`}>
+                  {storageStatus?.isPersistentDisk ? 'Permanent Disk Mounted (/var/data)' : 'Ephemeral Container Disk'}
+                </span>
+              </div>
+              <p className="text-xs text-slate-700 mt-1">
+                {storageStatus?.renderAdvice ||
+                  'All INEC results are automatically saved to disk and snapshot files. On Render Free Tier, container disks reset when deploying new code unless a Render Persistent Disk is attached or a Backup Snapshot is restored.'}
+              </p>
+              <div className="flex flex-wrap items-center gap-4 mt-2 text-[11px] font-mono text-slate-600">
+                <span>Active Directory: <strong className="text-slate-900">{storageStatus?.dataDir || '/app/data'}</strong></span>
+                <span>•</span>
+                <span>Polling Units Stored: <strong className="text-emerald-800">{storageStatus?.pollingUnitsCount ?? 0}</strong></span>
+                <span>•</span>
+                <span>Result Sheets Stored: <strong className="text-emerald-800">{storageStatus?.resultSheetsCount ?? 0}</strong></span>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <a
+              href={getDatabaseBackupUrl()}
+              download
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-800 border border-slate-300 text-xs font-bold rounded-lg shadow-2xs"
+            >
+              <Download className="w-3.5 h-3.5 text-emerald-700" />
+              <span>Export Snapshot</span>
+            </a>
+            <button
+              onClick={() => setIsRestoreModalOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-800 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg shadow-2xs"
+            >
+              <UploadCloud className="w-3.5 h-3.5" />
+              <span>Import / Restore</span>
+            </button>
+          </div>
+        </div>
+
+        {showRenderGuide && (
+          <div className="pt-3 border-t border-amber-200/80 text-xs text-slate-800 space-y-2 bg-white/90 p-3.5 rounded-lg border">
+            <div className="font-bold text-slate-900 flex items-center justify-between">
+              <span>How to Stop Uploaded INEC Results from Resetting to Zero on Render.com</span>
+              <button onClick={() => setShowRenderGuide(false)} className="text-slate-400 hover:text-slate-700">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1">
+              <div className="p-2.5 rounded bg-slate-50 border border-slate-200">
+                <div className="font-bold text-emerald-900">Method 1: Render Persistent Disk (Automatic)</div>
+                <p className="text-[11px] text-slate-600 mt-1">
+                  In your Render Dashboard, open your Web Service &rarr; <strong>Disks</strong> tab &rarr; click <strong>Add Disk</strong>. Set Mount Path to <code className="font-mono font-bold text-slate-900">/var/data</code> (1 GB). The app automatically detects <code className="font-mono">/var/data</code> and your results will never reset on any deployment.
+                </p>
+              </div>
+              <div className="p-2.5 rounded bg-slate-50 border border-slate-200">
+                <div className="font-bold text-amber-900">Method 2: 1-Click Backup & Restore (Free Tier)</div>
+                <p className="text-[11px] text-slate-600 mt-1">
+                  Before pushing new code edits to Render, click <strong>Download Backup (.json)</strong> above. After Render finishes deploying, click <strong>Restore Database</strong> and select your downloaded JSON file — all results restore in 1 second.
+                </p>
+              </div>
+              <div className="p-2.5 rounded bg-slate-50 border border-slate-200">
+                <div className="font-bold text-blue-900">Method 3: Bundle Snapshot in Git Repo</div>
+                <p className="text-[11px] text-slate-600 mt-1">
+                  Save your downloaded backup file as <code className="font-mono font-bold text-slate-900">data/neramp_database_snapshot.json</code> in your project folder before deploying. On startup, the server automatically recovers all results from that file if the database is empty!
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {actionSuccessNotice && (
@@ -1019,6 +1163,77 @@ export const StorageContentManagementTab: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Restore Database Modal */}
+      {isRestoreModalOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-2xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full overflow-hidden shadow-2xl border border-slate-200">
+            <div className="p-4 bg-slate-900 text-white flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <RotateCcw className="w-4 h-4 text-emerald-400" />
+                <span className="text-xs font-bold">Restore Database from Snapshot (.json)</span>
+              </div>
+              <button
+                onClick={() => {
+                  setIsRestoreModalOpen(false);
+                  setRestorePayloadJson('');
+                  setRestoreFileName('');
+                }}
+                className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-white"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-5 space-y-4 text-xs">
+              <p className="text-slate-600 leading-relaxed">
+                Select a previously exported <code className="font-mono font-bold text-slate-800">neramp_database_backup_*.json</code> or <code className="font-mono font-bold text-slate-800">neramp_database_snapshot.json</code> file. All Polling Units, Form EC8A Result Sheets, and Verifications inside the backup will be restored immediately.
+              </p>
+
+              <div className="p-4 border-2 border-dashed border-slate-300 rounded-xl bg-slate-50/70 space-y-2">
+                <label className="block font-semibold text-slate-800">
+                  Select Database Backup File (.json):
+                </label>
+                <input
+                  type="file"
+                  accept=".json,application/json"
+                  onChange={handleRestoreFileSelect}
+                  className="w-full text-xs text-slate-600 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-emerald-100 file:text-emerald-900 hover:file:bg-emerald-200 cursor-pointer"
+                />
+                {restoreFileName && (
+                  <div className="text-[11px] font-mono text-emerald-700 font-semibold pt-1">
+                    Loaded file: {restoreFileName} ({(restorePayloadJson.length / 1024).toFixed(1)} KB)
+                  </div>
+                )}
+              </div>
+
+              <div className="pt-2 flex justify-end gap-2 border-t border-slate-200">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsRestoreModalOpen(false);
+                    setRestorePayloadJson('');
+                    setRestoreFileName('');
+                  }}
+                  className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleExecuteRestore}
+                  disabled={!restorePayloadJson || isRestoring}
+                  className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold rounded-lg transition-colors shadow-2xs disabled:opacity-50"
+                >
+                  <RotateCcw className={`w-3.5 h-3.5 ${isRestoring ? 'animate-spin' : ''}`} />
+                  <span>{isRestoring ? 'Restoring Database...' : 'Restore Database Now'}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
+

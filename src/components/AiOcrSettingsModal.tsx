@@ -160,6 +160,7 @@ export const AiOcrSettingsModal: React.FC<AiOcrSettingsModalProps> = ({
       setFeedbackNotice({ type: 'success', text: res.message });
       setApiKeyInput('');
       await loadStatus();
+      window.dispatchEvent(new CustomEvent('ai-ocr-config-updated', { detail: res }));
       if (onKeyUpdated) onKeyUpdated();
     } catch (err: any) {
       setFeedbackNotice({ type: 'error', text: err.message });
@@ -175,6 +176,7 @@ export const AiOcrSettingsModal: React.FC<AiOcrSettingsModalProps> = ({
       const res = await setCustomGeminiApiKey('', selectedProvider, selectedModel);
       setFeedbackNotice({ type: 'success', text: res.message });
       await loadStatus();
+      window.dispatchEvent(new CustomEvent('ai-ocr-config-updated', { detail: res }));
       if (onKeyUpdated) onKeyUpdated();
     } catch (err: any) {
       setFeedbackNotice({ type: 'error', text: err.message });

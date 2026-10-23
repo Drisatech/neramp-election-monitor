@@ -508,7 +508,27 @@ const EVIDENCE_FILES = new Map<string, StoredEvidenceItem>();
 // ==========================================
 // PERMANENT DATABASE DISK PERSISTENCE
 // ==========================================
-const DATA_DIR = path.join(__dirname, 'data');
+// Detect persistent disk mount path for Render.com (/var/data or $DATA_DIR or $RENDER_DISK_PATH)
+const resolveDataDirectory = (): string => {
+  if (process.env.DATA_DIR && process.env.DATA_DIR.trim()) {
+    return process.env.DATA_DIR.trim();
+  }
+  if (process.env.RENDER_DISK_PATH && process.env.RENDER_DISK_PATH.trim()) {
+    return process.env.RENDER_DISK_PATH.trim();
+  }
+  // Standard Render persistent disk mount point if attached
+  if (fs.existsSync('/var/data')) {
+    try {
+      fs.accessSync('/var/data', fs.constants.W_OK);
+      return '/var/data';
+    } catch {
+      // not writable, fallback
+    }
+  }
+  return path.join(__dirname, 'data');
+};
+
+const DATA_DIR = resolveDataDirectory();
 if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
 }
@@ -520,8 +540,12 @@ const USER_SESSIONS_FILE = path.join(DATA_DIR, 'neramp_user_sessions.json');
 const AUDIT_LOGS_FILE = path.join(DATA_DIR, 'neramp_audit_logs.json');
 const DISCREPANCIES_FILE = path.join(DATA_DIR, 'neramp_discrepancies.json');
 const INCIDENTS_FILE = path.join(DATA_DIR, 'neramp_incidents.json');
+const ELECTIONS_FILE = path.join(DATA_DIR, 'neramp_elections.json');
 const SCHEDULER_FILE = path.join(DATA_DIR, 'neramp_scheduler.json');
 const LOOP_CONFIG_FILE = path.join(DATA_DIR, 'neramp_loop_config.json');
+const SNAPSHOT_FILE = path.join(DATA_DIR, 'neramp_database_snapshot.json');
+const REPO_SNAPSHOT_FILE = path.join(__dirname, 'data', 'neramp_database_snapshot.json');
+const PUBLIC_SNAPSHOT_FILE = path.join(__dirname, 'public', 'neramp_database_snapshot.json');
 
 // Polling Units store (Clean zero state)
 let POLLING_UNITS: PollingUnit[] = [];
@@ -724,6 +748,40 @@ function saveDatabaseToDisk(immediate: boolean = false) {
       fs.writeFileSync(AUDIT_LOGS_FILE, JSON.stringify(AUDIT_LOGS, null, 2), 'utf-8');
       fs.writeFileSync(DISCREPANCIES_FILE, JSON.stringify(DISCREPANCIES, null, 2), 'utf-8');
       fs.writeFileSync(INCIDENTS_FILE, JSON.stringify(INCIDENTS, null, 2), 'utf-8');
+      fs.writeFileSync(ELECTIONS_FILE, JSON.stringify(ELECTIONS, null, 2), 'utf-8');
+
+      // Auto-create consolidated snapshot if there are polling units or uploaded result sheets
+      if (POLLING_UNITS.length > 0 || Object.keys(RESULT_SHEETS).length > 0) {
+        const snapshotPayload = {
+          version: 2,
+          savedAt: new Date().toISOString(),
+          recordCount: POLLING_UNITS.length,
+          resultSheetsCount: Object.keys(RESULT_SHEETS).length,
+          elections: ELECTIONS,
+          pollingUnits: POLLING_UNITS,
+          resultSheets: RESULT_SHEETS,
+          users: USERS,
+          discrepancies: DISCREPANCIES,
+          incidents: INCIDENTS,
+          auditLogs: AUDIT_LOGS.slice(0, 100),
+        };
+        const snapJson = JSON.stringify(snapshotPayload, null, 2);
+        fs.writeFileSync(SNAPSHOT_FILE, snapJson, 'utf-8');
+
+        try {
+          const publicDir = path.join(__dirname, 'public');
+          if (!fs.existsSync(publicDir)) fs.mkdirSync(publicDir, { recursive: true });
+          fs.writeFileSync(PUBLIC_SNAPSHOT_FILE, snapJson, 'utf-8');
+        } catch {}
+
+        try {
+          const repoDataDir = path.join(__dirname, 'data');
+          if (!fs.existsSync(repoDataDir)) fs.mkdirSync(repoDataDir, { recursive: true });
+          if (repoDataDir !== DATA_DIR) {
+            fs.writeFileSync(REPO_SNAPSHOT_FILE, snapJson, 'utf-8');
+          }
+        } catch {}
+      }
     } catch (err: any) {
       console.error('[DATABASE PERSISTENCE] Error saving to disk:', err.message);
     }
@@ -740,16 +798,65 @@ function saveDatabaseToDisk(immediate: boolean = false) {
 
 function loadDatabaseFromDisk() {
   try {
+    let loadedPus = false;
     if (fs.existsSync(POLLING_UNITS_FILE)) {
       const content = fs.readFileSync(POLLING_UNITS_FILE, 'utf-8');
-      POLLING_UNITS = JSON.parse(content);
-      console.log(`[DATABASE PERSISTENCE] Loaded ${POLLING_UNITS.length} Polling Units from disk.`);
+      const parsed = JSON.parse(content);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        POLLING_UNITS = parsed;
+        loadedPus = true;
+        console.log(`[DATABASE PERSISTENCE] Loaded ${POLLING_UNITS.length} Polling Units from primary store (${POLLING_UNITS_FILE}).`);
+      }
     }
     if (fs.existsSync(RESULT_SHEETS_FILE)) {
       const content = fs.readFileSync(RESULT_SHEETS_FILE, 'utf-8');
-      RESULT_SHEETS = JSON.parse(content);
-      console.log(`[DATABASE PERSISTENCE] Loaded ${Object.keys(RESULT_SHEETS).length} Result Sheets from disk.`);
+      const parsed = JSON.parse(content);
+      if (parsed && typeof parsed === 'object') {
+        RESULT_SHEETS = parsed;
+        console.log(`[DATABASE PERSISTENCE] Loaded ${Object.keys(RESULT_SHEETS).length} Result Sheets from disk.`);
+      }
     }
+
+    // Fallback automatic recovery if primary store is empty (e.g. after fresh Render deployment)
+    if (!loadedPus || POLLING_UNITS.length === 0) {
+      const fallbackSnapshotPaths = [
+        SNAPSHOT_FILE,
+        REPO_SNAPSHOT_FILE,
+        PUBLIC_SNAPSHOT_FILE,
+        path.join(__dirname, 'data', 'neramp_database_snapshot.json'),
+        path.join(__dirname, 'public', 'neramp_database_snapshot.json'),
+        path.join(__dirname, 'public', 'data', 'neramp_database_snapshot.json'),
+        path.join(__dirname, 'data', 'neramp_polling_units.json'),
+      ];
+
+      for (const candidate of fallbackSnapshotPaths) {
+        if (candidate !== POLLING_UNITS_FILE && fs.existsSync(candidate)) {
+          try {
+            const raw = fs.readFileSync(candidate, 'utf-8');
+            const data = JSON.parse(raw);
+            const pusList = Array.isArray(data) ? data : data?.pollingUnits;
+            if (Array.isArray(pusList) && pusList.length > 0) {
+              POLLING_UNITS = pusList;
+              if (data?.resultSheets && typeof data.resultSheets === 'object') {
+                RESULT_SHEETS = { ...RESULT_SHEETS, ...data.resultSheets };
+              }
+              if (Array.isArray(data?.discrepancies) && data.discrepancies.length > 0) {
+                DISCREPANCIES = data.discrepancies;
+              }
+              if (Array.isArray(data?.incidents) && data.incidents.length > 0) {
+                INCIDENTS = data.incidents;
+              }
+              console.log(`[DATABASE PERSISTENCE] Successfully auto-recovered ${POLLING_UNITS.length} Polling Units & ${Object.keys(RESULT_SHEETS).length} Sheets from fallback snapshot: ${candidate}`);
+              saveDatabaseToDisk(true);
+              break;
+            }
+          } catch (e: any) {
+            console.warn(`[DATABASE PERSISTENCE] Fallback candidate check note (${candidate}):`, e.message);
+          }
+        }
+      }
+    }
+
     if (fs.existsSync(USERS_FILE)) {
       const content = fs.readFileSync(USERS_FILE, 'utf-8');
       const loadedUsers = JSON.parse(content);
@@ -778,6 +885,14 @@ function loadDatabaseFromDisk() {
     if (fs.existsSync(INCIDENTS_FILE)) {
       const content = fs.readFileSync(INCIDENTS_FILE, 'utf-8');
       INCIDENTS = JSON.parse(content);
+    }
+    if (fs.existsSync(ELECTIONS_FILE)) {
+      const content = fs.readFileSync(ELECTIONS_FILE, 'utf-8');
+      const loadedElections = JSON.parse(content);
+      if (Array.isArray(loadedElections) && loadedElections.length > 0) {
+        ELECTIONS = loadedElections;
+        console.log(`[DATABASE PERSISTENCE] Loaded ${ELECTIONS.length} Configured Elections from disk.`);
+      }
     }
   } catch (err: any) {
     console.error('[DATABASE PERSISTENCE] Error loading from disk:', err.message);
@@ -5522,6 +5637,7 @@ app.post('/api/v1/ocr/api-key', (req: Request, res: Response) => {
     success: true,
     message: `Active AI OCR Provider set to ${AI_PROVIDERS[currentProvider].name} (${selectedProviderModels[currentProvider]}).`,
     activeProvider: currentProvider,
+    activeProviderName: AI_PROVIDERS[currentProvider].name,
     activeModel: selectedProviderModels[currentProvider],
     keySource: customProviderKeys[currentProvider] ? 'custom_admin_key' : 'environment_variable',
     maskedKey: effectiveKey ? `${effectiveKey.slice(0, 6)}...${effectiveKey.slice(-4)}` : null,
@@ -6043,6 +6159,170 @@ app.post('/api/v1/admin/data/purge-demo', (req: Request, res: Response) => {
     remainingPollingUnits: 0,
     purgedCount,
     mode: currentDataSourceMode,
+  });
+});
+
+// Export Full Certified Database Backup (.json)
+app.get('/api/v1/admin/data/backup', (req: Request, res: Response) => {
+  const actorRole = (req.headers['x-actor-role'] as string) || '';
+  const actorEmail = (req.headers['x-actor-email'] as string) || 'admin:backup';
+
+  const backupData = {
+    platform: 'NIGERIA ELECTION RESULTS ANALYSIS AND MONITORING PLATFORM (NERAMP)',
+    exportVersion: 2,
+    exportedAt: new Date().toISOString(),
+    exporter: actorEmail,
+    storagePath: DATA_DIR,
+    summary: {
+      totalPollingUnits: POLLING_UNITS.length,
+      totalResultSheets: Object.keys(RESULT_SHEETS).length,
+      totalUsers: USERS.length,
+      totalDiscrepancies: DISCREPANCIES.length,
+      totalIncidents: INCIDENTS.length,
+      totalAuditLogs: AUDIT_LOGS.length,
+    },
+    pollingUnits: POLLING_UNITS,
+    resultSheets: RESULT_SHEETS,
+    users: USERS.map((u) => ({
+      ...u,
+      passwordHash: undefined,
+      salt: undefined,
+    })),
+    discrepancies: DISCREPANCIES,
+    incidents: INCIDENTS,
+    auditLogs: AUDIT_LOGS.slice(0, 500),
+  };
+
+  const backupJson = JSON.stringify(backupData, null, 2);
+  const checksum = crypto.createHash('sha256').update(backupJson).digest('hex');
+
+  AUDIT_LOGS.unshift({
+    id: 'audit-' + Date.now(),
+    timestamp: new Date().toISOString(),
+    actor: actorEmail,
+    action: 'EXPORT_DATABASE_BACKUP',
+    target: 'neramp_database',
+    details: `Exported full database backup containing ${POLLING_UNITS.length} Polling Units and ${Object.keys(RESULT_SHEETS).length} Result Sheets. SHA-256 Checksum: ${checksum.slice(0, 16)}...`,
+  });
+
+  const dateStr = new Date().toISOString().slice(0, 10);
+  res.setHeader('Content-Type', 'application/json');
+  res.setHeader('Content-Disposition', `attachment; filename="neramp_database_backup_${dateStr}_${Date.now()}.json"`);
+  res.send(backupJson);
+});
+
+// Restore Database from Snapshot or Backup Payload (.json)
+app.post('/api/v1/admin/data/restore', (req: Request, res: Response) => {
+  const actorRole = (req.headers['x-actor-role'] as string) || '';
+  const actorEmail = (req.headers['x-actor-email'] as string) || 'admin:restore';
+  const isAuthorized =
+    actorRole === 'SUPER_ADMIN' ||
+    actorRole === 'PROJECT_ADMIN' ||
+    actorEmail.toLowerCase() === 'drisatech@gmail.com';
+
+  if (!isAuthorized) {
+    res.status(403).json({
+      error: 'Restricted Action: Only Super Administrators or Project Administrators can restore the platform database.',
+    });
+    return;
+  }
+
+  const { snapshot, backupData } = req.body || {};
+  const payload = snapshot || backupData || req.body;
+
+  if (!payload || typeof payload !== 'object') {
+    res.status(400).json({ error: 'Valid JSON backup payload is required.' });
+    return;
+  }
+
+  const restoredPus = Array.isArray(payload.pollingUnits) ? payload.pollingUnits : [];
+  const restoredSheets = payload.resultSheets && typeof payload.resultSheets === 'object' ? payload.resultSheets : {};
+  const restoredDiscrepancies = Array.isArray(payload.discrepancies) ? payload.discrepancies : [];
+  const restoredIncidents = Array.isArray(payload.incidents) ? payload.incidents : [];
+
+  if (restoredPus.length === 0 && Object.keys(restoredSheets).length === 0) {
+    res.status(400).json({
+      error: 'No valid Polling Unit records or Result Sheets found in the uploaded backup file.',
+    });
+    return;
+  }
+
+  // Apply restored state
+  if (restoredPus.length > 0) {
+    POLLING_UNITS = restoredPus;
+  }
+  if (Object.keys(restoredSheets).length > 0) {
+    RESULT_SHEETS = { ...RESULT_SHEETS, ...restoredSheets };
+  }
+  if (restoredDiscrepancies.length > 0) {
+    DISCREPANCIES = restoredDiscrepancies;
+  }
+  if (restoredIncidents.length > 0) {
+    INCIDENTS = restoredIncidents;
+  }
+
+  // Restore non-sensitive user metadata if present
+  if (Array.isArray(payload.users) && payload.users.length > 0) {
+    for (const restoredUser of payload.users) {
+      const existing = USERS.find((u) => u.email.toLowerCase() === restoredUser.email.toLowerCase());
+      if (!existing && restoredUser.email) {
+        USERS.push({
+          ...restoredUser,
+          id: restoredUser.id || 'usr-' + Date.now(),
+          createdAt: restoredUser.createdAt || new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        });
+      }
+    }
+  }
+
+  // Persist immediately to disk and snapshot
+  saveDatabaseToDisk(true);
+
+  AUDIT_LOGS.unshift({
+    id: 'audit-' + Date.now(),
+    timestamp: new Date().toISOString(),
+    actor: actorEmail,
+    action: 'RESTORE_DATABASE_FROM_BACKUP',
+    target: 'neramp_database',
+    details: `Database restored from backup. Loaded ${restoredPus.length} Polling Units and ${Object.keys(restoredSheets).length} Result Sheets.`,
+  });
+
+  res.json({
+    message: `Database restored successfully! ${restoredPus.length} Polling Units and ${Object.keys(restoredSheets).length} Result Sheets loaded into storage.`,
+    counts: {
+      pollingUnits: POLLING_UNITS.length,
+      resultSheets: Object.keys(RESULT_SHEETS).length,
+      discrepancies: DISCREPANCIES.length,
+      incidents: INCIDENTS.length,
+    },
+  });
+});
+
+// Storage Engine Status & Render Persistent Disk Diagnostic
+app.get('/api/v1/admin/data/storage-status', (_req: Request, res: Response) => {
+  const isRenderDisk = DATA_DIR.startsWith('/var/data') || Boolean(process.env.RENDER_DISK_PATH);
+  const snapshotExists = fs.existsSync(SNAPSHOT_FILE);
+  const repoSnapshotExists = fs.existsSync(REPO_SNAPSHOT_FILE);
+  const publicSnapshotExists = fs.existsSync(PUBLIC_SNAPSHOT_FILE);
+
+  res.json({
+    data: {
+      dataDir: DATA_DIR,
+      isPersistentDisk: isRenderDisk,
+      diskType: isRenderDisk ? 'RENDER_PERSISTENT_DISK' : 'EPHEMERAL_CONTAINER_FILESYSTEM',
+      pollingUnitsCount: POLLING_UNITS.length,
+      resultSheetsCount: Object.keys(RESULT_SHEETS).length,
+      usersCount: USERS.length,
+      snapshots: {
+        primarySnapshotExists: snapshotExists,
+        repoSnapshotExists,
+        publicSnapshotExists,
+      },
+      renderAdvice: isRenderDisk
+        ? 'Your database is mounted on a persistent disk (/var/data). Results will permanently survive all deployments, restarts, and code changes!'
+        : 'Your app is currently running on Render\'s ephemeral filesystem. To prevent data from resetting on deployment, attach a Render Persistent Disk mounted at /var/data, OR click "Download Database Backup" before deploying and restore it in 1 click.',
+    },
   });
 });
 
@@ -7157,6 +7437,7 @@ app.post('/api/v1/admin/config/elections', (req: Request, res: Response) => {
   };
 
   ELECTIONS.push(newElec);
+  saveDatabaseToDisk(true);
 
   AUDIT_LOGS.unshift({
     id: 'audit-' + Date.now(),
@@ -7164,17 +7445,17 @@ app.post('/api/v1/admin/config/elections', (req: Request, res: Response) => {
     actor: 'admin:config_manager',
     action: 'CREATE_ELECTION_CONFIG',
     target: newElec.id,
-    details: `Added new election contest configuration: "${title}" (${electionType}) for ${date}. Held: ${isHeld ? 'Yes' : 'No'}.`,
+    details: `Added new election configuration: "${title}" (${electionType}) for ${date}. Held: ${isHeld ? 'Yes' : 'No'}.`,
   });
 
-  res.status(201).json({ message: 'Election contest configuration created', data: newElec });
+  res.status(201).json({ message: 'Election configuration created', data: newElec });
 });
 
 app.put('/api/v1/admin/config/elections/:id', (req: Request, res: Response) => {
   const { id } = req.params;
   const index = ELECTIONS.findIndex((e) => e.id === id);
   if (index === -1) {
-    res.status(404).json({ error: `Election contest with ID "${id}" not found` });
+    res.status(404).json({ error: `Election with ID "${id}" not found` });
     return;
   }
 
@@ -7215,6 +7496,7 @@ app.put('/api/v1/admin/config/elections/:id', (req: Request, res: Response) => {
   };
 
   ELECTIONS[index] = updatedElec;
+  saveDatabaseToDisk(true);
 
   AUDIT_LOGS.unshift({
     id: 'audit-' + Date.now(),
@@ -7222,26 +7504,27 @@ app.put('/api/v1/admin/config/elections/:id', (req: Request, res: Response) => {
     actor: 'admin:config_manager',
     action: 'UPDATE_ELECTION_CONFIG',
     target: id,
-    details: `Updated election contest configuration: "${updatedElec.title}" (${updatedElec.electionType}). Held: ${isHeld ? 'Yes' : 'No'}.`,
+    details: `Updated election configuration: "${updatedElec.title}" (${updatedElec.electionType}). Held: ${isHeld ? 'Yes' : 'No'}.`,
   });
 
-  res.json({ message: 'Election contest configuration updated successfully', data: updatedElec });
+  res.json({ message: 'Election configuration updated successfully', data: updatedElec });
 });
 
 app.delete('/api/v1/admin/config/elections/:id', (req: Request, res: Response) => {
   const { id } = req.params;
   const index = ELECTIONS.findIndex((e) => e.id === id);
   if (index === -1) {
-    res.status(404).json({ error: `Election contest with ID "${id}" not found` });
+    res.status(404).json({ error: `Election with ID "${id}" not found` });
     return;
   }
 
   if (ELECTIONS.length <= 1) {
-    res.status(400).json({ error: 'Cannot delete the only configured election contest on the platform' });
+    res.status(400).json({ error: 'Cannot delete the only configured election on the platform' });
     return;
   }
 
   const removed = ELECTIONS.splice(index, 1)[0];
+  saveDatabaseToDisk(true);
 
   AUDIT_LOGS.unshift({
     id: 'audit-' + Date.now(),
@@ -7249,10 +7532,10 @@ app.delete('/api/v1/admin/config/elections/:id', (req: Request, res: Response) =
     actor: 'admin:config_manager',
     action: 'DELETE_ELECTION_CONFIG',
     target: id,
-    details: `Deleted election contest configuration: "${removed.title}" (ID: ${id}).`,
+    details: `Deleted election configuration: "${removed.title}" (ID: ${id}).`,
   });
 
-  res.json({ message: `Election contest "${removed.title}" deleted successfully`, data: removed });
+  res.json({ message: `Election "${removed.title}" deleted successfully`, data: removed });
 });
 
 app.get('/api/v1/admin/config/candidates', (_req: Request, res: Response) => {

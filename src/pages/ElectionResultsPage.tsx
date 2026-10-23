@@ -76,7 +76,7 @@ export const ElectionResultsPage: React.FC = () => {
               onChange={(e) => setSelectedStateCode(e.target.value)}
               className="bg-slate-50 border border-slate-300 rounded px-2.5 py-1.5 font-medium text-slate-900 focus:outline-emerald-600"
             >
-              <option value="">Contest Default Scope ({summary?.scope || 'Default'})</option>
+              <option value="">Election Default Scope ({summary?.scope || 'Default'})</option>
               {states.map((st) => (
                 <option key={st.code} value={st.code}>
                   {st.name} ({st.totalPus.toLocaleString()} PUs)

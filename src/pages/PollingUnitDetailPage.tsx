@@ -66,7 +66,7 @@ export const PollingUnitDetailPage: React.FC = () => {
       setIsTranscribing(true);
       setTranscribeNotice(null);
       await triggerOcrTranscription(pu.resultSheetId, true);
-      setTranscribeNotice('Form EC8A successfully transcribed by Gemini Vision AI OCR!');
+      setTranscribeNotice('Form EC8A successfully transcribed by AI OCR!');
       await loadDetail();
     } catch (err: any) {
       const msg = err.message || 'AI OCR transcription failed';
@@ -147,7 +147,7 @@ export const PollingUnitDetailPage: React.FC = () => {
               ) : (
                 <Sparkles className="w-3.5 h-3.5 text-amber-300" />
               )}
-              <span>{isTranscribing ? 'Transcribing...' : 'Run Gemini AI OCR'}</span>
+              <span>{isTranscribing ? 'Transcribing...' : 'Run AI OCR'}</span>
             </button>
           )}
 
@@ -204,7 +204,7 @@ export const PollingUnitDetailPage: React.FC = () => {
             <div>
               <span className="font-bold text-xs uppercase tracking-wide block">Form EC8A Scan Ingested · Ready for AI OCR</span>
               <p className="text-xs text-amber-800">
-                Official INEC Form EC8A image is loaded. Click <strong>Run Gemini AI OCR</strong> to transcribe handwritten scores, registered voters, and presiding officer sign-off.
+                Official INEC Form EC8A image is loaded. Click <strong>Run AI OCR</strong> to transcribe handwritten scores, registered voters, and presiding officer sign-off.
               </p>
             </div>
           </div>

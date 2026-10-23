@@ -220,7 +220,7 @@ export const AdminCommandCentrePage: React.FC = () => {
   const handleCreateElection = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newElectionForm.title.trim()) {
-      showNotification('error', 'Please enter an election contest title.');
+      showNotification('error', 'Please enter an election title.');
       return;
     }
     try {
@@ -238,7 +238,7 @@ export const AdminCommandCentrePage: React.FC = () => {
       if (res?.data?.id) {
         setSelectedElectionId(res.data.id);
       }
-      showNotification('success', `Contest "${newElectionForm.title}" configured and added to the platform.`);
+      showNotification('success', `Election "${newElectionForm.title}" configured and added to the Election Switcher.`);
       setShowCreateElectionModal(false);
       setNewElectionForm({
         title: '',
@@ -253,7 +253,7 @@ export const AdminCommandCentrePage: React.FC = () => {
         sourceReference: 'INEC Official Election Timetable',
       });
     } catch (err: any) {
-      showNotification('error', err.message || 'Failed to configure new contest');
+      showNotification('error', err.message || 'Failed to configure new election');
     } finally {
       setIsCreatingElection(false);
     }
@@ -263,7 +263,7 @@ export const AdminCommandCentrePage: React.FC = () => {
     e.preventDefault();
     if (!editingElection) return;
     if (!editingElection.title.trim()) {
-      showNotification('error', 'Please enter an election contest title.');
+      showNotification('error', 'Please enter an election title.');
       return;
     }
     try {
@@ -278,10 +278,10 @@ export const AdminCommandCentrePage: React.FC = () => {
       await updateConfigElection(editingElection.id, payload);
       await refreshElections();
       await loadAllData();
-      showNotification('success', `Contest "${editingElection.title}" updated successfully.`);
+      showNotification('success', `Election "${editingElection.title}" updated successfully.`);
       setEditingElection(null);
     } catch (err: any) {
-      showNotification('error', err.message || 'Failed to update contest election');
+      showNotification('error', err.message || 'Failed to update election');
     } finally {
       setIsUpdatingElection(false);
     }
@@ -294,10 +294,10 @@ export const AdminCommandCentrePage: React.FC = () => {
       await deleteConfigElection(deletingElection.id);
       await refreshElections();
       await loadAllData();
-      showNotification('success', `Contest "${deletingElection.title}" deleted.`);
+      showNotification('success', `Election "${deletingElection.title}" deleted.`);
       setDeletingElection(null);
     } catch (err: any) {
-      showNotification('error', err.message || 'Failed to delete contest');
+      showNotification('error', err.message || 'Failed to delete election');
     } finally {
       setIsDeletingElection(false);
     }
@@ -739,14 +739,14 @@ export const AdminCommandCentrePage: React.FC = () => {
               className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs cursor-pointer hover:border-emerald-500 hover:bg-emerald-50/20 transition-all col-span-2 sm:col-span-1"
             >
               <div className="flex items-center justify-between text-slate-500 text-xs font-medium">
-                <span>Election Contests</span>
+                <span>Configured Elections</span>
                 <Layers className="w-4 h-4 text-emerald-700" />
               </div>
               <div className="mt-2 text-2xl font-black text-slate-900 font-mono">
                 {elections.length} <span className="text-xs font-normal text-emerald-700">({elections.filter((e: any) => e.status === 'CONCLUDED' || e.hasBeenHeld).length} Held)</span>
               </div>
               <div className="mt-1 text-[11px] text-emerald-700 font-bold flex items-center justify-between">
-                <span>Manage Contests</span>
+                <span>Manage Elections</span>
                 <span>&rarr;</span>
               </div>
             </div>
@@ -1317,7 +1317,7 @@ export const AdminCommandCentrePage: React.FC = () => {
                   <tr>
                     <th className="py-2.5 px-4">Job ID</th>
                     <th className="py-2.5 px-4">Adapter</th>
-                    <th className="py-2.5 px-4">Contest / Scope</th>
+                    <th className="py-2.5 px-4">Election / Scope</th>
                     <th className="py-2.5 px-4">Records Processed</th>
                     <th className="py-2.5 px-4">Execution Time</th>
                     <th className="py-2.5 px-4">Status</th>
@@ -1329,7 +1329,7 @@ export const AdminCommandCentrePage: React.FC = () => {
                     <tr key={j.id} className="hover:bg-slate-50/60">
                       <td className="py-3 px-4 font-mono font-bold text-slate-900">{j.id}</td>
                       <td className="py-3 px-4 font-mono text-[11px] text-slate-700">{j.adapter}</td>
-                      <td className="py-3 px-4 text-slate-800 font-medium">{j.sourceAttribution || 'General Contest'}</td>
+                      <td className="py-3 px-4 text-slate-800 font-medium">{j.sourceAttribution || 'General Election'}</td>
                       <td className="py-3 px-4 font-mono">
                         <span className="font-bold text-emerald-800">{j.recordsProcessed}</span> processed ·{' '}
                         <span className="text-slate-400">{j.recordsRetrieved} retrieved</span>
@@ -1513,9 +1513,9 @@ export const AdminCommandCentrePage: React.FC = () => {
         <div className="space-y-6">
           <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h2 className="text-sm font-bold text-slate-900">Election Contests & Geographic Reference Data</h2>
+              <h2 className="text-sm font-bold text-slate-900">Elections & Geographic Reference Data</h2>
               <p className="text-xs text-slate-500">
-                Configure contests, political party ballots, Registered Voters & PVC rolls, and canonical polling unit baselines.
+                Configure elections, political party ballots, Registered Voters & PVC rolls, and canonical polling unit baselines.
               </p>
             </div>
 
@@ -1531,7 +1531,7 @@ export const AdminCommandCentrePage: React.FC = () => {
                 className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-white bg-emerald-800 hover:bg-emerald-700 rounded-lg shadow-xs"
               >
                 <Plus className="w-3.5 h-3.5" />
-                <span>Configure New Contest</span>
+                <span>Configure New Election</span>
               </button>
             </div>
           </div>
@@ -1574,15 +1574,15 @@ export const AdminCommandCentrePage: React.FC = () => {
             </div>
           </div>
 
-          {/* Configured Election Contests */}
+          {/* Configured Elections */}
           <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
             <div className="p-3.5 border-b border-slate-200 bg-slate-50 flex flex-wrap items-center justify-between gap-2">
               <div>
                 <h3 className="text-xs font-bold text-slate-900 uppercase">
-                  Configured Election Contests ({elections.length})
+                  Configured Elections ({elections.length})
                 </h3>
                 <p className="text-[11px] text-slate-500 mt-0.5">
-                  Active and scheduled INEC election contests available in the global contest selector.
+                  Active and scheduled INEC elections available in the global Election Switcher.
                 </p>
               </div>
               <button
@@ -1590,7 +1590,7 @@ export const AdminCommandCentrePage: React.FC = () => {
                 className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-bold text-emerald-900 bg-emerald-100 hover:bg-emerald-200 border border-emerald-300 rounded cursor-pointer"
               >
                 <Plus className="w-3 h-3" />
-                <span>Add Contest</span>
+                <span>Add Election</span>
               </button>
             </div>
             <div className="divide-y divide-slate-100">
@@ -1638,17 +1638,17 @@ export const AdminCommandCentrePage: React.FC = () => {
                     <div className="flex items-center gap-2">
                       {isSelected ? (
                         <span className="px-2.5 py-1 rounded bg-emerald-800 text-white text-[11px] font-bold shadow-2xs">
-                          Active Contest
+                          Active Election
                         </span>
                       ) : (
                         <button
                           onClick={() => {
                             setSelectedElectionId(elec.id);
-                            showNotification('success', `Switched active platform contest to "${elec.title}".`);
+                            showNotification('success', `Switched active platform election to "${elec.title}".`);
                           }}
                           className="px-2.5 py-1 rounded border border-slate-300 hover:bg-slate-100 text-slate-700 text-[11px] font-semibold cursor-pointer"
                         >
-                          Switch to Contest
+                          Switch to Election
                         </button>
                       )}
 
@@ -1661,7 +1661,7 @@ export const AdminCommandCentrePage: React.FC = () => {
                           });
                         }}
                         className="inline-flex items-center gap-1 px-2.5 py-1 rounded border border-slate-300 hover:bg-slate-100 text-slate-700 text-[11px] font-medium cursor-pointer"
-                        title="Edit Contest Election"
+                        title="Edit Election"
                       >
                         <Edit className="w-3 h-3 text-slate-600" />
                         <span>Edit</span>
@@ -1671,7 +1671,7 @@ export const AdminCommandCentrePage: React.FC = () => {
                         onClick={() => setDeletingElection(elec)}
                         disabled={elections.length <= 1}
                         className="inline-flex items-center gap-1 px-2.5 py-1 rounded border border-rose-200 hover:bg-rose-50 text-rose-700 text-[11px] font-medium cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-                        title={elections.length <= 1 ? 'Cannot delete the only contest' : 'Delete Contest Election'}
+                        title={elections.length <= 1 ? 'Cannot delete the only election' : 'Delete Election'}
                       >
                         <Trash2 className="w-3 h-3 text-rose-600" />
                         <span>Delete</span>
@@ -2123,16 +2123,16 @@ export const AdminCommandCentrePage: React.FC = () => {
       {/* MODAL: CONFIGURE NEW ELECTION CONTEST                     */}
       {/* ======================================================== */}
       {/* ======================================================== */}
-      {/* MODAL: CONFIGURE NEW ELECTION CONTEST                     */}
+      {/* MODAL: CONFIGURE NEW ELECTION                             */}
       {/* ======================================================== */}
       {showCreateElectionModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-xl shadow-xl max-w-lg w-full p-6 space-y-4 border border-slate-200 animate-in fade-in zoom-in-95 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b pb-3">
               <div>
-                <h3 className="text-base font-bold text-slate-900">Configure New Election Contest</h3>
+                <h3 className="text-base font-bold text-slate-900">Configure New Election</h3>
                 <p className="text-xs text-slate-500">
-                  Register a new INEC election contest for result collation, monitoring, and audit verification.
+                  Register a new INEC election for result collation, monitoring, and audit verification.
                 </p>
               </div>
               <button
@@ -2145,7 +2145,7 @@ export const AdminCommandCentrePage: React.FC = () => {
 
             <form onSubmit={handleCreateElection} className="space-y-3.5 text-xs">
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">Contest Title</label>
+                <label className="block font-semibold text-slate-700 mb-1">Election Title</label>
                 <input
                   type="text"
                   required
@@ -2158,7 +2158,7 @@ export const AdminCommandCentrePage: React.FC = () => {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Contest Type</label>
+                  <label className="block font-semibold text-slate-700 mb-1">Election Type</label>
                   <select
                     value={newElectionForm.electionType}
                     onChange={(e) => setNewElectionForm({ ...newElectionForm, electionType: e.target.value })}
@@ -2253,7 +2253,7 @@ export const AdminCommandCentrePage: React.FC = () => {
                     <option value="false">No — Election Has Not Held Yet (Upcoming / Monitoring)</option>
                   </select>
                   <p className="text-[10px] text-slate-500 mt-0.5">
-                    Note: Elections that have been held appear in the global Contest Switcher.
+                    Note: All configured elections appear in the global Election Switcher.
                   </p>
                 </div>
 
@@ -2303,7 +2303,7 @@ export const AdminCommandCentrePage: React.FC = () => {
                   disabled={isCreatingElection}
                   className="px-4 py-2 rounded bg-emerald-800 text-white font-bold hover:bg-emerald-700 disabled:opacity-50 cursor-pointer shadow-xs"
                 >
-                  {isCreatingElection ? 'Saving Contest...' : 'Create & Activate Contest'}
+                  {isCreatingElection ? 'Saving Election...' : 'Create & Activate Election'}
                 </button>
               </div>
             </form>
@@ -2312,14 +2312,14 @@ export const AdminCommandCentrePage: React.FC = () => {
       )}
 
       {/* ======================================================== */}
-      {/* MODAL: EDIT / UPDATE ELECTION CONTEST                     */}
+      {/* MODAL: EDIT / UPDATE ELECTION                             */}
       {/* ======================================================== */}
       {editingElection && (
         <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-xl shadow-xl max-w-lg w-full p-6 space-y-4 border border-slate-200 animate-in fade-in zoom-in-95 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b pb-3">
               <div>
-                <h3 className="text-base font-bold text-slate-900">Update Contest Election</h3>
+                <h3 className="text-base font-bold text-slate-900">Update Election</h3>
                 <p className="text-xs text-slate-500 font-mono">
                   ID: {editingElection.id}
                 </p>
@@ -2334,7 +2334,7 @@ export const AdminCommandCentrePage: React.FC = () => {
 
             <form onSubmit={handleUpdateElection} className="space-y-3.5 text-xs">
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">Contest Title</label>
+                <label className="block font-semibold text-slate-700 mb-1">Election Title</label>
                 <input
                   type="text"
                   required
@@ -2346,7 +2346,7 @@ export const AdminCommandCentrePage: React.FC = () => {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Contest Type</label>
+                  <label className="block font-semibold text-slate-700 mb-1">Election Type</label>
                   <select
                     value={editingElection.electionType || 'GOVERNORSHIP'}
                     onChange={(e) => setEditingElection({ ...editingElection, electionType: e.target.value })}
@@ -2498,7 +2498,7 @@ export const AdminCommandCentrePage: React.FC = () => {
       )}
 
       {/* ======================================================== */}
-      {/* MODAL: DELETE ELECTION CONTEST CONFIRMATION              */}
+      {/* MODAL: DELETE ELECTION CONFIRMATION                      */}
       {/* ======================================================== */}
       {deletingElection && (
         <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
@@ -2508,13 +2508,13 @@ export const AdminCommandCentrePage: React.FC = () => {
                 <Trash2 className="w-5 h-5 text-rose-700" />
               </div>
               <div>
-                <h3 className="text-base font-bold text-slate-900">Delete Election Contest</h3>
+                <h3 className="text-base font-bold text-slate-900">Delete Election</h3>
                 <p className="text-xs text-rose-600 font-medium">Permanent Platform Action</p>
               </div>
             </div>
 
             <p className="text-xs text-slate-600 leading-relaxed">
-              Are you sure you want to remove the contest <strong className="text-slate-900">"{deletingElection.title}"</strong> (ID: {deletingElection.id})? This will delete the contest from the active platform register.
+              Are you sure you want to remove the election <strong className="text-slate-900">"{deletingElection.title}"</strong> (ID: {deletingElection.id})? This will delete the election from the active platform register.
             </p>
 
             <div className="pt-3 border-t border-slate-100 flex justify-end gap-2 text-xs">
@@ -2531,7 +2531,7 @@ export const AdminCommandCentrePage: React.FC = () => {
                 disabled={isDeletingElection}
                 className="px-4 py-2 rounded bg-rose-700 text-white font-bold hover:bg-rose-800 disabled:opacity-50 cursor-pointer shadow-xs"
               >
-                {isDeletingElection ? 'Deleting...' : 'Confirm Delete Contest'}
+                {isDeletingElection ? 'Deleting...' : 'Confirm Delete Election'}
               </button>
             </div>
           </div>

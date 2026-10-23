@@ -762,7 +762,7 @@ export const AdvancedAnalyticsPage: React.FC = () => {
                   {(comparisons?.candidates || []).filter((p) => p.totalVotes > 0).length === 0 ? (
                     <tr>
                       <td colSpan={8} className="py-8 text-center text-slate-400">
-                        No political party has recorded votes greater than zero for this contest yet.
+                        No political party has recorded votes greater than zero for this election yet.
                       </td>
                     </tr>
                   ) : (

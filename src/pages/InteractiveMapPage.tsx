@@ -180,7 +180,7 @@ export const InteractiveMapPage: React.FC = () => {
 
                   {activeParties.length === 0 ? (
                     <div className="p-2.5 rounded bg-slate-50 border border-slate-200 text-[11px] text-slate-500 text-center">
-                      No party votes uploaded for {activeState.name} in the selected contest election yet.
+                      No party votes uploaded for {activeState.name} in the selected election yet.
                     </div>
                   ) : (
                     <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200 space-y-2 max-h-56 overflow-y-auto">

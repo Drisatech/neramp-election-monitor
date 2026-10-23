@@ -25,6 +25,7 @@ import {
   Timer,
   CopyX,
   History,
+  Download,
 } from 'lucide-react';
 import {
   fetchIngestionStatus,
@@ -43,10 +44,15 @@ import {
   pauseLiveLoopExtraction,
   stopLiveLoopExtraction,
   triggerLoopExtractionNow,
+  getDatabaseBackupUrl,
+  fetchOcrQuotaStatus,
 } from '../services/api';
 import { DisclaimerBanner } from '../components/DisclaimerBanner';
+import { useElection } from '../context/ElectionContext';
+import { formatMenuElectionTitle } from '../components/Navbar';
 
 export const AdminIngestionPage: React.FC = () => {
+  const { elections } = useElection();
   const [statusData, setStatusData] = useState<any>(null);
   const [jobs, setJobs] = useState<any[]>([]);
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
@@ -80,11 +86,25 @@ export const AdminIngestionPage: React.FC = () => {
     verificationUrl: string;
   } | null>(null);
 
+  // Active AI OCR Provider & Model state
+  const [ocrQuota, setOcrQuota] = useState<any>(null);
+
   // Manual Trigger options
   const [selectedAdapter, setSelectedAdapter] = useState<'InecApprovedSourceAdapter' | 'DevelopmentFixtureAdapter'>(
     'InecApprovedSourceAdapter'
   );
   const [selectedElection, setSelectedElection] = useState('elec-2026-gov-osun');
+
+  const loadOcrStatus = async () => {
+    try {
+      const res = await fetchOcrQuotaStatus();
+      if (res?.data) {
+        setOcrQuota(res.data);
+      }
+    } catch {
+      // Non-fatal
+    }
+  };
 
   const loadLoopStatus = async () => {
     try {
@@ -110,7 +130,7 @@ export const AdminIngestionPage: React.FC = () => {
       setJobs(jbRes.data);
       setAuditLogs(adRes.data);
       setScheduler(scRes.data);
-      await loadLoopStatus();
+      await Promise.all([loadLoopStatus(), loadOcrStatus()]);
     } catch (err) {
       console.error('Failed to load admin ingestion data:', err);
     }
@@ -118,6 +138,11 @@ export const AdminIngestionPage: React.FC = () => {
 
   useEffect(() => {
     loadAll();
+    const handleOcrUpdated = () => {
+      loadOcrStatus();
+    };
+    window.addEventListener('ai-ocr-config-updated', handleOcrUpdated);
+    return () => window.removeEventListener('ai-ocr-config-updated', handleOcrUpdated);
   }, []);
 
   // Poll loop extraction status periodically
@@ -359,6 +384,15 @@ export const AdminIngestionPage: React.FC = () => {
             <Sparkles className="w-3.5 h-3.5 text-teal-700" />
             <span>AI OCR Settings</span>
           </button>
+          <a
+            href={getDatabaseBackupUrl()}
+            download
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded text-xs font-semibold transition-colors shadow-2xs"
+            title="Download a full JSON backup of all uploaded INEC results so they can be restored anytime"
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span>Backup Results (.json)</span>
+          </a>
           <Link
             to="/admin?tab=storage"
             className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-800 hover:bg-emerald-900 text-white rounded text-xs font-semibold transition-colors shadow-2xs"
@@ -563,7 +597,7 @@ export const AdminIngestionPage: React.FC = () => {
 
             <div className="p-2.5 bg-slate-50 rounded border border-slate-200">
               <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">
-                Target Contest
+                Target Election
               </label>
               <select
                 value={selectedElection}
@@ -571,8 +605,18 @@ export const AdminIngestionPage: React.FC = () => {
                 disabled={loopStatus?.isRunning}
                 className="w-full bg-white border border-slate-300 font-semibold rounded px-2 py-1 text-slate-900 text-xs disabled:opacity-60"
               >
-                <option value="elec-2026-gov-osun">Osun Gov 2026 (Live)</option>
-                <option value="elec-2026-gov-ekiti">Ekiti Gov 2026 (Live)</option>
+                {elections.length > 0 ? (
+                  elections.map((elec) => (
+                    <option key={elec.id} value={elec.id}>
+                      {formatMenuElectionTitle(elec)}
+                    </option>
+                  ))
+                ) : (
+                  <>
+                    <option value="elec-2026-gov-osun">Governorship Election - Osun - 2026-08-15</option>
+                    <option value="elec-2026-gov-ekiti">Governorship Election - Ekiti - 2026-06-20</option>
+                  </>
+                )}
               </select>
             </div>
           </div>
@@ -739,10 +783,12 @@ export const AdminIngestionPage: React.FC = () => {
               <Sparkles className="w-5 h-5 text-amber-300" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-white tracking-wide flex items-center gap-2">
+              <h3 className="text-sm font-bold text-white tracking-wide flex flex-wrap items-center gap-2">
                 <span>AI OCR Engine (INEC Form EC8A Transcription)</span>
                 <span className="text-[10px] font-mono bg-emerald-700/80 text-emerald-100 px-2 py-0.5 rounded border border-emerald-600">
-                  gemini-3.5-flash-lite · Active
+                  {ocrQuota
+                    ? `${ocrQuota.activeProviderName} (${ocrQuota.activeModel}) · Active`
+                    : 'AI OCR · Active'}
                 </span>
               </h3>
               <p className="text-xs text-emerald-200">
@@ -756,7 +802,7 @@ export const AdminIngestionPage: React.FC = () => {
               type="button"
               onClick={() => window.dispatchEvent(new CustomEvent('open-ai-ocr-settings'))}
               className="px-3.5 py-1.5 bg-teal-600/30 hover:bg-teal-600/50 text-teal-100 hover:text-white font-bold rounded text-xs transition-colors flex items-center gap-1.5 border border-teal-500/40 shadow-xs cursor-pointer"
-              title="Configure Gemini Vision AI OCR engine, rate limits, latency diagnostics, and API keys"
+              title="Configure AI OCR engine provider (Gemini, OpenAI, Groq, Claude), models, and API keys"
             >
               <Sparkles className="w-3.5 h-3.5 text-teal-300" />
               <span>Configure AI OCR / API Key</span>
@@ -860,18 +906,28 @@ export const AdminIngestionPage: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-slate-600 font-semibold mb-1">Target Election Contest</label>
+            <label className="block text-slate-600 font-semibold mb-1">Target Election</label>
             <select
               value={selectedElection}
               onChange={(e) => setSelectedElection(e.target.value)}
               className="w-full bg-slate-50 border border-slate-300 rounded px-2.5 py-1.5 text-slate-900 font-semibold focus:outline-emerald-600"
             >
-              <option value="elec-2026-gov-osun">
-                Governorship election - 2026-08-15 - OSUN (Official Live)
-              </option>
-              <option value="elec-2026-gov-ekiti">
-                Governorship election - 2026-06-20 - EKITI (Official Live)
-              </option>
+              {elections.length > 0 ? (
+                elections.map((elec) => (
+                  <option key={elec.id} value={elec.id}>
+                    {formatMenuElectionTitle(elec)}
+                  </option>
+                ))
+              ) : (
+                <>
+                  <option value="elec-2026-gov-osun">
+                    Governorship Election - Osun - 2026-08-15
+                  </option>
+                  <option value="elec-2026-gov-ekiti">
+                    Governorship Election - Ekiti - 2026-06-20
+                  </option>
+                </>
+              )}
             </select>
           </div>
 
