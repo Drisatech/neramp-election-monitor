@@ -1,0 +1,12 @@
+[
+  {
+    "id": "audit-1792748214257",
+    "timestamp": "2026-10-23T09:36:54.257Z",
+    "actor": "drisatech@gmail.com",
+    "actorName": "Engr. Idris A.",
+    "actorRole": "SUPER_ADMIN",
+    "action": "MANAGEMENT_LOGIN_SUCCESS",
+    "target": "usr-super-idris",
+    "details": "Management user Engr. Idris A. (drisatech@gmail.com) logged in. Role: SUPER_ADMIN, Badge: NERAMP-DEV-001. Session: sess-1792748214256-0fccfa98caab"
+  }
+]

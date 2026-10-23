@@ -1,0 +1,17 @@
+[
+  {
+    "id": "sess-1792748214256-0fccfa98caab",
+    "userId": "usr-super-idris",
+    "userName": "Engr. Idris A.",
+    "userEmail": "drisatech@gmail.com",
+    "role": "SUPER_ADMIN",
+    "badge": "NERAMP-DEV-001",
+    "loginAt": "2026-10-23T09:36:54.257Z",
+    "lastActiveAt": "2026-10-23T09:36:54.257Z",
+    "logoutAt": null,
+    "durationSeconds": 0,
+    "ipAddress": "127.0.0.1",
+    "userAgent": "curl/7.88.1",
+    "status": "ACTIVE"
+  }
+]

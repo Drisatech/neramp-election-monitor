@@ -33,8 +33,15 @@ export const VerificationQueuePage: React.FC = () => {
       const res = await fetchPollingUnits({
         electionId: selectedElectionId,
         uploadStatus: 'UPLOADED',
+        limit: 100,
       });
-      setQueue(res.data);
+      // Sort strictly by recently uploaded result time/date in INEC portal (most recent at the top)
+      const sorted = [...(res.data || [])].sort((a, b) => {
+        const timeA = new Date(a.sourceUploadTimestamp || a.lastRetrievedTimestamp || 0).getTime();
+        const timeB = new Date(b.sourceUploadTimestamp || b.lastRetrievedTimestamp || 0).getTime();
+        return timeB - timeA;
+      });
+      setQueue(sorted);
     } catch (err) {
       console.error('Failed to load queue:', err);
     } finally {
@@ -60,11 +67,17 @@ export const VerificationQueuePage: React.FC = () => {
     }
   };
 
-  const filtered = queue.filter((pu) => {
-    if (filterType === 'PENDING') return pu.verificationStatus === 'PENDING_VERIFICATION';
-    if (filterType === 'DISCREPANCY') return pu.verificationStatus === 'DISCREPANCY_FLAGGED';
-    return true;
-  });
+  const filtered = queue
+    .filter((pu) => {
+      if (filterType === 'PENDING') return pu.verificationStatus === 'PENDING_VERIFICATION';
+      if (filterType === 'DISCREPANCY') return pu.verificationStatus === 'DISCREPANCY_FLAGGED';
+      return true;
+    })
+    .sort((a, b) => {
+      const timeA = new Date(a.sourceUploadTimestamp || a.lastRetrievedTimestamp || 0).getTime();
+      const timeB = new Date(b.sourceUploadTimestamp || b.lastRetrievedTimestamp || 0).getTime();
+      return timeB - timeA;
+    });
 
   return (
     <div className="space-y-6">
@@ -72,11 +85,16 @@ export const VerificationQueuePage: React.FC = () => {
 
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-3">
         <div>
-          <h1 className="text-xl font-bold text-slate-900 tracking-tight">
-            Result Transcription Verification Queue
-          </h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl font-bold text-slate-900 tracking-tight">
+              Result Transcription Verification Queue
+            </h1>
+            <span className="text-[11px] bg-emerald-100 text-emerald-800 font-semibold px-2 py-0.5 rounded border border-emerald-200">
+              Arranged by Latest INEC Portal Upload
+            </span>
+          </div>
           <p className="text-xs text-slate-500">
-            Side-by-side verification workflow for checking uploaded Form EC8A images against extracted OCR tallies.
+            Side-by-side verification workflow. Results are arranged with the most recently uploaded sheets in the INEC Results Portal at the top of the log.
           </p>
         </div>
 
@@ -160,17 +178,40 @@ export const VerificationQueuePage: React.FC = () => {
         </div>
       ) : (
         <div className="space-y-3">
-          {filtered.map((pu) => (
-            <div key={pu.id} className="bg-white p-4 rounded-lg border border-slate-200 shadow-2xs flex flex-wrap items-center justify-between gap-4">
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <span className="font-mono font-bold text-slate-900 text-sm">{pu.code}</span>
-                  <span className="text-xs text-slate-500 font-medium">· {pu.name}</span>
+          {filtered.map((pu, idx) => {
+            const uploadDate = pu.sourceUploadTimestamp
+              ? new Date(pu.sourceUploadTimestamp).toLocaleString('en-NG', {
+                  day: 'numeric',
+                  month: 'short',
+                  year: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  second: '2-digit',
+                })
+              : 'Unknown Time';
+
+            return (
+              <div
+                key={pu.id}
+                className="bg-white p-4 rounded-lg border border-slate-200 shadow-2xs flex flex-wrap items-center justify-between gap-4 hover:border-emerald-300 transition-colors"
+              >
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-[10px] font-mono bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded font-bold">
+                      #{idx + 1}
+                    </span>
+                    <span className="font-mono font-bold text-slate-900 text-sm">{pu.code}</span>
+                    <span className="text-xs text-slate-600 font-medium">· {pu.name}</span>
+
+                    <span className="inline-flex items-center gap-1 text-[11px] font-mono bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-full">
+                      <Clock className="w-3 h-3 text-emerald-600" />
+                      <span>INEC Upload: {uploadDate}</span>
+                    </span>
+                  </div>
+                  <div className="text-xs text-slate-500">
+                    {pu.stateCode} State · {pu.lgaCode} LGA · Registered: {pu.registeredVoters} · Accredited: {pu.accreditedVoters}
+                  </div>
                 </div>
-                <div className="text-xs text-slate-500">
-                  {pu.stateCode} State · {pu.lgaCode} LGA · Registered: {pu.registeredVoters} · Accredited: {pu.accreditedVoters}
-                </div>
-              </div>
 
               <div className="flex items-center gap-2.5 flex-wrap">
                 <span
@@ -204,9 +245,10 @@ export const VerificationQueuePage: React.FC = () => {
                 </Link>
               </div>
             </div>
-          ))}
-        </div>
-      )}
+          );
+        })}
+      </div>
+    )}
 
       {/* Inline Quick Inspect Form EC8A Modal */}
       {inspectingPu && (

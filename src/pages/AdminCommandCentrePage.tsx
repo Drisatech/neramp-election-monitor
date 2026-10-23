@@ -40,6 +40,7 @@ import { useElection } from '../context/ElectionContext';
 import { DisclaimerBanner } from '../components/DisclaimerBanner';
 import { RegisteredVotersImportModal } from '../components/RegisteredVotersImportModal';
 import { StorageContentManagementTab } from '../components/StorageContentManagementTab';
+import { ManagementMonitoringTab } from '../components/ManagementMonitoringTab';
 import { OFFICIAL_INEC_PARTIES, getPartyInfo } from '../constants/parties';
 import {
   fetchCommandCenterMetrics,
@@ -84,12 +85,13 @@ type AdminTab =
   | 'coordination'
   | 'configuration'
   | 'audit'
-  | 'storage';
+  | 'storage'
+  | 'monitoring';
 
 export const AdminCommandCentrePage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const tabParam = searchParams.get('tab');
-  const initialTab: AdminTab = tabParam === 'storage' ? 'storage' : 'overview';
+  const initialTab: AdminTab = tabParam === 'storage' ? 'storage' : tabParam === 'monitoring' ? 'monitoring' : 'overview';
 
   const { role: activeUserRole, isSuperOrProjectAdmin } = useAuth();
   const { states, elections, selectedElectionId, setSelectedElectionId, refreshElections } = useElection();
@@ -663,6 +665,23 @@ export const AdminCommandCentrePage: React.FC = () => {
           <HardDrive className="w-4 h-4" />
           <span>Storage & Content Management</span>
         </button>
+
+        {activeUserRole === 'SUPER_ADMIN' && (
+          <button
+            onClick={() => setActiveTab('monitoring')}
+            className={`flex items-center gap-2 px-3 py-2 text-xs font-semibold rounded-md transition-colors whitespace-nowrap ${
+              activeTab === 'monitoring'
+                ? 'bg-purple-900 text-white'
+                : 'text-purple-700 bg-purple-50 hover:bg-purple-100 hover:text-purple-900 border border-purple-200'
+            }`}
+          >
+            <ShieldAlert className="w-4 h-4 text-purple-600" />
+            <span>Management Monitoring Logs</span>
+            <span className="text-[9px] bg-purple-200 text-purple-900 font-bold px-1.5 py-0.5 rounded uppercase">
+              Super Admin Only
+            </span>
+          </button>
+        )}
       </div>
 
       {/* ======================================================== */}
@@ -1665,6 +1684,11 @@ export const AdminCommandCentrePage: React.FC = () => {
       {/* TAB 8: STORAGE & CONTENT MANAGEMENT SYSTEM (CMS)          */}
       {/* ======================================================== */}
       {activeTab === 'storage' && <StorageContentManagementTab />}
+
+      {/* ======================================================== */}
+      {/* TAB 9: MANAGEMENT PERSONNEL MONITORING (SUPER ADMIN)      */}
+      {/* ======================================================== */}
+      {activeTab === 'monitoring' && activeUserRole === 'SUPER_ADMIN' && <ManagementMonitoringTab />}
 
       {/* ======================================================== */}
       {/* MODAL: CREATE USER                                        */}

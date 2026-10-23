@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import {
   Database,
   Play,
+  Pause,
+  Square,
   CheckCircle2,
   Clock,
   AlertTriangle,
@@ -19,6 +21,10 @@ import {
   UploadCloud,
   FileSpreadsheet,
   HardDrive,
+  Radio,
+  Timer,
+  CopyX,
+  History,
 } from 'lucide-react';
 import {
   fetchIngestionStatus,
@@ -32,6 +38,11 @@ import {
   purgeDemonstrationData,
   triggerBatchOcrTranscription,
   uploadAndTranscribeFormEc8a,
+  fetchLoopExtractionStatus,
+  startLiveLoopExtraction,
+  pauseLiveLoopExtraction,
+  stopLiveLoopExtraction,
+  triggerLoopExtractionNow,
 } from '../services/api';
 import { DisclaimerBanner } from '../components/DisclaimerBanner';
 
@@ -44,6 +55,13 @@ export const AdminIngestionPage: React.FC = () => {
   const [isTestingConn, setIsTestingConn] = useState(false);
   const [healthResult, setHealthResult] = useState<any>(null);
   const [triggerSuccess, setTriggerSuccess] = useState<string | null>(null);
+
+  // Live Collation Loop Extraction State
+  const [loopStatus, setLoopStatus] = useState<any>(null);
+  const [loopIntervalMinutes, setLoopIntervalMinutes] = useState<number>(2);
+  const [isLoopActionRunning, setIsLoopActionRunning] = useState(false);
+  const [loopFeedback, setLoopFeedback] = useState<string | null>(null);
+  const [secondsUntilNextCycle, setSecondsUntilNextCycle] = useState<number | null>(null);
 
   const [maxWards, setMaxWards] = useState<number>(20);
   const [isPurging, setIsPurging] = useState(false);
@@ -68,6 +86,18 @@ export const AdminIngestionPage: React.FC = () => {
   );
   const [selectedElection, setSelectedElection] = useState('elec-2026-gov-osun');
 
+  const loadLoopStatus = async () => {
+    try {
+      const res = await fetchLoopExtractionStatus();
+      setLoopStatus(res.data);
+      if (res.data?.intervalSeconds) {
+        setLoopIntervalMinutes(Math.max(1, Math.round(res.data.intervalSeconds / 60)));
+      }
+    } catch (err) {
+      // Loop status load failure non-fatal
+    }
+  };
+
   const loadAll = async () => {
     try {
       const [stRes, jbRes, adRes, scRes] = await Promise.all([
@@ -80,6 +110,7 @@ export const AdminIngestionPage: React.FC = () => {
       setJobs(jbRes.data);
       setAuditLogs(adRes.data);
       setScheduler(scRes.data);
+      await loadLoopStatus();
     } catch (err) {
       console.error('Failed to load admin ingestion data:', err);
     }
@@ -88,6 +119,88 @@ export const AdminIngestionPage: React.FC = () => {
   useEffect(() => {
     loadAll();
   }, []);
+
+  // Poll loop extraction status periodically
+  useEffect(() => {
+    const timer = setInterval(() => {
+      loadLoopStatus();
+    }, 4000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Compute countdown timer to next loop cycle
+  useEffect(() => {
+    if (!loopStatus?.isRunning || loopStatus?.isPaused || !loopStatus?.nextRunAt) {
+      setSecondsUntilNextCycle(null);
+      return;
+    }
+
+    const updateCountdown = () => {
+      const diff = Math.max(0, Math.floor((new Date(loopStatus.nextRunAt).getTime() - Date.now()) / 1000));
+      setSecondsUntilNextCycle(diff);
+    };
+
+    updateCountdown();
+    const interval = setInterval(updateCountdown, 1000);
+    return () => clearInterval(interval);
+  }, [loopStatus]);
+
+  // Live Loop Extraction Handlers
+  const handleStartLoop = async () => {
+    try {
+      setIsLoopActionRunning(true);
+      setLoopFeedback(null);
+      const res = await startLiveLoopExtraction(loopIntervalMinutes * 60, selectedElection);
+      setLoopStatus(res.data);
+      setLoopFeedback(`Live Loop Extraction started: querying INEC portal every ${loopIntervalMinutes} minute(s).`);
+      await loadAll();
+    } catch (err: any) {
+      setLoopFeedback(`Failed to start loop: ${err.message}`);
+    } finally {
+      setIsLoopActionRunning(false);
+    }
+  };
+
+  const handlePauseLoop = async () => {
+    try {
+      setIsLoopActionRunning(true);
+      const res = await pauseLiveLoopExtraction();
+      setLoopStatus(res.data);
+      setLoopFeedback('Live Loop Extraction paused.');
+    } catch (err: any) {
+      setLoopFeedback(`Failed to pause loop: ${err.message}`);
+    } finally {
+      setIsLoopActionRunning(false);
+    }
+  };
+
+  const handleStopLoop = async () => {
+    try {
+      setIsLoopActionRunning(true);
+      const res = await stopLiveLoopExtraction();
+      setLoopStatus(res.data);
+      setLoopFeedback('Live Loop Extraction stopped.');
+      setSecondsUntilNextCycle(null);
+    } catch (err: any) {
+      setLoopFeedback(`Failed to stop loop: ${err.message}`);
+    } finally {
+      setIsLoopActionRunning(false);
+    }
+  };
+
+  const handleTriggerLoopNow = async () => {
+    try {
+      setIsLoopActionRunning(true);
+      const res = await triggerLoopExtractionNow();
+      setLoopStatus(res.data);
+      setLoopFeedback(res.message);
+      await loadAll();
+    } catch (err: any) {
+      setLoopFeedback(`Manual cycle execution failed: ${err.message}`);
+    } finally {
+      setIsLoopActionRunning(false);
+    }
+  };
 
   const handlePurgeDemo = async () => {
     try {
@@ -124,8 +237,11 @@ export const AdminIngestionPage: React.FC = () => {
       setIsRunning(true);
       setTriggerSuccess(null);
       const res = await triggerIngestionRun(selectedAdapter, selectedElection, maxWards);
+      const processed = res.data?.recordsProcessed || 0;
+      const skipped = res.data?.duplicatesSkipped || 0;
+      const revised = res.data?.revisedCount || 0;
       setTriggerSuccess(
-        `Ingestion run #${res.data.id} completed. ${res.data.recordsProcessed} polling units processed from ${res.data.sourceAttribution}.`
+        `Ingestion run completed: ${processed} new polling unit(s) uploaded, ${skipped} existing unchanged unit(s) skipped to prevent duplicates, ${revised} altered result sheet(s) versioned.`
       );
       await loadAll();
     } catch (err: any) {
@@ -367,63 +483,221 @@ export const AdminIngestionPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Right: Configurable Scheduled Ingestion Service */}
+        {/* Right: Live Loop Extraction Engine for Ongoing Election Result Collation */}
         <div className="lg:col-span-5 bg-white p-5 rounded-lg border border-slate-200 shadow-2xs space-y-4">
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-            <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wide flex items-center gap-1.5">
-              <Clock className="w-3.5 h-3.5 text-slate-700" />
-              <span>Configurable Scheduled Ingestion</span>
-            </h3>
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 bg-emerald-100 text-emerald-800 rounded">
+                <Radio className="w-4 h-4 text-emerald-700 animate-pulse" />
+              </div>
+              <div>
+                <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wide">
+                  Live Loop Extraction Engine
+                </h3>
+                <span className="text-[10px] text-slate-500 font-medium">
+                  Live ongoing election result collation
+                </span>
+              </div>
+            </div>
+
             <span
-              className={`text-[10px] font-bold px-2 py-0.5 rounded ${
-                scheduler?.enabled
-                  ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
-                  : 'bg-slate-100 text-slate-600'
+              className={`text-[10px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1.5 ${
+                loopStatus?.isRunning && !loopStatus?.isPaused
+                  ? 'bg-emerald-100 text-emerald-900 border border-emerald-300'
+                  : loopStatus?.isPaused
+                  ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                  : 'bg-slate-100 text-slate-700 border border-slate-200'
               }`}
             >
-              {scheduler?.enabled ? 'SERVICE RUNNING' : 'STOPPED'}
+              <span
+                className={`w-2 h-2 rounded-full ${
+                  loopStatus?.isRunning && !loopStatus?.isPaused
+                    ? 'bg-emerald-500 animate-ping'
+                    : loopStatus?.isPaused
+                    ? 'bg-amber-500'
+                    : 'bg-slate-400'
+                }`}
+              />
+              <span>
+                {loopStatus?.isRunning && !loopStatus?.isPaused
+                  ? 'ACTIVE LOOP'
+                  : loopStatus?.isPaused
+                  ? 'PAUSED'
+                  : 'IDLE / STOPPED'}
+              </span>
             </span>
           </div>
 
-          <p className="text-xs text-slate-600">
-            Background worker service periodically queries the official source adapter to retrieve newly published polling-unit result sheets.
+          <p className="text-xs text-slate-600 leading-relaxed">
+            Continuously polls the official INEC portal based on a schedule timer to capture freshly uploaded results during live election collation. Polling units already in the system are skipped to prevent duplicate records, while altered sheets trigger automated version history logging.
           </p>
 
-          <div className="space-y-3 pt-1 text-xs">
-            <div className="flex items-center justify-between p-2.5 bg-slate-50 rounded border border-slate-200">
-              <span className="font-semibold text-slate-700">Service Status</span>
-              <button
-                onClick={() => handleSchedulerToggle(!scheduler?.enabled)}
-                className={`px-3 py-1 text-xs font-bold rounded transition-colors ${
-                  scheduler?.enabled
-                    ? 'bg-rose-100 text-rose-800 hover:bg-rose-200'
-                    : 'bg-emerald-600 text-white hover:bg-emerald-700'
-                }`}
-              >
-                {scheduler?.enabled ? 'Pause Scheduler' : 'Activate Scheduler'}
-              </button>
+          {/* Feedback banner */}
+          {loopFeedback && (
+            <div className="p-2.5 bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs rounded font-medium flex items-center justify-between">
+              <span>{loopFeedback}</span>
+              <button onClick={() => setLoopFeedback(null)} className="text-emerald-700 font-bold hover:text-emerald-900 ml-2">×</button>
             </div>
+          )}
 
-            <div className="flex items-center justify-between p-2.5 bg-slate-50 rounded border border-slate-200">
-              <span className="font-semibold text-slate-700">Polling Interval</span>
+          {/* Schedule Timer Config */}
+          <div className="grid grid-cols-2 gap-2 text-xs">
+            <div className="p-2.5 bg-slate-50 rounded border border-slate-200">
+              <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">
+                Collation Loop Interval
+              </label>
               <select
-                value={scheduler?.intervalMinutes || 5}
-                onChange={(e) => handleSchedulerInterval(Number(e.target.value))}
-                className="bg-white border border-slate-300 font-semibold rounded px-2 py-1 text-slate-900 text-xs"
+                value={loopIntervalMinutes}
+                onChange={(e) => setLoopIntervalMinutes(Number(e.target.value))}
+                disabled={loopStatus?.isRunning}
+                className="w-full bg-white border border-slate-300 font-semibold rounded px-2 py-1 text-slate-900 text-xs disabled:opacity-60"
               >
-                <option value={1}>Every 1 minute</option>
+                <option value={1}>Every 1 minute (Fast)</option>
+                <option value={2}>Every 2 minutes (Recommended)</option>
+                <option value={3}>Every 3 minutes</option>
                 <option value={5}>Every 5 minutes</option>
+                <option value={10}>Every 10 minutes</option>
                 <option value={15}>Every 15 minutes</option>
-                <option value={30}>Every 30 minutes</option>
-                <option value={60}>Every 60 minutes</option>
               </select>
             </div>
 
-            <div className="p-2.5 bg-slate-50 rounded border border-slate-200 space-y-1 font-mono text-[11px] text-slate-600">
-              <div>Last Execution: {scheduler?.lastRunAt ? new Date(scheduler.lastRunAt).toLocaleTimeString() : '18:35:00'} WAT</div>
-              <div>Next Execution: {scheduler?.nextRunAt ? new Date(scheduler.nextRunAt).toLocaleTimeString() : '18:40:00'} WAT</div>
+            <div className="p-2.5 bg-slate-50 rounded border border-slate-200">
+              <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">
+                Target Contest
+              </label>
+              <select
+                value={selectedElection}
+                onChange={(e) => setSelectedElection(e.target.value)}
+                disabled={loopStatus?.isRunning}
+                className="w-full bg-white border border-slate-300 font-semibold rounded px-2 py-1 text-slate-900 text-xs disabled:opacity-60"
+              >
+                <option value="elec-2026-gov-osun">Osun Gov 2026 (Live)</option>
+                <option value="elec-2026-gov-ekiti">Ekiti Gov 2026 (Live)</option>
+              </select>
             </div>
           </div>
+
+          {/* Real-time Countdown Banner */}
+          {loopStatus?.isRunning && !loopStatus?.isPaused && (
+            <div className="p-2.5 bg-emerald-900 text-white rounded-lg flex items-center justify-between shadow-xs">
+              <div className="flex items-center gap-2">
+                <Timer className="w-4 h-4 text-emerald-300 animate-spin" />
+                <span className="text-xs font-semibold">Next Loop Extraction Cycle:</span>
+              </div>
+              <span className="font-mono text-xs font-bold text-emerald-200 bg-emerald-950 px-2.5 py-0.5 rounded border border-emerald-700">
+                {secondsUntilNextCycle !== null ? `${secondsUntilNextCycle}s remaining` : 'Calculating...'}
+              </span>
+            </div>
+          )}
+
+          {/* Loop Metrics Grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-xs">
+            <div className="p-2 bg-slate-50 rounded border border-slate-200">
+              <span className="text-[10px] text-slate-500 uppercase font-bold block">Cycles</span>
+              <span className="text-base font-bold text-slate-900 block mt-0.5 font-mono">
+                {loopStatus?.currentCycle || 0}
+              </span>
+            </div>
+
+            <div className="p-2 bg-emerald-50 rounded border border-emerald-200">
+              <span className="text-[10px] text-emerald-700 uppercase font-bold block">New PUs</span>
+              <span className="text-base font-bold text-emerald-800 block mt-0.5 font-mono">
+                {loopStatus?.newlyUploadedCount || 0}
+              </span>
+            </div>
+
+            <div className="p-2 bg-blue-50 rounded border border-blue-200" title="Existing polling units skipped to avoid duplicate entries">
+              <span className="text-[10px] text-blue-700 uppercase font-bold block flex items-center justify-center gap-0.5">
+                <CopyX className="w-2.5 h-2.5" />
+                <span>Skipped</span>
+              </span>
+              <span className="text-base font-bold text-blue-800 block mt-0.5 font-mono">
+                {loopStatus?.duplicatesSkippedCount || 0}
+              </span>
+            </div>
+
+            <div className="p-2 bg-amber-50 rounded border border-amber-200" title="Altered results uploaded with version history recorded">
+              <span className="text-[10px] text-amber-700 uppercase font-bold block flex items-center justify-center gap-0.5">
+                <History className="w-2.5 h-2.5" />
+                <span>Revised</span>
+              </span>
+              <span className="text-base font-bold text-amber-800 block mt-0.5 font-mono">
+                {loopStatus?.revisedVersionCount || 0}
+              </span>
+            </div>
+          </div>
+
+          {/* Loop Control Actions */}
+          <div className="flex flex-wrap items-center gap-2 pt-1 text-xs">
+            {!loopStatus?.isRunning ? (
+              <button
+                onClick={handleStartLoop}
+                disabled={isLoopActionRunning}
+                className="flex-1 py-2 px-3 bg-emerald-800 hover:bg-emerald-700 text-white rounded font-bold transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50 shadow-xs cursor-pointer"
+              >
+                <Play className="w-3.5 h-3.5" />
+                <span>Start Live Extraction Loop</span>
+              </button>
+            ) : (
+              <>
+                <button
+                  onClick={loopStatus?.isPaused ? handleStartLoop : handlePauseLoop}
+                  disabled={isLoopActionRunning}
+                  className={`flex-1 py-2 px-3 rounded font-bold transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50 shadow-xs cursor-pointer ${
+                    loopStatus?.isPaused
+                      ? 'bg-emerald-700 hover:bg-emerald-800 text-white'
+                      : 'bg-amber-600 hover:bg-amber-700 text-white'
+                  }`}
+                >
+                  {loopStatus?.isPaused ? <Play className="w-3.5 h-3.5" /> : <Pause className="w-3.5 h-3.5" />}
+                  <span>{loopStatus?.isPaused ? 'Resume Loop' : 'Pause Loop'}</span>
+                </button>
+
+                <button
+                  onClick={handleStopLoop}
+                  disabled={isLoopActionRunning}
+                  className="py-2 px-3 bg-rose-700 hover:bg-rose-800 text-white rounded font-bold transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50 shadow-xs cursor-pointer"
+                >
+                  <Square className="w-3.5 h-3.5" />
+                  <span>Stop</span>
+                </button>
+              </>
+            )}
+
+            <button
+              onClick={handleTriggerLoopNow}
+              disabled={isLoopActionRunning}
+              className="py-2 px-3 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded font-semibold transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50 border border-slate-300 cursor-pointer"
+              title="Execute an extraction cycle immediately without waiting for the timer"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${isLoopActionRunning ? 'animate-spin' : ''}`} />
+              <span>Poll Now</span>
+            </button>
+          </div>
+
+          {/* Loop Recent Execution Log */}
+          {loopStatus?.log && loopStatus.log.length > 0 && (
+            <div className="pt-2 border-t border-slate-100 space-y-1">
+              <span className="text-[10px] font-bold text-slate-500 uppercase block">
+                Recent Loop Collation Activity
+              </span>
+              <div className="max-h-28 overflow-y-auto space-y-1 text-[11px] font-mono">
+                {loopStatus.log.slice(0, 5).map((entry: any, idx: number) => (
+                  <div key={idx} className="p-1.5 bg-slate-50 rounded border border-slate-200 text-slate-700 flex items-center justify-between">
+                    <div>
+                      <span className="font-bold text-slate-900">Cycle #{entry.cycle}:</span>{' '}
+                      <span className="text-emerald-700 font-semibold">+{entry.newlyUploaded} new</span>,{' '}
+                      <span className="text-blue-700">{entry.duplicatesSkipped} skipped</span>,{' '}
+                      <span className="text-amber-700">{entry.revisedVersionCount} revised</span>
+                    </div>
+                    <span className="text-[10px] text-slate-400">
+                      {new Date(entry.timestamp).toLocaleTimeString()}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -633,9 +907,15 @@ export const AdminIngestionPage: React.FC = () => {
           </div>
         )}
 
-        <p className="text-[11px] text-slate-500 italic">
-          Manual ingestion triggers execute idempotent syndication. Duplicate result sheets (identical SHA-256 hash) are automatically skipped, and revisions trigger automated document version increments.
-        </p>
+        <div className="p-3 bg-emerald-50/80 rounded border border-emerald-200 text-xs text-emerald-950 space-y-1">
+          <div className="font-bold flex items-center gap-1.5 text-emerald-900">
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-700" />
+            <span>Automatic Duplicate Avoidance & Version History Tracking Active</span>
+          </div>
+          <p className="text-[11px] text-slate-600 leading-relaxed">
+            When manually pulling already concluded results batch by batch from INEC portal, polling units already uploaded are automatically skipped to avoid duplicate entries. If a result has been altered or updated on the INEC portal, it is re-ingested with an automated version history record without overwriting previous audit data.
+          </p>
+        </div>
       </div>
 
       {/* Ingestion Jobs & Audit Trail */}
@@ -646,7 +926,7 @@ export const AdminIngestionPage: React.FC = () => {
             Ingestion Pipeline Execution History
           </h3>
           <div className="space-y-2">
-            {jobs.map((job) => (
+            {jobs.map((job: any) => (
               <div key={job.id} className="p-3 bg-slate-50 rounded border border-slate-200 text-xs space-y-1">
                 <div className="flex items-center justify-between">
                   <span className="font-mono font-bold text-slate-900">{job.id}</span>
@@ -672,7 +952,7 @@ export const AdminIngestionPage: React.FC = () => {
             Immutable Audit Trail & Retrieval Logs
           </h3>
           <div className="space-y-2">
-            {auditLogs.slice(0, 10).map((log) => (
+            {auditLogs.slice(0, 10).map((log: any) => (
               <div key={log.id} className="p-2.5 bg-slate-50 rounded border border-slate-200 text-xs">
                 <div className="flex items-center justify-between mb-1">
                   <span className="font-bold text-slate-900">{log.action}</span>

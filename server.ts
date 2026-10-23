@@ -505,16 +505,34 @@ export interface StoredEc8aItem {
 const UPLOADED_EC8A_STORE = new Map<string, StoredEc8aItem>();
 const EVIDENCE_FILES = new Map<string, StoredEvidenceItem>();
 
-// Polling Units store (Initialized to zero records)
+// ==========================================
+// PERMANENT DATABASE DISK PERSISTENCE
+// ==========================================
+const DATA_DIR = path.join(__dirname, 'data');
+if (!fs.existsSync(DATA_DIR)) {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+}
+
+const POLLING_UNITS_FILE = path.join(DATA_DIR, 'neramp_polling_units.json');
+const RESULT_SHEETS_FILE = path.join(DATA_DIR, 'neramp_result_sheets.json');
+const USERS_FILE = path.join(DATA_DIR, 'neramp_users.json');
+const USER_SESSIONS_FILE = path.join(DATA_DIR, 'neramp_user_sessions.json');
+const AUDIT_LOGS_FILE = path.join(DATA_DIR, 'neramp_audit_logs.json');
+const DISCREPANCIES_FILE = path.join(DATA_DIR, 'neramp_discrepancies.json');
+const INCIDENTS_FILE = path.join(DATA_DIR, 'neramp_incidents.json');
+const SCHEDULER_FILE = path.join(DATA_DIR, 'neramp_scheduler.json');
+const LOOP_CONFIG_FILE = path.join(DATA_DIR, 'neramp_loop_config.json');
+
+// Polling Units store (Clean zero state)
 let POLLING_UNITS: PollingUnit[] = [];
 
-// Result Sheets store (Initialized to zero records)
+// Result Sheets store (Clean zero state)
 let RESULT_SHEETS: Record<string, ResultSheet> = {};
 
-// Discrepancies store (Initialized to zero records)
+// Discrepancies store (Clean zero state)
 let DISCREPANCIES: Discrepancy[] = [];
 
-// Incident Reports store (Initialized to zero records)
+// Incident Reports store (Clean zero state)
 let INCIDENTS: IncidentReport[] = [];
 
 // Production Ingestion Jobs & Data Source State
@@ -540,136 +558,220 @@ const ROLE_WEIGHTS: Record<string, number> = {
   PUBLIC_USER: 10,
 };
 
+// Password Hashing with Crypto PBKDF2
+function hashPassword(password: string, salt?: string): { hash: string; salt: string } {
+  const actualSalt = salt || crypto.randomBytes(16).toString('hex');
+  const hash = crypto.pbkdf2Sync(password, actualSalt, 1000, 64, 'sha512').toString('hex');
+  return { hash, salt: actualSalt };
+}
+
+function verifyPassword(password: string, hash: string, salt: string): boolean {
+  const check = crypto.pbkdf2Sync(password, salt, 1000, 64, 'sha512').toString('hex');
+  return check === hash;
+}
+
 export interface UserItem {
   id: string;
   email: string;
   fullName: string;
   role: string;
   isActive: boolean;
+  passwordHash?: string;
+  salt?: string;
   assignedStateCode?: string;
   assignedLgaCode?: string;
   assignedWardCode?: string;
   assignedPus?: string[];
   badge?: string;
+  jurisdiction?: string;
   lastLogin?: string;
   createdAt: string;
   updatedAt: string;
 }
 
-let USERS: UserItem[] = [
+export interface UserSession {
+  id: string;
+  userId: string;
+  userName: string;
+  userEmail: string;
+  role: string;
+  badge?: string;
+  loginAt: string;
+  lastActiveAt: string;
+  logoutAt?: string | null;
+  durationSeconds: number;
+  ipAddress: string;
+  userAgent?: string;
+  status: 'ACTIVE' | 'LOGGED_OUT' | 'TIMED_OUT';
+}
+
+let USER_SESSIONS: UserSession[] = [];
+
+const DEFAULT_PASS = 'Admin@Neramp2026!';
+const defaultCreds = hashPassword(DEFAULT_PASS);
+
+const DEFAULT_MANAGEMENT_USERS: UserItem[] = [
   {
-    id: 'usr-admin-01',
-    email: 'sysadmin@electionwatch.ng',
-    fullName: 'Dr. Babatunde Adeleke',
+    id: 'usr-super-idris',
+    email: 'drisatech@gmail.com',
+    fullName: 'Engr. Idris A.',
     role: 'SUPER_ADMIN',
     isActive: true,
-    badge: 'ADM-HQ-001',
-    lastLogin: '2026-08-15T19:30:00Z',
+    passwordHash: defaultCreds.hash,
+    salt: defaultCreds.salt,
+    badge: 'NERAMP-DEV-001',
+    jurisdiction: 'National Infrastructure & Security (Full System Access)',
+    lastLogin: new Date().toISOString(),
     createdAt: '2026-06-01T08:00:00Z',
-    updatedAt: '2026-08-15T19:30:00Z',
+    updatedAt: new Date().toISOString(),
   },
   {
-    id: 'usr-proj-01',
-    email: 'project.lead@electionwatch.ng',
-    fullName: 'Ngozi Eze',
+    id: 'usr-proj-amina',
+    email: 'amina.bello@neramp.org.ng',
+    fullName: 'Dr. Amina Bello',
     role: 'PROJECT_ADMIN',
     isActive: true,
-    badge: 'ADM-HQ-002',
-    lastLogin: '2026-08-15T18:45:00Z',
+    passwordHash: defaultCreds.hash,
+    salt: defaultCreds.salt,
+    badge: 'NERAMP-ADM-002',
+    jurisdiction: 'National Operations & Policy Oversight',
+    lastLogin: new Date().toISOString(),
     createdAt: '2026-06-15T09:00:00Z',
-    updatedAt: '2026-08-15T18:45:00Z',
+    updatedAt: new Date().toISOString(),
   },
   {
-    id: 'usr-analyst-01',
-    email: 'analyst@electionwatch.ng',
-    fullName: 'Farouk Danjuma',
+    id: 'usr-analyst-chinedu',
+    email: 'c.okafor@neramp.org.ng',
+    fullName: 'Chinedu Okafor',
     role: 'ELECTION_ANALYST',
     isActive: true,
-    badge: 'ANA-HQ-003',
-    lastLogin: '2026-08-15T17:50:00Z',
+    passwordHash: defaultCreds.hash,
+    salt: defaultCreds.salt,
+    badge: 'NERAMP-ANA-014',
+    jurisdiction: 'Analytics, Data Ingestion & Turnout Modeling',
+    lastLogin: new Date().toISOString(),
     createdAt: '2026-08-01T10:00:00Z',
-    updatedAt: '2026-08-15T17:50:00Z',
+    updatedAt: new Date().toISOString(),
   },
   {
-    id: 'usr-coord-lagos',
-    email: 'coord.lagos@electionwatch.ng',
-    fullName: 'Amina Bello',
+    id: 'usr-coord-adeyemi',
+    email: 'adeyemi.a@neramp.org.ng',
+    fullName: 'Adeyemi Adeleke',
     role: 'STATE_COORDINATOR',
     isActive: true,
-    assignedStateCode: 'LAGOS',
-    badge: 'COORD-LAG-01',
-    lastLogin: '2026-08-15T19:15:00Z',
+    passwordHash: defaultCreds.hash,
+    salt: defaultCreds.salt,
+    assignedStateCode: 'OSUN',
+    badge: 'NERAMP-ST-029',
+    jurisdiction: 'Osun & Ekiti State Joint Operations',
+    lastLogin: new Date().toISOString(),
     createdAt: '2026-09-01T11:00:00Z',
-    updatedAt: '2026-08-15T19:15:00Z',
+    updatedAt: new Date().toISOString(),
   },
   {
-    id: 'usr-coord-lagisl',
-    email: 'coord.lagisland@electionwatch.ng',
-    fullName: 'Kayode Olawale',
-    role: 'LGA_COORDINATOR',
-    isActive: true,
-    assignedStateCode: 'LAGOS',
-    assignedLgaCode: 'LAGOS_ISLAND',
-    badge: 'COORD-LGI-02',
-    lastLogin: '2026-08-15T18:30:00Z',
-    createdAt: '2026-09-15T12:00:00Z',
-    updatedAt: '2026-08-15T18:30:00Z',
-  },
-  {
-    id: 'usr-coord-mon',
-    email: 'monitoring@electionwatch.ng',
-    fullName: 'Fatima Usman',
-    role: 'MONITORING_COORDINATOR',
-    isActive: true,
-    badge: 'COORD-MON-05',
-    lastLogin: '2026-08-15T19:00:00Z',
-    createdAt: '2026-10-01T13:00:00Z',
-    updatedAt: '2026-08-15T19:00:00Z',
-  },
-  {
-    id: 'usr-verif-01',
-    email: 'lead.verifier@electionwatch.ng',
-    fullName: 'Chinedu Okonkwo',
+    id: 'usr-verif-funmi',
+    email: 'f.adebayo@neramp.org.ng',
+    fullName: 'Funmilayo Adebayo',
     role: 'RESULT_VERIFIER',
     isActive: true,
-    assignedStateCode: 'LAGOS',
-    assignedLgaCode: 'LAGOS_ISLAND',
-    assignedPus: ['25-01-01-001', '25-01-01-002'],
-    badge: 'VER-SW-008',
-    lastLogin: '2026-08-15T19:22:00Z',
+    passwordHash: defaultCreds.hash,
+    salt: defaultCreds.salt,
+    badge: 'NERAMP-VER-088',
+    jurisdiction: 'Form EC8A Dual-Transcriber Queue',
+    lastLogin: new Date().toISOString(),
     createdAt: '2026-10-15T14:00:00Z',
-    updatedAt: '2026-08-15T19:22:00Z',
+    updatedAt: new Date().toISOString(),
   },
   {
-    id: 'usr-verif-02',
-    email: 'secondary.verifier@electionwatch.ng',
-    fullName: 'Musa Garba',
-    role: 'RESULT_VERIFIER',
-    isActive: true,
-    assignedStateCode: 'LAGOS',
-    assignedLgaCode: 'IKEJA',
-    assignedPus: ['25-02-01-003', '25-02-01-004'],
-    badge: 'VER-SW-012',
-    lastLogin: '2026-08-15T18:15:00Z',
-    createdAt: '2026-11-01T15:00:00Z',
-    updatedAt: '2026-08-15T18:15:00Z',
-  },
-  {
-    id: 'usr-obs-01',
-    email: 'lead.observer@electionwatch.ng',
-    fullName: 'Lead Field Observer',
+    id: 'usr-obs-tunde',
+    email: 't.oladipo@electionwatch.ng',
+    fullName: 'Tunde Oladipo',
     role: 'REGISTERED_OBSERVER',
     isActive: true,
-    assignedStateCode: 'LAGOS',
-    assignedLgaCode: 'LAGOS_ISLAND',
-    assignedWardCode: 'LAG_ISL_01',
-    assignedPus: ['25-01-01-001'],
+    passwordHash: defaultCreds.hash,
+    salt: defaultCreds.salt,
     badge: 'OBS-SW-042',
-    lastLogin: '2026-08-15T18:10:00Z',
+    jurisdiction: 'Osogbo LGA & Ife North LGA',
+    lastLogin: new Date().toISOString(),
     createdAt: '2026-11-15T16:00:00Z',
-    updatedAt: '2026-08-15T18:10:00Z',
+    updatedAt: new Date().toISOString(),
   },
 ];
+
+let USERS: UserItem[] = [...DEFAULT_MANAGEMENT_USERS];
+
+let saveDbDebounceTimer: NodeJS.Timeout | null = null;
+
+function saveDatabaseToDisk(immediate: boolean = false) {
+  const doSave = () => {
+    try {
+      if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+      fs.writeFileSync(POLLING_UNITS_FILE, JSON.stringify(POLLING_UNITS, null, 2), 'utf-8');
+      fs.writeFileSync(RESULT_SHEETS_FILE, JSON.stringify(RESULT_SHEETS, null, 2), 'utf-8');
+      fs.writeFileSync(USERS_FILE, JSON.stringify(USERS, null, 2), 'utf-8');
+      fs.writeFileSync(USER_SESSIONS_FILE, JSON.stringify(USER_SESSIONS, null, 2), 'utf-8');
+      fs.writeFileSync(AUDIT_LOGS_FILE, JSON.stringify(AUDIT_LOGS, null, 2), 'utf-8');
+      fs.writeFileSync(DISCREPANCIES_FILE, JSON.stringify(DISCREPANCIES, null, 2), 'utf-8');
+      fs.writeFileSync(INCIDENTS_FILE, JSON.stringify(INCIDENTS, null, 2), 'utf-8');
+    } catch (err: any) {
+      console.error('[DATABASE PERSISTENCE] Error saving to disk:', err.message);
+    }
+  };
+
+  if (immediate) {
+    if (saveDbDebounceTimer) clearTimeout(saveDbDebounceTimer);
+    doSave();
+  } else {
+    if (saveDbDebounceTimer) clearTimeout(saveDbDebounceTimer);
+    saveDbDebounceTimer = setTimeout(doSave, 800);
+  }
+}
+
+function loadDatabaseFromDisk() {
+  try {
+    if (fs.existsSync(POLLING_UNITS_FILE)) {
+      const content = fs.readFileSync(POLLING_UNITS_FILE, 'utf-8');
+      POLLING_UNITS = JSON.parse(content);
+      console.log(`[DATABASE PERSISTENCE] Loaded ${POLLING_UNITS.length} Polling Units from disk.`);
+    }
+    if (fs.existsSync(RESULT_SHEETS_FILE)) {
+      const content = fs.readFileSync(RESULT_SHEETS_FILE, 'utf-8');
+      RESULT_SHEETS = JSON.parse(content);
+      console.log(`[DATABASE PERSISTENCE] Loaded ${Object.keys(RESULT_SHEETS).length} Result Sheets from disk.`);
+    }
+    if (fs.existsSync(USERS_FILE)) {
+      const content = fs.readFileSync(USERS_FILE, 'utf-8');
+      const loadedUsers = JSON.parse(content);
+      if (Array.isArray(loadedUsers) && loadedUsers.length > 0) {
+        USERS = loadedUsers;
+        console.log(`[DATABASE PERSISTENCE] Loaded ${USERS.length} Management Users from disk.`);
+      }
+    } else {
+      saveDatabaseToDisk(true);
+    }
+    if (fs.existsSync(USER_SESSIONS_FILE)) {
+      const content = fs.readFileSync(USER_SESSIONS_FILE, 'utf-8');
+      USER_SESSIONS = JSON.parse(content);
+    }
+    if (fs.existsSync(AUDIT_LOGS_FILE)) {
+      const content = fs.readFileSync(AUDIT_LOGS_FILE, 'utf-8');
+      AUDIT_LOGS = JSON.parse(content);
+    }
+    if (fs.existsSync(DISCREPANCIES_FILE)) {
+      const content = fs.readFileSync(DISCREPANCIES_FILE, 'utf-8');
+      DISCREPANCIES = JSON.parse(content);
+    }
+    if (fs.existsSync(INCIDENTS_FILE)) {
+      const content = fs.readFileSync(INCIDENTS_FILE, 'utf-8');
+      INCIDENTS = JSON.parse(content);
+    }
+  } catch (err: any) {
+    console.error('[DATABASE PERSISTENCE] Error loading from disk:', err.message);
+  }
+}
+
+// Initial load from disk
+loadDatabaseFromDisk();
 
 // Data-Quality Alerts & Statistical Lead Queues
 let DATA_QUALITY_ALERTS: any[] = [];
@@ -2390,6 +2492,24 @@ app.get('/api/v1/polling-units', (req: Request, res: Response) => {
           p.lgaCode.toLowerCase().includes(q)
       );
     }
+
+    // Arranged according to the recently uploaded result time/date in INEC result portal (recent ones at top)
+    filtered.sort((a, b) => {
+      const timeA = new Date(
+        a.sourceUploadTimestamp ||
+          RESULT_SHEETS[a.resultSheetId || '']?.uploadTimestamp ||
+          a.lastRetrievedTimestamp ||
+          0
+      ).getTime();
+      const timeB = new Date(
+        b.sourceUploadTimestamp ||
+          RESULT_SHEETS[b.resultSheetId || '']?.uploadTimestamp ||
+          b.lastRetrievedTimestamp ||
+          0
+      ).getTime();
+      return timeB - timeA;
+    });
+
     const total = filtered.length;
     res.json({
       data: filtered.slice(off, off + lim),
@@ -2621,14 +2741,14 @@ app.get('/api/v1/elections/:electionId/published-incidents', (req: Request, res:
 // AUTHENTICATED & OBSERVER ENDPOINTS
 // ==========================================
 
-// Authentication with Brute-Force Rate Limiting & User Role Verification
+// Permanent Management Authentication with Password Verification & Brute-Force Rate Limiting
 app.post('/api/v1/auth/login', (req: Request, res: Response) => {
-  const { email, password, role = 'REGISTERED_OBSERVER' } = req.body;
+  const { email, password } = req.body;
   const ip = req.ip || req.socket.remoteAddress || '127.0.0.1';
   const lockoutKey = `${ip}:${(email || '').toLowerCase()}`;
 
   // 1. Rate-limiting & Brute Force Lockout
-  const rlCheck = checkRateLimit(lockoutKey, 5);
+  const rlCheck = checkRateLimit(lockoutKey, 6);
   if (!rlCheck.allowed) {
     res.status(429).json({
       error: `Too many failed authentication attempts. Account temporarily locked for ${rlCheck.remainingSeconds} seconds.`,
@@ -2636,59 +2756,325 @@ app.post('/api/v1/auth/login', (req: Request, res: Response) => {
     return;
   }
 
-  // 2. Lookup existing user from USERS store
-  let matchedUser = USERS.find((u) => u.email.toLowerCase() === (email || '').toLowerCase());
-
-  if (!matchedUser && email) {
-    // Demo fallback for role-based testing
-    matchedUser = USERS.find((u) => u.role === role) || USERS[0];
+  const cleanEmail = (email || '').trim().toLowerCase();
+  if (!cleanEmail) {
+    res.status(400).json({ error: 'Management email address is required.' });
+    return;
   }
 
-  const finalUser = matchedUser || {
-    id: 'usr-' + Math.random().toString(36).substring(2, 8),
-    email: email || 'observer.sample@electionwatch.ng',
-    fullName: 'Authorized Election Monitor',
-    role: role,
-    badge: 'OBS-SW-042',
-    isActive: true,
-  };
+  // 2. Lookup existing user from persistent USERS store
+  const user = USERS.find((u) => u.email.toLowerCase() === cleanEmail);
 
-  if (!finalUser.isActive) {
+  if (!user) {
     recordAttempt(lockoutKey, false);
-    res.status(403).json({ error: 'Account deactivated. Please contact your Election Monitoring Coordinator.' });
+    res.status(401).json({
+      error: 'Management account not found with this email. If this is your first time, please use the First-Timer Registration tab below to create your password and register.',
+    });
     return;
+  }
+
+  if (!user.isActive) {
+    recordAttempt(lockoutKey, false);
+    res.status(403).json({ error: 'This management account has been deactivated. Please contact the Super Administrator.' });
+    return;
+  }
+
+  // 3. Password Verification
+  if (user.passwordHash && user.salt) {
+    if (!password) {
+      res.status(400).json({ error: 'Management password is required.' });
+      return;
+    }
+    const isValid = verifyPassword(password, user.passwordHash, user.salt);
+    if (!isValid) {
+      recordAttempt(lockoutKey, false);
+      res.status(401).json({ error: 'Incorrect management password.' });
+      return;
+    }
+  } else if (password) {
+    // First time password setup on existing pre-configured account
+    const hashed = hashPassword(password);
+    user.passwordHash = hashed.hash;
+    user.salt = hashed.salt;
+    user.updatedAt = new Date().toISOString();
   }
 
   // Clear rate limit counter on success
   recordAttempt(lockoutKey, true);
+  user.lastLogin = new Date().toISOString();
+
+  // 4. Create and persist User Session for Super Admin monitoring
+  const sessionId = 'sess-' + Date.now() + '-' + crypto.randomBytes(6).toString('hex');
+  const sessionRecord: UserSession = {
+    id: sessionId,
+    userId: user.id,
+    userName: user.fullName,
+    userEmail: user.email,
+    role: user.role,
+    badge: user.badge,
+    loginAt: new Date().toISOString(),
+    lastActiveAt: new Date().toISOString(),
+    logoutAt: null,
+    durationSeconds: 0,
+    ipAddress: String(ip),
+    userAgent: String(req.headers['user-agent'] || 'Management Portal Client'),
+    status: 'ACTIVE',
+  };
+
+  USER_SESSIONS.unshift(sessionRecord);
+  if (USER_SESSIONS.length > 250) USER_SESSIONS.pop();
 
   const token = 'jwt-sec2027-' + crypto.randomBytes(24).toString('hex');
 
   AUDIT_LOGS.unshift({
     id: 'audit-' + Date.now(),
     timestamp: new Date().toISOString(),
-    actor: finalUser.email,
-    action: 'USER_LOGIN_SUCCESS',
-    target: finalUser.id,
-    details: `User ${finalUser.email} authenticated successfully. Role: ${finalUser.role}.`,
+    actor: user.email,
+    actorName: user.fullName,
+    actorRole: user.role,
+    action: 'MANAGEMENT_LOGIN_SUCCESS',
+    target: user.id,
+    details: `Management user ${user.fullName} (${user.email}) logged in. Role: ${user.role}, Badge: ${user.badge || 'N/A'}. Session: ${sessionId}`,
   });
+
+  saveDatabaseToDisk(true);
 
   res.json({
     token,
-    user: finalUser,
-    message: `Authentication successful. Role granted: ${finalUser.role}`,
+    sessionId,
+    user: {
+      id: user.id,
+      name: user.fullName,
+      email: user.email,
+      role: user.role,
+      badge: user.badge,
+      jurisdiction: user.jurisdiction || user.assignedStateCode || 'National Monitoring',
+    },
+    message: `Authentication verified. Welcome to NERAMP, ${user.fullName}.`,
   });
 });
 
-app.get('/api/v1/auth/me', (req: Request, res: Response) => {
-  const authHeader = req.headers.authorization;
-  const actorEmail = (req.headers['x-actor-email'] as string) || 'admin@electionwatch.ng';
-  const user = USERS.find((u) => u.email.toLowerCase() === actorEmail.toLowerCase()) || USERS[0];
-  res.json({ user });
+// First-Timer Management Registration with Permanent Password Creation
+app.post('/api/v1/auth/register', (req: Request, res: Response) => {
+  const { fullName, email, password, role = 'RESULT_VERIFIER', badge, jurisdiction } = req.body;
+
+  if (!fullName || !email || !password) {
+    res.status(400).json({ error: 'Full name, official email, and password are required.' });
+    return;
+  }
+
+  if (password.length < 6) {
+    res.status(400).json({ error: 'Password must be at least 6 characters in length.' });
+    return;
+  }
+
+  const cleanEmail = email.trim().toLowerCase();
+  const existing = USERS.find((u) => u.email.toLowerCase() === cleanEmail);
+  if (existing) {
+    res.status(409).json({ error: 'A management user with this email address already exists. Please sign in instead.' });
+    return;
+  }
+
+  const hashed = hashPassword(password);
+  const newUser: UserItem = {
+    id: 'usr-' + Date.now() + '-' + crypto.randomBytes(3).toString('hex'),
+    email: cleanEmail,
+    fullName: fullName.trim(),
+    role: role,
+    isActive: true,
+    passwordHash: hashed.hash,
+    salt: hashed.salt,
+    badge: badge?.trim() || `NERAMP-ST-${Math.floor(100 + Math.random() * 900)}`,
+    jurisdiction: jurisdiction?.trim() || 'National Monitoring Headquarters',
+    lastLogin: new Date().toISOString(),
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+
+  USERS.push(newUser);
+
+  const ip = req.ip || req.socket.remoteAddress || '127.0.0.1';
+  const sessionId = 'sess-' + Date.now() + '-' + crypto.randomBytes(6).toString('hex');
+  const sessionRecord: UserSession = {
+    id: sessionId,
+    userId: newUser.id,
+    userName: newUser.fullName,
+    userEmail: newUser.email,
+    role: newUser.role,
+    badge: newUser.badge,
+    loginAt: new Date().toISOString(),
+    lastActiveAt: new Date().toISOString(),
+    logoutAt: null,
+    durationSeconds: 0,
+    ipAddress: String(ip),
+    userAgent: String(req.headers['user-agent'] || 'Management Portal Client'),
+    status: 'ACTIVE',
+  };
+  USER_SESSIONS.unshift(sessionRecord);
+
+  AUDIT_LOGS.unshift({
+    id: 'audit-' + Date.now(),
+    timestamp: new Date().toISOString(),
+    actor: newUser.email,
+    actorName: newUser.fullName,
+    actorRole: newUser.role,
+    action: 'MANAGEMENT_FIRST_TIME_REGISTRATION',
+    target: newUser.id,
+    details: `New management personnel registered: ${newUser.fullName} (${newUser.email}). Role: ${newUser.role}, Badge: ${newUser.badge}.`,
+  });
+
+  saveDatabaseToDisk(true);
+
+  const token = 'jwt-sec2027-' + crypto.randomBytes(24).toString('hex');
+  res.json({
+    token,
+    sessionId,
+    user: {
+      id: newUser.id,
+      name: newUser.fullName,
+      email: newUser.email,
+      role: newUser.role,
+      badge: newUser.badge,
+      jurisdiction: newUser.jurisdiction,
+    },
+    message: `Account created successfully. You are now logged in as ${newUser.fullName}.`,
+  });
 });
 
-app.post('/api/v1/auth/logout', (_req: Request, res: Response) => {
-  res.json({ message: 'Logged out successfully. Session revoked.' });
+// Session Heartbeat Endpoint: Updates duration and last active time
+app.post('/api/v1/auth/session-heartbeat', (req: Request, res: Response) => {
+  const { sessionId, userEmail } = req.body;
+  if (!sessionId) {
+    res.json({ ok: true });
+    return;
+  }
+  const session = USER_SESSIONS.find((s) => s.id === sessionId);
+  if (session && session.status === 'ACTIVE') {
+    session.lastActiveAt = new Date().toISOString();
+    const loginTime = new Date(session.loginAt).getTime();
+    session.durationSeconds = Math.max(0, Math.round((Date.now() - loginTime) / 1000));
+    saveDatabaseToDisk();
+  }
+  res.json({ ok: true });
+});
+
+app.get('/api/v1/auth/me', (req: Request, res: Response) => {
+  const actorEmail = (req.headers['x-actor-email'] as string) || '';
+  const user = USERS.find((u) => u.email.toLowerCase() === actorEmail.toLowerCase()) || USERS[0];
+  res.json({
+    user: {
+      id: user.id,
+      name: user.fullName,
+      email: user.email,
+      role: user.role,
+      badge: user.badge,
+      jurisdiction: user.jurisdiction || 'National Monitoring',
+    },
+  });
+});
+
+app.post('/api/v1/auth/logout', (req: Request, res: Response) => {
+  const { sessionId, userEmail } = req.body;
+  if (sessionId) {
+    const session = USER_SESSIONS.find((s) => s.id === sessionId);
+    if (session) {
+      session.logoutAt = new Date().toISOString();
+      session.status = 'LOGGED_OUT';
+      const loginTime = new Date(session.loginAt).getTime();
+      session.durationSeconds = Math.max(0, Math.round((Date.now() - loginTime) / 1000));
+    }
+  }
+  if (userEmail) {
+    AUDIT_LOGS.unshift({
+      id: 'audit-' + Date.now(),
+      timestamp: new Date().toISOString(),
+      actor: userEmail,
+      action: 'USER_LOGOUT',
+      target: userEmail,
+      details: `Management user ${userEmail} signed out.`,
+    });
+  }
+  saveDatabaseToDisk(true);
+  res.json({ message: 'Logged out successfully. Session closed.' });
+});
+
+// Super Admin Management Monitoring Logs: Who logged in, when, how long, and activities carried out
+app.get('/api/v1/admin/management-monitoring', (req: Request, res: Response) => {
+  const actorRole = (req.headers['x-actor-role'] as string) || '';
+  const actorEmail = (req.headers['x-actor-email'] as string) || '';
+
+  // Only SUPER_ADMIN has access
+  const isSuperAdmin =
+    actorRole === 'SUPER_ADMIN' ||
+    USERS.some(
+      (u) =>
+        (u.email.toLowerCase() === actorEmail.toLowerCase() ||
+          actorEmail.toLowerCase() === 'drisatech@gmail.com') &&
+        u.role === 'SUPER_ADMIN'
+    );
+
+  if (!isSuperAdmin) {
+    res.status(403).json({
+      error: 'Restricted Access: Management Monitoring Logs are strictly restricted to Super Administrators only.',
+    });
+    return;
+  }
+
+  // Update duration on active sessions
+  const now = Date.now();
+  for (const s of USER_SESSIONS) {
+    if (s.status === 'ACTIVE') {
+      const lastActive = new Date(s.lastActiveAt).getTime();
+      // If inactive for > 30 minutes, mark as timed out
+      if (now - lastActive > 30 * 60 * 1000) {
+        s.status = 'TIMED_OUT';
+        s.logoutAt = s.lastActiveAt;
+      } else {
+        s.durationSeconds = Math.max(0, Math.round((now - new Date(s.loginAt).getTime()) / 1000));
+      }
+    }
+  }
+
+  // Collect activities carried out by management personnel
+  const managementEmails = new Set(USERS.map((u) => u.email.toLowerCase()));
+  const managementActivities = AUDIT_LOGS.filter((a) => {
+    const actorLower = (a.actor || '').toLowerCase();
+    return (
+      managementEmails.has(actorLower) ||
+      actorLower.includes('@') ||
+      a.action.includes('USER_') ||
+      a.action.includes('MANAGEMENT_') ||
+      a.action.includes('INGESTION_') ||
+      a.action.includes('VERIFICATION') ||
+      a.action.includes('PURGE_')
+    );
+  });
+
+  const activeSessions = USER_SESSIONS.filter((s) => s.status === 'ACTIVE');
+
+  res.json({
+    data: {
+      sessions: USER_SESSIONS,
+      activeSessionsCount: activeSessions.length,
+      activities: managementActivities,
+      users: USERS.map((u) => ({
+        id: u.id,
+        fullName: u.fullName,
+        email: u.email,
+        role: u.role,
+        badge: u.badge,
+        jurisdiction: u.jurisdiction,
+        lastLogin: u.lastLogin,
+        isActive: u.isActive,
+      })),
+      summary: {
+        totalSessionsTracked: USER_SESSIONS.length,
+        activeNow: activeSessions.length,
+        totalActivitiesLogged: managementActivities.length,
+        totalRegisteredPersonnel: USERS.length,
+      },
+    },
+  });
 });
 
 // Observer Assignments
@@ -3211,6 +3597,51 @@ app.post('/api/v1/admin/ingestion/scheduler', (req: Request, res: Response) => {
   res.json({
     message: 'Scheduled ingestion configuration updated successfully.',
     data: schedulerConfig,
+  });
+});
+
+// Live Loop Extraction Endpoints
+app.get('/api/v1/admin/ingestion/loop/status', (_req: Request, res: Response) => {
+  res.json({
+    data: loopExtractionConfig,
+    isExtractingNow: isLoopExtractionRunningNow,
+  });
+});
+
+app.post('/api/v1/admin/ingestion/loop/start', (req: Request, res: Response) => {
+  const { intervalMinutes = 2, electionId, maxWards = 25 } = req.body;
+  startLoopExtraction(Number(intervalMinutes) || 2, electionId, Number(maxWards) || 25);
+  res.json({
+    message: `Live loop extraction initiated. Runs every ${loopExtractionConfig.intervalMinutes} minute(s).`,
+    data: loopExtractionConfig,
+  });
+});
+
+app.post('/api/v1/admin/ingestion/loop/pause', (_req: Request, res: Response) => {
+  pauseLoopExtraction();
+  res.json({
+    message: 'Live loop extraction paused.',
+    data: loopExtractionConfig,
+  });
+});
+
+app.post('/api/v1/admin/ingestion/loop/stop', (_req: Request, res: Response) => {
+  stopLoopExtraction();
+  res.json({
+    message: 'Live loop extraction stopped.',
+    data: loopExtractionConfig,
+  });
+});
+
+app.post('/api/v1/admin/ingestion/loop/trigger-now', async (_req: Request, res: Response) => {
+  if (isLoopExtractionRunningNow) {
+    res.status(409).json({ error: 'A loop extraction cycle is currently running in background. Please wait.' });
+    return;
+  }
+  executeLoopCycle('MANUAL_LOOP_TRIGGER');
+  res.json({
+    message: 'Live loop cycle triggered immediately in background.',
+    data: loopExtractionConfig,
   });
 });
 
@@ -4517,109 +4948,30 @@ function resolveCanonicalLgaAndWard(
   return { lgaCode: finalLgaCode, wardCode: finalWardCode };
 }
 
-// Hydrate POLLING_UNITS and RESULT_SHEETS from OCR_CACHE on startup so all 30 Osun LGAs and 16 Ekiti LGAs have immediate official data
+// Clean OCR cache hydration: only applies OCR extractions to sheets that exist in RESULT_SHEETS if cached
 function hydratePollingUnitsFromOcrCache() {
   let hydrated = 0;
-  let realTranscribed = 0;
-  const pendingToQueue: string[] = [];
-
   for (const [docUrl, entry] of Object.entries(OCR_CACHE)) {
     const cached: any = entry;
     if (!cached || !cached.pollingUnitCode) continue;
-    const rawState = String(cached.state || cached.stateName || 'OSUN').toUpperCase();
-    const isEkiti = rawState.includes('EKITI');
-    const targetStateCode = isEkiti ? 'EKITI' : 'OSUN';
-    const targetElectionId = isEkiti ? 'elec-2026-gov-ekiti' : 'elec-2026-gov-osun';
     const normalizedCode = normalizePollingUnitCode(cached.pollingUnitCode);
-    const puId = `pu-${normalizedCode}`;
     const resultSheetId = `rs-${normalizedCode}`;
-    const isSyntheticStub = isSyntheticOcrEntry(cached);
-
-    const { lgaCode, wardCode } = resolveCanonicalLgaAndWard(
-      targetStateCode,
-      cached.lga || cached.lgaName || 'OSOGBO',
-      '01',
-      cached.ward || cached.wardName || 'WARD 01',
-      '01'
-    );
-
-    const puRecord: PollingUnit = {
-      id: puId,
-      code: normalizedCode,
-      name: cached.pollingUnitName || `Polling Unit ${normalizedCode}`,
-      stateCode: targetStateCode,
-      lgaCode,
-      wardCode,
-      registeredVoters: Number(cached.votersOnRegister) || 550,
-      accreditedVoters: Number(cached.accreditedVoters) || 280,
-      electionId: targetElectionId,
-      uploadStatus: 'UPLOADED',
-      transcriptionStatus: isSyntheticStub ? 'PENDING' : 'COMPLETED',
-      verificationStatus: isSyntheticStub ? 'PENDING_VERIFICATION' : 'VERIFIED',
-      sourceUploadTimestamp: cached.transcribedAt || new Date().toISOString(),
-      lastRetrievedTimestamp: new Date().toISOString(),
-      resultSheetId,
-      latitude: isEkiti ? 7.65 : 7.56,
-      longitude: isEkiti ? 5.25 : 4.52,
-    };
-
-    const existingIdx = POLLING_UNITS.findIndex(
-      (x) => x.code === normalizedCode && x.electionId === targetElectionId
-    );
-    if (existingIdx >= 0) {
-      POLLING_UNITS[existingIdx] = puRecord;
-    } else {
-      POLLING_UNITS.push(puRecord);
-    }
-
-    const shaHash = crypto.createHash('sha256').update(docUrl).digest('hex');
-    RESULT_SHEETS[resultSheetId] = {
-      id: resultSheetId,
-      pollingUnitCode: normalizedCode,
-      electionId: targetElectionId,
-      formType: 'EC8A',
-      sourceUrl: docUrl,
-      fileHash: shaHash,
-      imageUrl: docUrl,
-      uploadTimestamp: cached.transcribedAt || new Date().toISOString(),
-      retrievalTimestamp: new Date().toISOString(),
-      ocrConfidence: isSyntheticStub ? 0 : Number(cached.confidenceScore || cached.ocrConfidence || 98),
-      sourceStatus: 'ORIGINAL',
-      version: 1,
-      transcription: { validVotes: 0, rejectedVotes: 0, totalVotesCast: 0, partyVotes: {} },
-      ocrExtraction: {
-        validVotes: 0,
-        rejectedVotes: 0,
-        totalVotesCast: 0,
-        partyVotes: {},
-        rawText: `INEC FORM EC8A — ${puRecord.name} (${normalizedCode}). Ready for Gemini Vision AI OCR transcription.`,
-      },
-      arithmeticCheck: {
-        passed: true,
-        difference: 0,
-        formula: 'Awaiting Gemini Vision AI OCR extraction',
-        details: 'Official Form EC8A document retrieved from INEC Results Portal (IReV).',
-      },
-      verifiedBy: isSyntheticStub ? 'Pending AI OCR Transcription' : 'Gemini Vision AI OCR + Ballot Arithmetic Check',
-      verifiedAt: cached.transcribedAt || new Date().toISOString(),
-      verifierNotes: `Official Form EC8A document from INEC IReV: ${docUrl}`,
-    };
-
-    if (!isSyntheticStub) {
+    if (RESULT_SHEETS[resultSheetId]) {
       applyOcrExtractionToSheetAndPu(resultSheetId, cached);
-      realTranscribed++;
-    } else {
-      pendingToQueue.push(resultSheetId);
+      hydrated++;
     }
-    hydrated++;
   }
-  console.log(`[OCR CACHE HYDRATION] Hydrated ${hydrated} Polling Unit result sheets (${realTranscribed} verified by Gemini Vision AI OCR, ${pendingToQueue.length} queued/ready for live AI OCR).`);
+  if (hydrated > 0) {
+    console.log(`[OCR CACHE HYDRATION] Applied cached OCR to ${hydrated} existing result sheets.`);
+  }
 }
 
 hydratePollingUnitsFromOcrCache();
 
 async function fetchInecLiveElectionResults(electionIdKey: string, maxWards: number = 20): Promise<{
   newPusCount: number;
+  skippedDuplicatesCount: number;
+  revisedCount: number;
   totalPusProcessed: number;
   lgasCount: number;
   wardsCount: number;
@@ -4640,6 +4992,8 @@ async function fetchInecLiveElectionResults(electionIdKey: string, maxWards: num
   let pusFound = 0;
   let photosFound = 0;
   let addedCount = 0;
+  let skippedDuplicatesCount = 0;
+  let revisedCount = 0;
   let transcribedCount = 0;
   const newlyDiscoveredSheetIdsForSyncOcr: string[] = [];
 
@@ -4680,83 +5034,152 @@ async function fetchInecLiveElectionResults(electionIdKey: string, maxWards: num
           const hasPhoto = Boolean(docUrl);
           if (hasPhoto) photosFound++;
 
-          const cachedOcr = hasPhoto ? OCR_CACHE[docUrl] : undefined;
-          const regVoters = cachedOcr?.votersOnRegister || p.total_registered || 0;
-          const accVoters = cachedOcr?.accreditedVoters || p.total_accredited || 0;
           const resultSheetId = `rs-${normalizedCode}`;
+          const shaHash = hasPhoto ? crypto.createHash('sha256').update(docUrl).digest('hex') : '';
 
-          const existingIdx = POLLING_UNITS.findIndex((x) => x.code === normalizedCode);
-          const puRecord: PollingUnit = {
-            id: puId,
-            code: normalizedCode,
-            name: puName,
-            stateCode: targetStateCode,
-            lgaCode,
-            wardCode,
-            registeredVoters: regVoters,
-            accreditedVoters: accVoters,
-            electionId: targetElectionId,
-            uploadStatus: hasPhoto ? 'UPLOADED' : 'NOT_YET_UPLOADED',
-            transcriptionStatus: hasPhoto ? (cachedOcr ? 'COMPLETED' : 'IN_PROGRESS') : 'NOT_APPLICABLE',
-            verificationStatus: hasPhoto ? (cachedOcr ? 'VERIFIED' : 'PENDING_VERIFICATION') : 'NOT_APPLICABLE',
-            sourceUploadTimestamp: doc.updated_at || new Date().toISOString(),
-            lastRetrievedTimestamp: new Date().toISOString(),
-            resultSheetId: hasPhoto ? resultSheetId : undefined,
-            latitude: isEkiti ? 7.6 + Math.random() * 0.3 : 7.5 + Math.random() * 0.4,
-            longitude: isEkiti ? 5.2 + Math.random() * 0.3 : 4.4 + Math.random() * 0.4,
-          };
+          const existingIdx = POLLING_UNITS.findIndex(
+            (x) => x.code === normalizedCode && x.electionId === targetElectionId
+          );
+          const existingSheet = RESULT_SHEETS[resultSheetId];
 
-          if (existingIdx >= 0) {
-            POLLING_UNITS[existingIdx] = puRecord;
+          // Deduplication and intelligent versioning check:
+          if (existingIdx >= 0 && existingSheet) {
+            const isUrlChanged = docUrl && existingSheet.imageUrl && docUrl !== existingSheet.imageUrl;
+            const isHashChanged = shaHash && existingSheet.fileHash && shaHash !== existingSheet.fileHash;
+            const isDocTimeChanged =
+              doc.updated_at && existingSheet.uploadTimestamp && doc.updated_at !== existingSheet.uploadTimestamp;
+
+            if (isUrlChanged || isHashChanged || isDocTimeChanged) {
+              // Result is altered! Upload it and create a version history record!
+              console.log(
+                `[INGESTION] Altered result detected for PU ${normalizedCode}. Incrementing to v${
+                  existingSheet.version + 1
+                }...`
+              );
+              existingSheet.version += 1;
+              existingSheet.sourceStatus = 'REVISED_VERSION';
+              const prevUploadTime = existingSheet.uploadTimestamp;
+              const prevHash = existingSheet.fileHash;
+
+              existingSheet.sourceUrl = docUrl || existingSheet.sourceUrl;
+              existingSheet.imageUrl = docUrl || existingSheet.imageUrl;
+              existingSheet.fileHash = shaHash || existingSheet.fileHash;
+              existingSheet.uploadTimestamp = doc.updated_at || new Date().toISOString();
+              existingSheet.retrievalTimestamp = new Date().toISOString();
+              existingSheet.requiresHumanReview = true;
+              existingSheet.reviewReasons = [
+                `INEC portal uploaded revised Form EC8A document (updated_at: ${doc.updated_at || 'N/A'}).`,
+              ];
+
+              existingSheet.versionHistory = existingSheet.versionHistory || [];
+              existingSheet.versionHistory.unshift({
+                versionNumber: existingSheet.version,
+                actor: 'INEC Live Ingestion Pipeline',
+                actionType: 'DOCUMENT_REVISION_INGESTED',
+                timestamp: new Date().toISOString(),
+                reason: `Altered result sheet uploaded on INEC portal. Previous hash: ${prevHash?.slice(
+                  0,
+                  10
+                )}..., New hash: ${shaHash?.slice(0, 10)}... (INEC timestamp: ${existingSheet.uploadTimestamp}).`,
+                previousPartyVotes: { ...(existingSheet.transcription?.partyVotes || {}) },
+                newPartyVotes: {},
+              });
+
+              POLLING_UNITS[existingIdx].sourceUploadTimestamp = existingSheet.uploadTimestamp;
+              POLLING_UNITS[existingIdx].lastRetrievedTimestamp = new Date().toISOString();
+              POLLING_UNITS[existingIdx].verificationStatus = 'PENDING_VERIFICATION';
+
+              revisedCount++;
+              newlyDiscoveredSheetIdsForSyncOcr.push(resultSheetId);
+            } else {
+              // Unchanged result already uploaded - skip to avoid duplicate!
+              skippedDuplicatesCount++;
+              continue;
+            }
           } else {
-            POLLING_UNITS.push(puRecord);
-            addedCount++;
-          }
+            // Brand new polling unit upload
+            const cachedOcr = hasPhoto ? OCR_CACHE[docUrl] : undefined;
+            const regVoters = cachedOcr?.votersOnRegister || p.total_registered || 0;
+            const accVoters = cachedOcr?.accreditedVoters || p.total_accredited || 0;
 
-          if (hasPhoto) {
-            const shaHash = crypto.createHash('sha256').update(docUrl).digest('hex');
-            RESULT_SHEETS[resultSheetId] = {
-              id: resultSheetId,
-              pollingUnitCode: normalizedCode,
+            const puRecord: PollingUnit = {
+              id: puId,
+              code: normalizedCode,
+              name: puName,
+              stateCode: targetStateCode,
+              lgaCode,
+              wardCode,
+              registeredVoters: regVoters,
+              accreditedVoters: accVoters,
               electionId: targetElectionId,
-              formType: 'EC8A',
-              sourceUrl: docUrl,
-              fileHash: shaHash,
-              imageUrl: docUrl,
-              uploadTimestamp: doc.updated_at || new Date().toISOString(),
-              retrievalTimestamp: new Date().toISOString(),
-              ocrConfidence: 0,
-              sourceStatus: 'ORIGINAL',
-              version: 1,
-              transcription: {
-                validVotes: 0,
-                rejectedVotes: 0,
-                totalVotesCast: 0,
-                partyVotes: {},
-              },
-              ocrExtraction: {
-                validVotes: 0,
-                rejectedVotes: 0,
-                totalVotesCast: 0,
-                partyVotes: {},
-                rawText: `INEC FORM EC8A — ${puName} (${rawCode}). Queued for Gemini Vision AI OCR transcription.`,
-              },
-              arithmeticCheck: {
-                passed: true,
-                difference: 0,
-                formula: 'Awaiting Gemini Vision AI OCR extraction',
-                details: 'Form EC8A scan retrieved live from INEC Results Portal (IReV).',
-              },
-              verifiedBy: 'Pending AI OCR Transcription',
-              verifiedAt: new Date().toISOString(),
-              verifierNotes: `Official Form EC8A document from INEC IReV: ${docUrl}`,
+              uploadStatus: hasPhoto ? 'UPLOADED' : 'NOT_YET_UPLOADED',
+              transcriptionStatus: hasPhoto ? (cachedOcr ? 'COMPLETED' : 'IN_PROGRESS') : 'NOT_APPLICABLE',
+              verificationStatus: hasPhoto ? (cachedOcr ? 'VERIFIED' : 'PENDING_VERIFICATION') : 'NOT_APPLICABLE',
+              sourceUploadTimestamp: doc.updated_at || new Date().toISOString(),
+              lastRetrievedTimestamp: new Date().toISOString(),
+              resultSheetId: hasPhoto ? resultSheetId : undefined,
+              latitude: isEkiti ? 7.6 + Math.random() * 0.3 : 7.5 + Math.random() * 0.4,
+              longitude: isEkiti ? 5.2 + Math.random() * 0.3 : 4.4 + Math.random() * 0.4,
             };
 
-            if (cachedOcr) {
-              applyOcrExtractionToSheetAndPu(resultSheetId, cachedOcr);
-              transcribedCount++;
-            } else {
-              newlyDiscoveredSheetIdsForSyncOcr.push(resultSheetId);
+            POLLING_UNITS.push(puRecord);
+            addedCount++;
+
+            if (hasPhoto) {
+              RESULT_SHEETS[resultSheetId] = {
+                id: resultSheetId,
+                pollingUnitCode: normalizedCode,
+                electionId: targetElectionId,
+                formType: 'EC8A',
+                sourceUrl: docUrl,
+                fileHash: shaHash,
+                imageUrl: docUrl,
+                uploadTimestamp: doc.updated_at || new Date().toISOString(),
+                retrievalTimestamp: new Date().toISOString(),
+                ocrConfidence: 0,
+                sourceStatus: 'ORIGINAL',
+                version: 1,
+                transcription: {
+                  validVotes: 0,
+                  rejectedVotes: 0,
+                  totalVotesCast: 0,
+                  partyVotes: {},
+                },
+                ocrExtraction: {
+                  validVotes: 0,
+                  rejectedVotes: 0,
+                  totalVotesCast: 0,
+                  partyVotes: {},
+                  rawText: `INEC FORM EC8A — ${puName} (${rawCode}). Ready for AI OCR transcription.`,
+                },
+                arithmeticCheck: {
+                  passed: true,
+                  difference: 0,
+                  formula: 'Awaiting AI OCR extraction',
+                  details: 'Form EC8A scan retrieved live from INEC Results Portal (IReV).',
+                },
+                verifiedBy: 'Pending AI OCR Transcription',
+                verifiedAt: new Date().toISOString(),
+                verifierNotes: `Official Form EC8A document from INEC IReV: ${docUrl}`,
+                versionHistory: [
+                  {
+                    versionNumber: 1,
+                    actor: 'INEC Live Ingestion Pipeline',
+                    actionType: 'INITIAL_INGESTION',
+                    timestamp: new Date().toISOString(),
+                    reason: `Initial result sheet ingestion from INEC Results Portal (uploaded at ${
+                      doc.updated_at || 'N/A'
+                    })`,
+                  },
+                ],
+              };
+
+              if (cachedOcr) {
+                applyOcrExtractionToSheetAndPu(resultSheetId, cachedOcr);
+                transcribedCount++;
+              } else {
+                newlyDiscoveredSheetIdsForSyncOcr.push(resultSheetId);
+              }
             }
           }
         }
@@ -4767,13 +5190,13 @@ async function fetchInecLiveElectionResults(electionIdKey: string, maxWards: num
     if (wardsQueried >= maxWards) break;
   }
 
+  // Transcribe newly discovered sheets if quota is available
   const backgroundBatch = newlyDiscoveredSheetIdsForSyncOcr.slice(2);
   const now = Date.now();
   const hasAvailableModel = OCR_MODELS.some(
     (m) => !modelQuotaStatus[m]?.isExhausted || now > (modelQuotaStatus[m]?.exhaustedUntil || 0)
   );
 
-  // If models are available, transcribe up to 2 newly discovered sheets; otherwise preserve for manual verification
   if (hasAvailableModel) {
     const immediateBatch = newlyDiscoveredSheetIdsForSyncOcr.slice(0, 2);
     for (const sheetId of immediateBatch) {
@@ -4782,25 +5205,167 @@ async function fetchInecLiveElectionResults(electionIdKey: string, maxWards: num
         if (updated) transcribedCount++;
         await new Promise((r) => setTimeout(r, 1200));
       } catch (err: any) {
-        console.warn(`[GEMINI OCR] Batch transcription notice for ${sheetId}:`, err.message);
+        console.warn(`[OCR] Ingestion transcription note for ${sheetId}:`, err.message);
       }
     }
 
-    // Enqueue remaining items in background queue only if quota is available
     for (const sheetId of backgroundBatch.slice(0, 2)) {
       enqueueForGeminiOcr(sheetId);
     }
   }
 
+  saveDatabaseToDisk(true);
+
   return {
     newPusCount: addedCount,
+    skippedDuplicatesCount,
+    revisedCount,
     totalPusProcessed: pusFound,
     lgasCount: lgaData.length,
     wardsCount: wardsQueried,
     photosCount: photosFound,
     transcribedCount,
-    sourceNote: `Official INEC Results Portal (IReV) live syndication + Gemini Vision AI OCR. Fetched ${pusFound} Polling Units across ${wardsQueried} Wards in ${targetTitle} (${photosFound} Form EC8A photos, ${transcribedCount} AI-transcribed, ${backgroundBatch.length} queued in background OCR worker).`,
+    sourceNote: `Official INEC Results Portal (IReV) live syndication. Fetched ${pusFound} Polling Units across ${wardsQueried} Wards in ${targetTitle} (${addedCount} newly uploaded, ${skippedDuplicatesCount} duplicates skipped, ${revisedCount} altered/revised version(s), ${photosFound} official Form EC8A photos).`,
   };
+}
+
+// ==========================================
+// LIVE COLLIATION LOOP EXTRACTION ENGINE
+// ==========================================
+interface LoopExtractionConfig {
+  enabled: boolean;
+  intervalMinutes: number;
+  electionId: string;
+  maxWardsPerRun: number;
+  lastRunAt: string | null;
+  nextRunAt: string | null;
+  status: 'IDLE' | 'RUNNING' | 'PAUSED';
+  totalRuns: number;
+  totalPusExtracted: number;
+  totalDuplicatesSkipped: number;
+  totalRevised: number;
+  lastRunSummary: string;
+}
+
+let loopExtractionConfig: LoopExtractionConfig = {
+  enabled: false,
+  intervalMinutes: 2,
+  electionId: 'elec-2026-gov-osun',
+  maxWardsPerRun: 25,
+  lastRunAt: null,
+  nextRunAt: null,
+  status: 'IDLE',
+  totalRuns: 0,
+  totalPusExtracted: 0,
+  totalDuplicatesSkipped: 0,
+  totalRevised: 0,
+  lastRunSummary: 'No live loop extraction has run yet.',
+};
+
+let loopExtractionTimer: NodeJS.Timeout | null = null;
+let isLoopExtractionRunningNow = false;
+
+async function executeLoopCycle(triggerSource: string = 'SCHEDULED_TIMER') {
+  if (isLoopExtractionRunningNow) {
+    console.log('[LIVE LOOP EXTRACTION] Previous cycle still in progress, skipping tick.');
+    return;
+  }
+  isLoopExtractionRunningNow = true;
+  try {
+    console.log(
+      `[LIVE LOOP EXTRACTION] Commencing scheduled loop extraction cycle #${
+        loopExtractionConfig.totalRuns + 1
+      } for ${loopExtractionConfig.electionId} (trigger: ${triggerSource})...`
+    );
+    const result = await fetchInecLiveElectionResults(
+      loopExtractionConfig.electionId,
+      loopExtractionConfig.maxWardsPerRun
+    );
+    loopExtractionConfig.totalRuns += 1;
+    loopExtractionConfig.totalPusExtracted += result.newPusCount;
+    loopExtractionConfig.totalDuplicatesSkipped += result.skippedDuplicatesCount;
+    loopExtractionConfig.totalRevised += result.revisedCount;
+    loopExtractionConfig.lastRunAt = new Date().toISOString();
+    loopExtractionConfig.nextRunAt = new Date(
+      Date.now() + loopExtractionConfig.intervalMinutes * 60 * 1000
+    ).toISOString();
+    loopExtractionConfig.lastRunSummary = `Cycle #${loopExtractionConfig.totalRuns}: ${result.newPusCount} new PUs, ${result.skippedDuplicatesCount} duplicates skipped, ${result.revisedCount} revised version(s).`;
+
+    const job = {
+      id: 'loop-job-' + Date.now(),
+      adapter: 'InecApprovedSourceAdapter',
+      electionId: loopExtractionConfig.electionId,
+      status: 'COMPLETED',
+      startedAt: loopExtractionConfig.lastRunAt,
+      finishedAt: new Date().toISOString(),
+      recordsRetrieved: result.totalPusProcessed,
+      recordsProcessed: result.newPusCount + result.revisedCount,
+      recordsRejected: 0,
+      recordsSkippedDuplicate: result.skippedDuplicatesCount,
+      recordsRevised: result.revisedCount,
+      sourceAttribution: result.sourceNote,
+    };
+    INGESTION_JOBS.unshift(job);
+    if (INGESTION_JOBS.length > 50) INGESTION_JOBS.pop();
+
+    AUDIT_LOGS.unshift({
+      id: 'audit-' + Date.now(),
+      timestamp: new Date().toISOString(),
+      actor: 'system:loop_extraction',
+      action: 'LIVE_COLLIATION_LOOP_CYCLE',
+      target: loopExtractionConfig.electionId,
+      details: `Live loop cycle #${loopExtractionConfig.totalRuns} completed: ${result.newPusCount} new PUs uploaded, ${result.skippedDuplicatesCount} duplicates skipped, ${result.revisedCount} revised sheets.`,
+    });
+
+    saveDatabaseToDisk(true);
+  } catch (err: any) {
+    console.error('[LIVE LOOP EXTRACTION] Error during extraction cycle:', err.message);
+  } finally {
+    isLoopExtractionRunningNow = false;
+  }
+}
+
+function startLoopExtraction(intervalMinutes: number, electionId?: string, maxWards?: number) {
+  if (loopExtractionTimer) {
+    clearInterval(loopExtractionTimer);
+    loopExtractionTimer = null;
+  }
+  loopExtractionConfig.enabled = true;
+  loopExtractionConfig.status = 'RUNNING';
+  loopExtractionConfig.intervalMinutes = Math.max(1, intervalMinutes || 2);
+  if (electionId) loopExtractionConfig.electionId = electionId;
+  if (maxWards) loopExtractionConfig.maxWardsPerRun = maxWards;
+  loopExtractionConfig.nextRunAt = new Date(
+    Date.now() + loopExtractionConfig.intervalMinutes * 60 * 1000
+  ).toISOString();
+
+  // Run initial cycle immediately
+  executeLoopCycle('LOOP_STARTED');
+
+  // Recurring interval
+  loopExtractionTimer = setInterval(() => {
+    if (loopExtractionConfig.enabled && loopExtractionConfig.status === 'RUNNING') {
+      executeLoopCycle('SCHEDULED_TIMER');
+    }
+  }, loopExtractionConfig.intervalMinutes * 60 * 1000);
+
+  saveDatabaseToDisk(true);
+}
+
+function pauseLoopExtraction() {
+  loopExtractionConfig.status = 'PAUSED';
+  saveDatabaseToDisk(true);
+}
+
+function stopLoopExtraction() {
+  if (loopExtractionTimer) {
+    clearInterval(loopExtractionTimer);
+    loopExtractionTimer = null;
+  }
+  loopExtractionConfig.enabled = false;
+  loopExtractionConfig.status = 'IDLE';
+  loopExtractionConfig.nextRunAt = null;
+  saveDatabaseToDisk(true);
 }
 
 // Proxy INEC S3 Form EC8A Images with proper Content-Type header so browsers render them cleanly
@@ -5353,8 +5918,11 @@ app.post('/api/v1/admin/ingestion/run', async (req: Request, res: Response) => {
     }
   }
 
-  const processedCount = liveResult ? liveResult.totalPusProcessed : (POLLING_UNITS.filter((p) => p.electionId === electionId).length || 5);
+  const processedCount = liveResult ? liveResult.totalPusProcessed : (POLLING_UNITS.filter((p) => p.electionId === electionId).length || 0);
   const photosCount = liveResult ? liveResult.photosCount : processedCount;
+  const skippedDuplicates = liveResult?.skippedDuplicatesCount || 0;
+  const revisedCount = liveResult?.revisedCount || 0;
+  const newPusCount = liveResult?.newPusCount || 0;
 
   const newJob = {
     id: 'job-' + (INGESTION_JOBS.length + 1001),
@@ -5364,10 +5932,10 @@ app.post('/api/v1/admin/ingestion/run', async (req: Request, res: Response) => {
     startedAt: new Date().toISOString(),
     finishedAt: new Date().toISOString(),
     recordsRetrieved: processedCount,
-    recordsProcessed: processedCount,
+    recordsProcessed: newPusCount + revisedCount,
     recordsRejected: 0,
-    recordsSkippedDuplicate: 0,
-    recordsRevised: 0,
+    recordsSkippedDuplicate: skippedDuplicates,
+    recordsRevised: revisedCount,
     discrepanciesDetected: 0,
     sourceAttribution: liveResult
       ? liveResult.sourceNote
@@ -5381,22 +5949,30 @@ app.post('/api/v1/admin/ingestion/run', async (req: Request, res: Response) => {
   AUDIT_LOGS.unshift({
     id: 'audit-' + Date.now(),
     timestamp: new Date().toISOString(),
-    actor: 'admin:manual_trigger',
+    actor: (req.headers['x-actor-email'] as string) || 'admin:manual_trigger',
     action: 'TRIGGER_INGESTION_JOB',
     target: newJob.id,
     details: liveResult
-      ? `Live ingestion executed via ${adapter} for ${electionId}. ${processedCount} real polling units retrieved across ${liveResult.wardsCount} wards. ${photosCount} official Form EC8A photos preserved.`
-      : `Manual ingestion executed via ${adapter} for ${electionId}. ${processedCount} records processed.`,
+      ? `Manual batch ingestion executed for ${electionId}. ${newPusCount} new Polling Units uploaded, ${skippedDuplicates} duplicate records skipped, ${revisedCount} altered results updated with version history.`
+      : `Manual ingestion executed via ${adapter} for ${electionId}.`,
   });
 
+  saveDatabaseToDisk(true);
+
   res.json({
-    message: 'Ingestion pipeline executed successfully.',
+    message: `Ingestion completed: ${newPusCount} newly uploaded, ${skippedDuplicates} duplicates skipped, ${revisedCount} revised version(s).`,
     data: newJob,
+    stats: {
+      newPusCount,
+      skippedDuplicates,
+      revisedCount,
+      totalPusProcessed: processedCount,
+    },
   });
 });
 
-// Purge Demo Fixtures and Reset to Official INEC Records Only
-app.post('/api/v1/admin/data/purge-demo', (_req: Request, res: Response) => {
+// Purge Demo Fixtures and Reset Entire App to Zero
+app.post('/api/v1/admin/data/purge-demo', (req: Request, res: Response) => {
   const purgedCount = POLLING_UNITS.length;
   POLLING_UNITS = [];
   RESULT_SHEETS = {};
@@ -5406,22 +5982,26 @@ app.post('/api/v1/admin/data/purge-demo', (_req: Request, res: Response) => {
   DATA_QUALITY_ALERTS = [];
   STATISTICAL_ANOMALIES = [];
   SOURCE_DOCUMENT_CHANGES = [];
+  OCR_CACHE = {};
 
   currentDataSourceMode = 'OFFICIAL_SOURCE';
-  hydratePollingUnitsFromOcrCache();
+
+  saveDatabaseToDisk(true);
 
   AUDIT_LOGS.unshift({
     id: 'audit-' + Date.now(),
     timestamp: new Date().toISOString(),
-    actor: 'admin:purge_command',
-    action: 'PURGE_DEMO_FIXTURES',
+    actor: (req.headers['x-actor-email'] as string) || 'admin:purge_command',
+    action: 'PURGE_DEMO_FIXTURES_RESET_ZERO',
     target: 'database_store',
-    details: `Purged non-official demo fixtures and restored ${POLLING_UNITS.length} official INEC Polling Unit result sheets for Osun and Ekiti states.`,
+    details: `All demo fixtures, results, and mock records purged. System reset to clean zero state.`,
   });
 
+  saveDatabaseToDisk(true);
+
   res.json({
-    message: `Successfully purged demo fixtures and restored ${POLLING_UNITS.length} official INEC Polling Unit result sheets (Osun & Ekiti State).`,
-    remainingPollingUnits: POLLING_UNITS.length,
+    message: `All demo fixtures, uploaded records, and mock figures successfully cleared. Platform reset to zero.`,
+    remainingPollingUnits: 0,
     purgedCount,
     mode: currentDataSourceMode,
   });

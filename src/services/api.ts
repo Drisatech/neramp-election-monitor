@@ -866,3 +866,144 @@ export async function testGeminiOcrConnection(
   return res.json();
 }
 
+export function getAuthHeaders(): Record<string, string> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+  try {
+    const token = localStorage.getItem('neramp_mgmt_token');
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    const userJson = localStorage.getItem('neramp_mgmt_auth_user');
+    if (userJson) {
+      const u = JSON.parse(userJson);
+      if (u?.email) headers['x-actor-email'] = u.email;
+      if (u?.role) headers['x-actor-role'] = u.role;
+    }
+  } catch {}
+  return headers;
+}
+
+// Permanent Management Authentication
+export async function loginManagement(email: string, password?: string) {
+  const res = await fetch(`${API_BASE}/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Authentication failed');
+  }
+  return res.json();
+}
+
+export async function registerManagement(data: {
+  fullName: string;
+  email: string;
+  password: string;
+  role?: string;
+  badge?: string;
+  jurisdiction?: string;
+}) {
+  const res = await fetch(`${API_BASE}/auth/register`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Registration failed');
+  }
+  return res.json();
+}
+
+export async function sendSessionHeartbeat(sessionId: string, userEmail?: string) {
+  try {
+    await fetch(`${API_BASE}/auth/session-heartbeat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sessionId, userEmail }),
+    });
+  } catch {
+    // Non-blocking
+  }
+}
+
+export async function logoutManagement(sessionId?: string, userEmail?: string) {
+  try {
+    await fetch(`${API_BASE}/auth/logout`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sessionId, userEmail }),
+    });
+  } catch {
+    // Non-blocking
+  }
+}
+
+// Super Admin Management Monitoring Logs
+export async function fetchManagementMonitoring() {
+  const res = await fetch(`${API_BASE}/admin/management-monitoring`, {
+    headers: getAuthHeaders(),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Failed to fetch management monitoring logs');
+  }
+  return res.json();
+}
+
+// Live Collation Loop Extraction APIs
+export async function fetchLoopExtractionStatus() {
+  const res = await fetch(`${API_BASE}/admin/ingestion/loop/status`);
+  if (!res.ok) throw new Error('Failed to fetch loop status');
+  return res.json();
+}
+
+export async function startLiveLoopExtraction(intervalMinutes: number, electionId?: string, maxWards?: number) {
+  const res = await fetch(`${API_BASE}/admin/ingestion/loop/start`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ intervalMinutes, electionId, maxWards }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Failed to start live loop extraction');
+  }
+  return res.json();
+}
+
+export async function pauseLiveLoopExtraction() {
+  const res = await fetch(`${API_BASE}/admin/ingestion/loop/pause`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({}),
+  });
+  if (!res.ok) throw new Error('Failed to pause live loop extraction');
+  return res.json();
+}
+
+export async function stopLiveLoopExtraction() {
+  const res = await fetch(`${API_BASE}/admin/ingestion/loop/stop`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({}),
+  });
+  if (!res.ok) throw new Error('Failed to stop live loop extraction');
+  return res.json();
+}
+
+export async function triggerLoopExtractionNow() {
+  const res = await fetch(`${API_BASE}/admin/ingestion/loop/trigger-now`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({}),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Failed to trigger loop extraction cycle');
+  }
+  return res.json();
+}
+
+
