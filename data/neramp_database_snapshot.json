@@ -1,16 +1,16 @@
 {
   "platform": "NIGERIA ELECTION RESULTS ANALYSIS AND MONITORING PLATFORM (NERAMP)",
   "exportVersion": 2,
-  "exportedAt": "2026-10-23T17:20:44.662Z",
+  "exportedAt": "2026-10-23T22:00:10.412Z",
   "exporter": "admin:backup",
   "storagePath": "/app/data",
   "summary": {
     "totalPollingUnits": 49,
     "totalResultSheets": 49,
-    "totalUsers": 7,
-    "totalDiscrepancies": 0,
+    "totalUsers": 6,
+    "totalDiscrepancies": 4,
     "totalIncidents": 0,
-    "totalAuditLogs": 15
+    "totalAuditLogs": 16
   },
   "pollingUnits": [
     {
@@ -58,12 +58,12 @@
       "stateCode": "OSUN",
       "lgaCode": "ILA",
       "wardCode": "ILA_RA_01",
-      "registeredVoters": 0,
-      "accreditedVoters": 0,
+      "registeredVoters": 942,
+      "accreditedVoters": 182,
       "electionId": "elec-2026-gov-osun",
       "uploadStatus": "UPLOADED",
-      "transcriptionStatus": "IN_PROGRESS",
-      "verificationStatus": "PENDING_VERIFICATION",
+      "transcriptionStatus": "COMPLETED",
+      "verificationStatus": "VERIFIED",
       "sourceUploadTimestamp": "2026-08-15T18:03:03.142Z",
       "lastRetrievedTimestamp": "2026-10-23T16:36:05.372Z",
       "resultSheetId": "rs-29-17-03-003",
@@ -77,12 +77,12 @@
       "stateCode": "OSUN",
       "lgaCode": "ILA",
       "wardCode": "ILA_RA_01",
-      "registeredVoters": 0,
-      "accreditedVoters": 0,
+      "registeredVoters": 320,
+      "accreditedVoters": 312,
       "electionId": "elec-2026-gov-osun",
       "uploadStatus": "UPLOADED",
-      "transcriptionStatus": "IN_PROGRESS",
-      "verificationStatus": "PENDING_VERIFICATION",
+      "transcriptionStatus": "COMPLETED",
+      "verificationStatus": "VERIFIED",
       "sourceUploadTimestamp": "2026-08-15T17:48:08.219Z",
       "lastRetrievedTimestamp": "2026-10-23T16:36:05.372Z",
       "resultSheetId": "rs-29-17-03-006",
@@ -96,12 +96,12 @@
       "stateCode": "OSUN",
       "lgaCode": "ILA",
       "wardCode": "ILA_RA_01",
-      "registeredVoters": 0,
-      "accreditedVoters": 0,
+      "registeredVoters": 511,
+      "accreditedVoters": 327,
       "electionId": "elec-2026-gov-osun",
       "uploadStatus": "UPLOADED",
-      "transcriptionStatus": "IN_PROGRESS",
-      "verificationStatus": "PENDING_VERIFICATION",
+      "transcriptionStatus": "COMPLETED",
+      "verificationStatus": "VERIFIED",
       "sourceUploadTimestamp": "2026-08-15T17:36:06.876Z",
       "lastRetrievedTimestamp": "2026-10-23T16:36:05.372Z",
       "resultSheetId": "rs-29-17-03-005",
@@ -210,12 +210,12 @@
       "stateCode": "OSUN",
       "lgaCode": "ILA",
       "wardCode": "ILA_RA_02",
-      "registeredVoters": 0,
-      "accreditedVoters": 0,
+      "registeredVoters": 522,
+      "accreditedVoters": 318,
       "electionId": "elec-2026-gov-osun",
       "uploadStatus": "UPLOADED",
-      "transcriptionStatus": "IN_PROGRESS",
-      "verificationStatus": "PENDING_VERIFICATION",
+      "transcriptionStatus": "COMPLETED",
+      "verificationStatus": "VERIFIED",
       "sourceUploadTimestamp": "2026-08-15T18:57:35.473Z",
       "lastRetrievedTimestamp": "2026-10-23T16:36:06.358Z",
       "resultSheetId": "rs-29-17-08-011",
@@ -229,12 +229,12 @@
       "stateCode": "OSUN",
       "lgaCode": "ILA",
       "wardCode": "ILA_RA_02",
-      "registeredVoters": 0,
-      "accreditedVoters": 0,
+      "registeredVoters": 116,
+      "accreditedVoters": 213,
       "electionId": "elec-2026-gov-osun",
       "uploadStatus": "UPLOADED",
-      "transcriptionStatus": "IN_PROGRESS",
-      "verificationStatus": "PENDING_VERIFICATION",
+      "transcriptionStatus": "COMPLETED",
+      "verificationStatus": "VERIFIED",
       "sourceUploadTimestamp": "2026-08-15T18:18:11.574Z",
       "lastRetrievedTimestamp": "2026-10-23T16:36:06.358Z",
       "resultSheetId": "rs-29-17-08-010",
@@ -248,12 +248,12 @@
       "stateCode": "OSUN",
       "lgaCode": "ILA",
       "wardCode": "ILA_RA_02",
-      "registeredVoters": 0,
-      "accreditedVoters": 0,
+      "registeredVoters": 327,
+      "accreditedVoters": 216,
       "electionId": "elec-2026-gov-osun",
       "uploadStatus": "UPLOADED",
-      "transcriptionStatus": "IN_PROGRESS",
-      "verificationStatus": "PENDING_VERIFICATION",
+      "transcriptionStatus": "COMPLETED",
+      "verificationStatus": "VERIFIED",
       "sourceUploadTimestamp": "2026-08-15T17:27:10.710Z",
       "lastRetrievedTimestamp": "2026-10-23T16:36:06.358Z",
       "resultSheetId": "rs-29-17-08-001",
@@ -400,12 +400,12 @@
       "stateCode": "OSUN",
       "lgaCode": "ILA",
       "wardCode": "ILA_RA_01",
-      "registeredVoters": 0,
-      "accreditedVoters": 0,
+      "registeredVoters": 403,
+      "accreditedVoters": 232,
       "electionId": "elec-2026-gov-osun",
       "uploadStatus": "UPLOADED",
-      "transcriptionStatus": "IN_PROGRESS",
-      "verificationStatus": "PENDING_VERIFICATION",
+      "transcriptionStatus": "COMPLETED",
+      "verificationStatus": "VERIFIED",
       "sourceUploadTimestamp": "2026-08-15T18:39:06.844Z",
       "lastRetrievedTimestamp": "2026-10-23T16:36:07.061Z",
       "resultSheetId": "rs-29-17-02-001",
@@ -419,12 +419,12 @@
       "stateCode": "OSUN",
       "lgaCode": "ILA",
       "wardCode": "ILA_RA_01",
-      "registeredVoters": 0,
-      "accreditedVoters": 0,
+      "registeredVoters": 435,
+      "accreditedVoters": 223,
       "electionId": "elec-2026-gov-osun",
       "uploadStatus": "UPLOADED",
-      "transcriptionStatus": "IN_PROGRESS",
-      "verificationStatus": "PENDING_VERIFICATION",
+      "transcriptionStatus": "COMPLETED",
+      "verificationStatus": "VERIFIED",
       "sourceUploadTimestamp": "2026-08-15T18:39:06.019Z",
       "lastRetrievedTimestamp": "2026-10-23T16:36:07.061Z",
       "resultSheetId": "rs-29-17-02-006",
@@ -438,12 +438,12 @@
       "stateCode": "OSUN",
       "lgaCode": "ILA",
       "wardCode": "ILA_RA_01",
-      "registeredVoters": 0,
-      "accreditedVoters": 0,
+      "registeredVoters": 690,
+      "accreditedVoters": 393,
       "electionId": "elec-2026-gov-osun",
       "uploadStatus": "UPLOADED",
-      "transcriptionStatus": "IN_PROGRESS",
-      "verificationStatus": "PENDING_VERIFICATION",
+      "transcriptionStatus": "COMPLETED",
+      "verificationStatus": "DISCREPANCY_FLAGGED",
       "sourceUploadTimestamp": "2026-08-15T17:21:11.605Z",
       "lastRetrievedTimestamp": "2026-10-23T16:36:07.061Z",
       "resultSheetId": "rs-29-17-02-008",
@@ -988,7 +988,7 @@
         "passed": true,
         "difference": 0,
         "formula": "Party Sum (586) = Valid (586) + Rejected (6) = Cast (592) | Used Ballots (#5+#6+#7) = 594",
-        "details": "Gemini Vision AI OCR verified: Party votes sum (586) matches Total Valid Votes (586) and is within Accredited Voters (594). Presiding Officer: OLALEYE TANSO TOJI."
+        "details": "Lead Observer Verifier verified: Party votes sum (586) matches Total Valid Votes (586) and is within Accredited Voters (594). Presiding Officer: OLALEYE TANSO TOJI."
       },
       "verifiedBy": "Lead Observer Verifier",
       "verifiedAt": "2026-10-23T16:50:08.937Z",
@@ -1073,9 +1073,9 @@
         "passed": true,
         "difference": 0,
         "formula": "Party Sum (439) = Valid (439) + Rejected (2) = Cast (441) | Used Ballots (#5+#6+#7) = 441",
-        "details": "Gemini Vision AI OCR verified: Party votes sum (439) matches Total Valid Votes (439) and is within Accredited Voters (441). Presiding Officer: ADELEKE AABUKUDR. CO."
+        "details": "Engr. Idris A. verified: Party votes sum (439) matches Total Valid Votes (439) and is within Accredited Voters (441). Presiding Officer: ADELEKE AABUKUDR. CO."
       },
-      "verifiedBy": "Gemini Vision AI OCR + Ballot Arithmetic Check",
+      "verifiedBy": "Engr. Idris A.",
       "verifiedAt": "2026-10-23T16:36:20.409Z",
       "verifierNotes": "Transcribed from official Form EC8A (S/N 0001911). Presiding Officer: ADELEKE AABUKUDR. CO.",
       "versionHistory": [
@@ -1113,38 +1113,115 @@
       "imageUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7035/97415/5f113c15-2261-4003-a088-f6aa72329977.jpg",
       "uploadTimestamp": "2026-08-15T18:03:03.142Z",
       "retrievalTimestamp": "2026-10-23T16:36:05.372Z",
-      "ocrConfidence": 0,
+      "ocrConfidence": 95,
       "sourceStatus": "ORIGINAL",
-      "version": 1,
+      "version": 2,
       "transcription": {
-        "validVotes": 0,
+        "validVotes": 476,
         "rejectedVotes": 0,
-        "totalVotesCast": 0,
-        "partyVotes": {}
+        "totalVotesCast": 476,
+        "partyVotes": {
+          "A": 318,
+          "ADC": 4,
+          "ADP": 0,
+          "APC": 152,
+          "APP": 1,
+          "ZLP": 1
+        }
       },
       "ocrExtraction": {
-        "validVotes": 0,
+        "validVotes": 476,
         "rejectedVotes": 0,
-        "totalVotesCast": 0,
-        "partyVotes": {},
-        "rawText": "INEC FORM EC8A — AJABA JUNCTION (29/17/03/003). Ready for AI OCR transcription."
+        "totalVotesCast": 476,
+        "partyVotes": {
+          "A": 318,
+          "ADC": 4,
+          "ADP": 1,
+          "APC": 152,
+          "APP": 1,
+          "ZLP": 1
+        },
+        "rawText": "INEC FORM EC8A — STATEMENT OF RESULT OF POLL FROM POLLING UNIT\nS/N: 0001912 | Date: 15/02/2028\nState: OSUN | LGA: ILA | Ward: EJIGBO III\nPolling Unit: AJABA JUNCTION (29/17/03/003)\n#1 Voters on Register: 942 | #2 Accredited Voters: 182\n#3 Ballots Issued: 942 | #4 Unused Ballots: 460 | #5 Spoiled Ballots: 6\n#6 Rejected Ballots: 0 | #7 Total Valid Votes: 476 | #8 Total Used Ballots: 482\nParty Votes Scored: A: 318 (THREE HUNDRED and EIGHTEEN) | ADC: 4 (FOUR) | ADP: 1 (ONE) | APC: 152 (ONE hundred and FIFTY two) | APP: 1 (ONE) | ZLP: 1 (one)\nPresiding Officer: Adeyeje Mustapha T."
       },
       "arithmeticCheck": {
         "passed": true,
         "difference": 0,
-        "formula": "Awaiting AI OCR extraction",
-        "details": "Form EC8A scan retrieved live from INEC Results Portal (IReV)."
+        "formula": "476 + 0 = 476 (Cast: 476)",
+        "details": "Engr. Idris A. verified: Arithmetic verified."
       },
-      "verifiedBy": "Pending AI OCR Transcription",
-      "verifiedAt": "2026-10-23T16:36:05.372Z",
-      "verifierNotes": "Official Form EC8A document from INEC IReV: https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7035/97415/5f113c15-2261-4003-a088-f6aa72329977.jpg",
+      "verifiedBy": "Engr. Idris A.",
+      "verifiedAt": "2026-10-23T21:44:53.357Z",
+      "verifierNotes": "Correction applied by Engr. Idris A.: ADP was canceled in the result sheet but AI still counted it. Discrepancy resolved.",
       "versionHistory": [
+        {
+          "versionNumber": 2,
+          "actor": "Engr. Idris A.",
+          "actionType": "VERIFICATION_SIGN_OFF",
+          "timestamp": "2026-10-23T21:44:53.357Z",
+          "reason": "Correction applied by Engr. Idris A.: ADP was canceled in the result sheet but AI still counted it. Discrepancy resolved."
+        },
+        {
+          "versionNumber": 2,
+          "actor": "Engr. Idris A.",
+          "actionType": "MANUAL_CORRECTION",
+          "timestamp": "2026-10-23T21:44:48.190Z",
+          "reason": "ADP was canceled in the result sheet but AI still counted it. Discrepancy resolved.",
+          "previousPartyVotes": {
+            "A": 318,
+            "ADC": 4,
+            "ADP": 1,
+            "APC": 152,
+            "APP": 1,
+            "ZLP": 1
+          },
+          "newPartyVotes": {
+            "A": 318,
+            "ADC": 4,
+            "ADP": 0,
+            "APC": 152,
+            "APP": 1,
+            "ZLP": 1
+          }
+        },
         {
           "versionNumber": 1,
           "actor": "INEC Live Ingestion Pipeline",
           "actionType": "INITIAL_INGESTION",
           "timestamp": "2026-10-23T16:36:05.372Z",
           "reason": "Initial result sheet ingestion from INEC Results Portal (uploaded at 2026-08-15T18:03:03.142Z)"
+        }
+      ],
+      "ballotStatistics": {
+        "registeredVoters": 942,
+        "accreditedVoters": 182,
+        "ballotsIssued": 942,
+        "unusedBallots": 460,
+        "spoiledBallots": 6,
+        "rejectedVotes": 0,
+        "validVotes": 476,
+        "totalVotesCast": 476,
+        "totalUsedBallots": 482,
+        "serialNumber": "0001912",
+        "presidingOfficerName": "Adeyeje Mustapha T.",
+        "electionDateOnForm": "15/02/2028"
+      },
+      "requiresHumanReview": true,
+      "auditLogs": [
+        {
+          "id": "audit-1792791893357",
+          "timestamp": "2026-10-23T21:44:53.357Z",
+          "actor": "user:Engr. Idris A.",
+          "action": "VERIFY_RESULT",
+          "target": "rs-29-17-03-003",
+          "details": "Decision: APPROVED. Notes: Correction applied by Engr. Idris A.: ADP was canceled in the result sheet but AI still counted it. Discrepancy resolved."
+        },
+        {
+          "id": "audit-1792791888190",
+          "timestamp": "2026-10-23T21:44:48.190Z",
+          "actor": "user:Engr. Idris A.",
+          "action": "CORRECT_TRANSCRIPTION",
+          "target": "rs-29-17-03-003",
+          "details": "Transcribed values corrected to v2. Reason: ADP was canceled in the result sheet but AI still counted it. Discrepancy resolved.. Old valid: 476, New: 476."
         }
       ]
     },
@@ -1158,38 +1235,86 @@
       "imageUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7035/97418/3007f5b8-384d-45c0-ba88-48316c6a3e14.jpg",
       "uploadTimestamp": "2026-08-15T17:48:08.219Z",
       "retrievalTimestamp": "2026-10-23T16:36:05.372Z",
-      "ocrConfidence": 0,
+      "ocrConfidence": 90,
       "sourceStatus": "ORIGINAL",
       "version": 1,
       "transcription": {
-        "validVotes": 0,
-        "rejectedVotes": 0,
-        "totalVotesCast": 0,
-        "partyVotes": {}
+        "validVotes": 370,
+        "rejectedVotes": 2,
+        "totalVotesCast": 372,
+        "partyVotes": {
+          "A": 234,
+          "AA": 2,
+          "ADC": 2,
+          "ADP": 1,
+          "APC": 129,
+          "APM": 1,
+          "ZLP": 1
+        }
       },
       "ocrExtraction": {
-        "validVotes": 0,
-        "rejectedVotes": 0,
-        "totalVotesCast": 0,
-        "partyVotes": {},
-        "rawText": "INEC FORM EC8A — NEW GARAGE (29/17/03/006). Ready for AI OCR transcription."
+        "validVotes": 370,
+        "rejectedVotes": 2,
+        "totalVotesCast": 372,
+        "partyVotes": {
+          "A": 234,
+          "AA": 2,
+          "ADC": 2,
+          "ADP": 1,
+          "APC": 129,
+          "APM": 1,
+          "ZLP": 1
+        },
+        "rawText": "INEC FORM EC8A — STATEMENT OF RESULT OF POLL FROM POLLING UNIT\nS/N: 0001915 | Date: 15/03/2026\nState: OSUN | LGA: ILA | Ward: EJIGBO III\nPolling Unit: NEW GARAGE (29-17-03-006)\n#1 Voters on Register: 320 | #2 Accredited Voters: 312\n#3 Ballots Issued: 370 | #4 Unused Ballots: 348 | #5 Spoiled Ballots: 0\n#6 Rejected Ballots: 2 | #7 Total Valid Votes: 370 | #8 Total Used Ballots: 372\nParty Votes Scored: A: 234 (TWO HUNDRED & THIRTY FOUR) | AA: 2 (TWO) | ADC: 2 (TWO) | ADP: 1 (ONE) | APC: 129 (ONE HUNDRED AND TWENTY NINE) | APM: 1 (ONE) | ZLP: 1 (ONE)\nPresiding Officer: AKINLAEDE IDRISU"
       },
       "arithmeticCheck": {
-        "passed": true,
+        "passed": false,
         "difference": 0,
-        "formula": "Awaiting AI OCR extraction",
-        "details": "Form EC8A scan retrieved live from INEC Results Portal (IReV)."
+        "formula": "Party Sum (370) = Valid (370) + Rejected (2) = Cast (372) | Used Ballots (#5+#6+#7) = 372",
+        "details": "Overvoting Alert: Total Valid Votes (370) exceeds Accredited Voters (312)."
       },
-      "verifiedBy": "Pending AI OCR Transcription",
-      "verifiedAt": "2026-10-23T16:36:05.372Z",
-      "verifierNotes": "Official Form EC8A document from INEC IReV: https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7035/97418/3007f5b8-384d-45c0-ba88-48316c6a3e14.jpg",
+      "verifiedBy": "Engr. Idris A.",
+      "verifiedAt": "2026-10-23T21:47:27.903Z",
+      "verifierNotes": "Transcribed from official Form EC8A (S/N 0001915). Presiding Officer: AKINLAEDE IDRISU.",
       "versionHistory": [
+        {
+          "versionNumber": 1,
+          "actor": "Engr. Idris A.",
+          "actionType": "VERIFICATION_SIGN_OFF",
+          "timestamp": "2026-10-23T21:47:27.903Z",
+          "reason": "Transcribed from official Form EC8A (S/N 0001915). Presiding Officer: AKINLAEDE IDRISU."
+        },
         {
           "versionNumber": 1,
           "actor": "INEC Live Ingestion Pipeline",
           "actionType": "INITIAL_INGESTION",
           "timestamp": "2026-10-23T16:36:05.372Z",
           "reason": "Initial result sheet ingestion from INEC Results Portal (uploaded at 2026-08-15T17:48:08.219Z)"
+        }
+      ],
+      "ballotStatistics": {
+        "registeredVoters": 320,
+        "accreditedVoters": 312,
+        "ballotsIssued": 370,
+        "unusedBallots": 348,
+        "spoiledBallots": 0,
+        "rejectedVotes": 2,
+        "validVotes": 370,
+        "totalVotesCast": 372,
+        "totalUsedBallots": 372,
+        "serialNumber": "0001915",
+        "presidingOfficerName": "AKINLAEDE IDRISU",
+        "electionDateOnForm": "15/03/2026"
+      },
+      "requiresHumanReview": true,
+      "auditLogs": [
+        {
+          "id": "audit-1792792047903",
+          "timestamp": "2026-10-23T21:47:27.903Z",
+          "actor": "user:Engr. Idris A.",
+          "action": "VERIFY_RESULT",
+          "target": "rs-29-17-03-006",
+          "details": "Decision: APPROVED. Notes: Transcribed from official Form EC8A (S/N 0001915). Presiding Officer: AKINLAEDE IDRISU."
         }
       ]
     },
@@ -1203,38 +1328,78 @@
       "imageUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7035/97417/5248871f-b820-4661-b553-5b2a220cea8c.jpg",
       "uploadTimestamp": "2026-08-15T17:36:06.876Z",
       "retrievalTimestamp": "2026-10-23T16:36:05.372Z",
-      "ocrConfidence": 0,
+      "ocrConfidence": 95,
       "sourceStatus": "ORIGINAL",
       "version": 1,
       "transcription": {
-        "validVotes": 0,
-        "rejectedVotes": 0,
-        "totalVotesCast": 0,
-        "partyVotes": {}
+        "validVotes": 323,
+        "rejectedVotes": 4,
+        "totalVotesCast": 327,
+        "partyVotes": {
+          "A": 183,
+          "APC": 139,
+          "ADC": 1
+        }
       },
       "ocrExtraction": {
-        "validVotes": 0,
-        "rejectedVotes": 0,
-        "totalVotesCast": 0,
-        "partyVotes": {},
-        "rawText": "INEC FORM EC8A — ONIFADE JUNCTION (29/17/03/005). Ready for AI OCR transcription."
+        "validVotes": 323,
+        "rejectedVotes": 4,
+        "totalVotesCast": 327,
+        "partyVotes": {
+          "A": 183,
+          "APC": 139,
+          "ADC": 1
+        },
+        "rawText": "INEC FORM EC8A — STATEMENT OF RESULT OF POLL FROM POLLING UNIT\nS/N: 0001914 | Date: 15/08/2026\nState: OSUN | LGA: ILA | Ward: EJIGBO III\nPolling Unit: ONIFADE JUNCTION (29-17-03-005)\n#1 Voters on Register: 511 | #2 Accredited Voters: 327\n#3 Ballots Issued: 600 | #4 Unused Ballots: 273 | #5 Spoiled Ballots: 0\n#6 Rejected Ballots: 4 | #7 Total Valid Votes: 323 | #8 Total Used Ballots: 327\nParty Votes Scored: A: 183 (One hundred and Eighty three) | APC: 139 (One hundred and thirty nine) | ADC: 1 (One)\nPresiding Officer: ADETAN DALAPO"
       },
       "arithmeticCheck": {
         "passed": true,
         "difference": 0,
-        "formula": "Awaiting AI OCR extraction",
-        "details": "Form EC8A scan retrieved live from INEC Results Portal (IReV)."
+        "formula": "Party Sum (323) = Valid (323) + Rejected (4) = Cast (327) | Used Ballots (#5+#6+#7) = 327",
+        "details": "Engr. Idris A. verified: Party votes sum (323) matches Total Valid Votes (323) and is within Accredited Voters (327). Presiding Officer: ADETAN DALAPO."
       },
-      "verifiedBy": "Pending AI OCR Transcription",
-      "verifiedAt": "2026-10-23T16:36:05.372Z",
-      "verifierNotes": "Official Form EC8A document from INEC IReV: https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7035/97417/5248871f-b820-4661-b553-5b2a220cea8c.jpg",
+      "verifiedBy": "Engr. Idris A.",
+      "verifiedAt": "2026-10-23T21:48:42.676Z",
+      "verifierNotes": "Transcribed from official Form EC8A (S/N 0001914). Presiding Officer: ADETAN DALAPO.",
       "versionHistory": [
+        {
+          "versionNumber": 1,
+          "actor": "Engr. Idris A.",
+          "actionType": "VERIFICATION_SIGN_OFF",
+          "timestamp": "2026-10-23T21:48:42.676Z",
+          "reason": "Transcribed from official Form EC8A (S/N 0001914). Presiding Officer: ADETAN DALAPO."
+        },
         {
           "versionNumber": 1,
           "actor": "INEC Live Ingestion Pipeline",
           "actionType": "INITIAL_INGESTION",
           "timestamp": "2026-10-23T16:36:05.372Z",
           "reason": "Initial result sheet ingestion from INEC Results Portal (uploaded at 2026-08-15T17:36:06.876Z)"
+        }
+      ],
+      "ballotStatistics": {
+        "registeredVoters": 511,
+        "accreditedVoters": 327,
+        "ballotsIssued": 600,
+        "unusedBallots": 273,
+        "spoiledBallots": 0,
+        "rejectedVotes": 4,
+        "validVotes": 323,
+        "totalVotesCast": 327,
+        "totalUsedBallots": 327,
+        "serialNumber": "0001914",
+        "presidingOfficerName": "ADETAN DALAPO",
+        "electionDateOnForm": "15/08/2026"
+      },
+      "requiresHumanReview": false,
+      "auditLogs": [
+        {
+          "id": "audit-1792792122676",
+          "timestamp": "2026-10-23T21:48:42.676Z",
+          "actor": "user:Engr. Idris A.",
+          "action": "VERIFY_RESULT",
+          "target": "rs-29-17-03-005",
+          "details": "Decision: APPROVED. Notes: Transcribed from official Form EC8A (S/N 0001914). Presiding Officer: ADETAN DALAPO."
         }
       ]
     },
@@ -1415,7 +1580,7 @@
         "passed": true,
         "difference": 0,
         "formula": "Party Sum (315) = Valid (315) + Rejected (0) = Cast (315) | Used Ballots (#5+#6+#7) = 322",
-        "details": "Gemini Vision AI OCR verified: Party votes sum (315) matches Total Valid Votes (315) and is within Accredited Voters (321). Presiding Officer: OYENIYI IBRAHEM OLADIPO."
+        "details": "Lead Observer Verifier verified: Party votes sum (315) matches Total Valid Votes (315) and is within Accredited Voters (321). Presiding Officer: OYENIYI IBRAHEM OLADIPO."
       },
       "verifiedBy": "Lead Observer Verifier",
       "verifiedAt": "2026-10-23T17:11:55.353Z",
@@ -1504,7 +1669,7 @@
         "passed": true,
         "difference": 0,
         "formula": "Party Sum (290) = Valid (290) + Rejected (2) = Cast (292) | Used Ballots (#5+#6+#7) = 291",
-        "details": "Gemini Vision AI OCR verified: Party votes sum (290) matches Total Valid Votes (290) and is within Accredited Voters (291). Presiding Officer: OYE DARE BOLANLE."
+        "details": "Lead Observer Verifier verified: Party votes sum (290) matches Total Valid Votes (290) and is within Accredited Voters (291). Presiding Officer: OYE DARE BOLANLE."
       },
       "verifiedBy": "Lead Observer Verifier",
       "verifiedAt": "2026-10-23T17:14:50.250Z",
@@ -1561,38 +1726,82 @@
       "imageUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7040/97478/e3d4a853-947c-4810-9d00-4633ec47b10a.jpg",
       "uploadTimestamp": "2026-08-15T18:57:35.473Z",
       "retrievalTimestamp": "2026-10-23T16:36:06.358Z",
-      "ocrConfidence": 0,
+      "ocrConfidence": 98,
       "sourceStatus": "ORIGINAL",
       "version": 1,
       "transcription": {
-        "validVotes": 0,
-        "rejectedVotes": 0,
-        "totalVotesCast": 0,
-        "partyVotes": {}
+        "validVotes": 315,
+        "rejectedVotes": 3,
+        "totalVotesCast": 318,
+        "partyVotes": {
+          "A": 204,
+          "AA": 1,
+          "ADC": 7,
+          "APC": 101,
+          "ZLP": 2
+        }
       },
       "ocrExtraction": {
-        "validVotes": 0,
-        "rejectedVotes": 0,
-        "totalVotesCast": 0,
-        "partyVotes": {},
-        "rawText": "INEC FORM EC8A — ALOYIN (OPP. GENERAL HOSPITAL, ILA) (29/17/08/011). Ready for AI OCR transcription."
+        "validVotes": 315,
+        "rejectedVotes": 3,
+        "totalVotesCast": 318,
+        "partyVotes": {
+          "A": 204,
+          "AA": 1,
+          "ADC": 7,
+          "APC": 101,
+          "ZLP": 2
+        },
+        "rawText": "INEC FORM EC8A — STATEMENT OF RESULT OF POLL FROM POLLING UNIT\nS/N: 0001975 | Date: 15-08-2026\nState: OSUN | LGA: ILA | Ward: OKE OLA\nPolling Unit: OLOV IN (OPF. GENERAL HOSPITAL, ILA) (29-15-09-011)\n#1 Voters on Register: 522 | #2 Accredited Voters: 318\n#3 Ballots Issued: 522 | #4 Unused Ballots: 201 | #5 Spoiled Ballots: 3\n#6 Rejected Ballots: 3 | #7 Total Valid Votes: 315 | #8 Total Used Ballots: 321\nParty Votes Scored: A: 204 (TWO HUNDRED AND FOUR) | AA: 1 (ONE) | ADC: 7 (SEVEN) | APC: 101 (ONE HUNDRED AND ONE) | ZLP: 2 (TWO)\nPresiding Officer: OYEWOLE TAWAKALITI F."
       },
       "arithmeticCheck": {
         "passed": true,
         "difference": 0,
-        "formula": "Awaiting AI OCR extraction",
-        "details": "Form EC8A scan retrieved live from INEC Results Portal (IReV)."
+        "formula": "Party Sum (315) = Valid (315) + Rejected (3) = Cast (318) | Used Ballots (#5+#6+#7) = 321",
+        "details": "Engr. Idris A. verified: Party votes sum (315) matches Total Valid Votes (315) and is within Accredited Voters (318). Presiding Officer: OYEWOLE TAWAKALITI F.."
       },
-      "verifiedBy": "Pending AI OCR Transcription",
-      "verifiedAt": "2026-10-23T16:36:06.358Z",
-      "verifierNotes": "Official Form EC8A document from INEC IReV: https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7040/97478/e3d4a853-947c-4810-9d00-4633ec47b10a.jpg",
+      "verifiedBy": "Engr. Idris A.",
+      "verifiedAt": "2026-10-23T21:31:01.396Z",
+      "verifierNotes": "Transcribed from official Form EC8A (S/N 0001975). Presiding Officer: OYEWOLE TAWAKALITI F..",
       "versionHistory": [
+        {
+          "versionNumber": 1,
+          "actor": "Engr. Idris A.",
+          "actionType": "VERIFICATION_SIGN_OFF",
+          "timestamp": "2026-10-23T21:31:01.397Z",
+          "reason": "Transcribed from official Form EC8A (S/N 0001975). Presiding Officer: OYEWOLE TAWAKALITI F.."
+        },
         {
           "versionNumber": 1,
           "actor": "INEC Live Ingestion Pipeline",
           "actionType": "INITIAL_INGESTION",
           "timestamp": "2026-10-23T16:36:06.358Z",
           "reason": "Initial result sheet ingestion from INEC Results Portal (uploaded at 2026-08-15T18:57:35.473Z)"
+        }
+      ],
+      "ballotStatistics": {
+        "registeredVoters": 522,
+        "accreditedVoters": 318,
+        "ballotsIssued": 522,
+        "unusedBallots": 201,
+        "spoiledBallots": 3,
+        "rejectedVotes": 3,
+        "validVotes": 315,
+        "totalVotesCast": 318,
+        "totalUsedBallots": 321,
+        "serialNumber": "0001975",
+        "presidingOfficerName": "OYEWOLE TAWAKALITI F.",
+        "electionDateOnForm": "15-08-2026"
+      },
+      "requiresHumanReview": false,
+      "auditLogs": [
+        {
+          "id": "audit-1792791061397",
+          "timestamp": "2026-10-23T21:31:01.397Z",
+          "actor": "user:Engr. Idris A.",
+          "action": "VERIFY_RESULT",
+          "target": "rs-29-17-08-011",
+          "details": "Decision: APPROVED. Notes: Transcribed from official Form EC8A (S/N 0001975). Presiding Officer: OYEWOLE TAWAKALITI F.."
         }
       ]
     },
@@ -1606,38 +1815,82 @@
       "imageUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7040/97477/2e661dad-68c3-4e73-9937-3e046bd49ee2.jpg",
       "uploadTimestamp": "2026-08-15T18:18:11.574Z",
       "retrievalTimestamp": "2026-10-23T16:36:06.358Z",
-      "ocrConfidence": 0,
+      "ocrConfidence": 95,
       "sourceStatus": "ORIGINAL",
       "version": 1,
       "transcription": {
-        "validVotes": 0,
-        "rejectedVotes": 0,
-        "totalVotesCast": 0,
-        "partyVotes": {}
+        "validVotes": 210,
+        "rejectedVotes": 3,
+        "totalVotesCast": 213,
+        "partyVotes": {
+          "A": 143,
+          "AA": 1,
+          "ADC": 1,
+          "APC": 64,
+          "APP": 1
+        }
       },
       "ocrExtraction": {
-        "validVotes": 0,
-        "rejectedVotes": 0,
-        "totalVotesCast": 0,
-        "partyVotes": {},
-        "rawText": "INEC FORM EC8A — L.A. PRY. SCHOOL, ALOYIN II (29/17/08/010). Ready for AI OCR transcription."
+        "validVotes": 210,
+        "rejectedVotes": 3,
+        "totalVotesCast": 213,
+        "partyVotes": {
+          "A": 143,
+          "AA": 1,
+          "ADC": 1,
+          "APC": 64,
+          "APP": 1
+        },
+        "rawText": "INEC FORM EC8A — STATEMENT OF RESULT OF POLL FROM POLLING UNIT\nS/N: 0001974 | Date: 15/08/2026\nState: OSUN | LGA: ILA | Ward: OKE OLA\nPolling Unit: L.A. PRY. SCHOOL, ALOYIN II (29-17-08-010)\n#1 Voters on Register: 116 | #2 Accredited Voters: 213\n#3 Ballots Issued: 416 | #4 Unused Ballots: 203 | #5 Spoiled Ballots: 0\n#6 Rejected Ballots: 3 | #7 Total Valid Votes: 210 | #8 Total Used Ballots: 213\nParty Votes Scored: A: 143 (One hundred and forty three) | AA: 1 (One) | ADC: 1 (One) | APC: 64 (Sixty four) | APP: 1 (One)\nPresiding Officer: Oyeode Adenise Akobami"
       },
       "arithmeticCheck": {
         "passed": true,
         "difference": 0,
-        "formula": "Awaiting AI OCR extraction",
-        "details": "Form EC8A scan retrieved live from INEC Results Portal (IReV)."
+        "formula": "Party Sum (210) = Valid (210) + Rejected (3) = Cast (213) | Used Ballots (#5+#6+#7) = 213",
+        "details": "Engr. Idris A. verified: Party votes sum (210) matches Total Valid Votes (210) and is within Accredited Voters (213). Presiding Officer: Oyeode Adenise Akobami."
       },
-      "verifiedBy": "Pending AI OCR Transcription",
-      "verifiedAt": "2026-10-23T16:36:06.358Z",
-      "verifierNotes": "Official Form EC8A document from INEC IReV: https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7040/97477/2e661dad-68c3-4e73-9937-3e046bd49ee2.jpg",
+      "verifiedBy": "Engr. Idris A.",
+      "verifiedAt": "2026-10-23T21:39:12.153Z",
+      "verifierNotes": "Transcribed from official Form EC8A (S/N 0001974). Presiding Officer: Oyeode Adenise Akobami.",
       "versionHistory": [
+        {
+          "versionNumber": 1,
+          "actor": "Engr. Idris A.",
+          "actionType": "VERIFICATION_SIGN_OFF",
+          "timestamp": "2026-10-23T21:39:12.153Z",
+          "reason": "Transcribed from official Form EC8A (S/N 0001974). Presiding Officer: Oyeode Adenise Akobami."
+        },
         {
           "versionNumber": 1,
           "actor": "INEC Live Ingestion Pipeline",
           "actionType": "INITIAL_INGESTION",
           "timestamp": "2026-10-23T16:36:06.358Z",
           "reason": "Initial result sheet ingestion from INEC Results Portal (uploaded at 2026-08-15T18:18:11.574Z)"
+        }
+      ],
+      "ballotStatistics": {
+        "registeredVoters": 116,
+        "accreditedVoters": 213,
+        "ballotsIssued": 416,
+        "unusedBallots": 203,
+        "spoiledBallots": 0,
+        "rejectedVotes": 3,
+        "validVotes": 210,
+        "totalVotesCast": 213,
+        "totalUsedBallots": 213,
+        "serialNumber": "0001974",
+        "presidingOfficerName": "Oyeode Adenise Akobami",
+        "electionDateOnForm": "15/08/2026"
+      },
+      "requiresHumanReview": false,
+      "auditLogs": [
+        {
+          "id": "audit-1792791552153",
+          "timestamp": "2026-10-23T21:39:12.153Z",
+          "actor": "user:Engr. Idris A.",
+          "action": "VERIFY_RESULT",
+          "target": "rs-29-17-08-010",
+          "details": "Decision: APPROVED. Notes: Transcribed from official Form EC8A (S/N 0001974). Presiding Officer: Oyeode Adenise Akobami."
         }
       ]
     },
@@ -1651,38 +1904,78 @@
       "imageUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7040/97468/76cfa007-a7a7-4c4b-b3e9-5f221b7c1316.jpg",
       "uploadTimestamp": "2026-08-15T17:27:10.710Z",
       "retrievalTimestamp": "2026-10-23T16:36:06.358Z",
-      "ocrConfidence": 0,
+      "ocrConfidence": 98,
       "sourceStatus": "ORIGINAL",
       "version": 1,
       "transcription": {
-        "validVotes": 0,
-        "rejectedVotes": 0,
-        "totalVotesCast": 0,
-        "partyVotes": {}
+        "validVotes": 215,
+        "rejectedVotes": 1,
+        "totalVotesCast": 216,
+        "partyVotes": {
+          "A": 158,
+          "ADC": 2,
+          "APC": 55
+        }
       },
       "ocrExtraction": {
-        "validVotes": 0,
-        "rejectedVotes": 0,
-        "totalVotesCast": 0,
-        "partyVotes": {},
-        "rawText": "INEC FORM EC8A — NO SORROW HOUSE, OKE OLA (29/17/08/001). Ready for AI OCR transcription."
+        "validVotes": 215,
+        "rejectedVotes": 1,
+        "totalVotesCast": 216,
+        "partyVotes": {
+          "A": 158,
+          "ADC": 2,
+          "APC": 55
+        },
+        "rawText": "INEC FORM EC8A — STATEMENT OF RESULT OF POLL FROM POLLING UNIT\nS/N: 0001965 | Date: 15/08/2026\nState: OSUN | LGA: ILA | Ward: OKE OLA\nPolling Unit: NO SORROW HOUSE, OKE OLA (29/17/08/001)\n#1 Voters on Register: 327 | #2 Accredited Voters: 216\n#3 Ballots Issued: 327 | #4 Unused Ballots: 141 | #5 Spoiled Ballots: 0\n#6 Rejected Ballots: 1 | #7 Total Valid Votes: 215 | #8 Total Used Ballots: 216\nParty Votes Scored: A: 158 (ONE HUNDRED AND FIFTY EIGHT) | ADC: 2 (TWO) | APC: 55 (FIFTY FIVE)\nPresiding Officer: Akosola Olusofemi O."
       },
       "arithmeticCheck": {
         "passed": true,
         "difference": 0,
-        "formula": "Awaiting AI OCR extraction",
-        "details": "Form EC8A scan retrieved live from INEC Results Portal (IReV)."
+        "formula": "Party Sum (215) = Valid (215) + Rejected (1) = Cast (216) | Used Ballots (#5+#6+#7) = 216",
+        "details": "Engr. Idris A. verified: Party votes sum (215) matches Total Valid Votes (215) and is within Accredited Voters (216). Presiding Officer: Akosola Olusofemi O.."
       },
-      "verifiedBy": "Pending AI OCR Transcription",
-      "verifiedAt": "2026-10-23T16:36:06.358Z",
-      "verifierNotes": "Official Form EC8A document from INEC IReV: https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7040/97468/76cfa007-a7a7-4c4b-b3e9-5f221b7c1316.jpg",
+      "verifiedBy": "Engr. Idris A.",
+      "verifiedAt": "2026-10-23T21:51:27.262Z",
+      "verifierNotes": "Transcribed from official Form EC8A (S/N 0001965). Presiding Officer: Akosola Olusofemi O..",
       "versionHistory": [
+        {
+          "versionNumber": 1,
+          "actor": "Engr. Idris A.",
+          "actionType": "VERIFICATION_SIGN_OFF",
+          "timestamp": "2026-10-23T21:51:27.263Z",
+          "reason": "Transcribed from official Form EC8A (S/N 0001965). Presiding Officer: Akosola Olusofemi O.."
+        },
         {
           "versionNumber": 1,
           "actor": "INEC Live Ingestion Pipeline",
           "actionType": "INITIAL_INGESTION",
           "timestamp": "2026-10-23T16:36:06.358Z",
           "reason": "Initial result sheet ingestion from INEC Results Portal (uploaded at 2026-08-15T17:27:10.710Z)"
+        }
+      ],
+      "ballotStatistics": {
+        "registeredVoters": 327,
+        "accreditedVoters": 216,
+        "ballotsIssued": 327,
+        "unusedBallots": 141,
+        "spoiledBallots": 0,
+        "rejectedVotes": 1,
+        "validVotes": 215,
+        "totalVotesCast": 216,
+        "totalUsedBallots": 216,
+        "serialNumber": "0001965",
+        "presidingOfficerName": "Akosola Olusofemi O.",
+        "electionDateOnForm": "15/08/2026"
+      },
+      "requiresHumanReview": false,
+      "auditLogs": [
+        {
+          "id": "audit-1792792287263",
+          "timestamp": "2026-10-23T21:51:27.263Z",
+          "actor": "user:Engr. Idris A.",
+          "action": "VERIFY_RESULT",
+          "target": "rs-29-17-08-001",
+          "details": "Decision: APPROVED. Notes: Transcribed from official Form EC8A (S/N 0001965). Presiding Officer: Akosola Olusofemi O.."
         }
       ]
     },
@@ -2011,38 +2304,76 @@
       "imageUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7034/97404/c38e0b7c-96c5-48f2-aaa9-c96411e98287.jpg",
       "uploadTimestamp": "2026-08-15T18:39:06.844Z",
       "retrievalTimestamp": "2026-10-23T16:36:07.061Z",
-      "ocrConfidence": 0,
+      "ocrConfidence": 95,
       "sourceStatus": "ORIGINAL",
       "version": 1,
       "transcription": {
-        "validVotes": 0,
-        "rejectedVotes": 0,
-        "totalVotesCast": 0,
-        "partyVotes": {}
+        "validVotes": 231,
+        "rejectedVotes": 1,
+        "totalVotesCast": 232,
+        "partyVotes": {
+          "A": 131,
+          "APC": 100
+        }
       },
       "ocrExtraction": {
-        "validVotes": 0,
-        "rejectedVotes": 0,
-        "totalVotesCast": 0,
-        "partyVotes": {},
-        "rawText": "INEC FORM EC8A — OJUDE ENARE (29/17/02/001). Ready for AI OCR transcription."
+        "validVotes": 231,
+        "rejectedVotes": 1,
+        "totalVotesCast": 232,
+        "partyVotes": {
+          "A": 131,
+          "APC": 100
+        },
+        "rawText": "INEC FORM EC8A — STATEMENT OF RESULT OF POLL FROM POLLING UNIT\nS/N: 0001901 | Date: 15TH AUGUST, 2026\nState: OSUN | LGA: ILA | Ward: EJIGBO II\nPolling Unit: OJUDE ENARE (29-17-02-01)\n#1 Voters on Register: 403 | #2 Accredited Voters: 232\n#3 Ballots Issued: 503 | #4 Unused Ballots: 271 | #5 Spoiled Ballots: 0\n#6 Rejected Ballots: 1 | #7 Total Valid Votes: 231 | #8 Total Used Ballots: 232\nParty Votes Scored: A: 131 (One-hundred and Thirty One) | APC: 100 (One-Hundred)\nPresiding Officer: ADEDIRAN AOENI MATHIAS"
       },
       "arithmeticCheck": {
         "passed": true,
         "difference": 0,
-        "formula": "Awaiting AI OCR extraction",
-        "details": "Form EC8A scan retrieved live from INEC Results Portal (IReV)."
+        "formula": "Party Sum (231) = Valid (231) + Rejected (1) = Cast (232) | Used Ballots (#5+#6+#7) = 232",
+        "details": "Engr. Idris A. verified: Party votes sum (231) matches Total Valid Votes (231) and is within Accredited Voters (232). Presiding Officer: ADEDIRAN AOENI MATHIAS."
       },
-      "verifiedBy": "Pending AI OCR Transcription",
-      "verifiedAt": "2026-10-23T16:36:07.061Z",
-      "verifierNotes": "Official Form EC8A document from INEC IReV: https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7034/97404/c38e0b7c-96c5-48f2-aaa9-c96411e98287.jpg",
+      "verifiedBy": "Engr. Idris A.",
+      "verifiedAt": "2026-10-23T21:32:18.483Z",
+      "verifierNotes": "Transcribed from official Form EC8A (S/N 0001901). Presiding Officer: ADEDIRAN AOENI MATHIAS.",
       "versionHistory": [
+        {
+          "versionNumber": 1,
+          "actor": "Engr. Idris A.",
+          "actionType": "VERIFICATION_SIGN_OFF",
+          "timestamp": "2026-10-23T21:32:18.483Z",
+          "reason": "Transcribed from official Form EC8A (S/N 0001901). Presiding Officer: ADEDIRAN AOENI MATHIAS."
+        },
         {
           "versionNumber": 1,
           "actor": "INEC Live Ingestion Pipeline",
           "actionType": "INITIAL_INGESTION",
           "timestamp": "2026-10-23T16:36:07.061Z",
           "reason": "Initial result sheet ingestion from INEC Results Portal (uploaded at 2026-08-15T18:39:06.844Z)"
+        }
+      ],
+      "ballotStatistics": {
+        "registeredVoters": 403,
+        "accreditedVoters": 232,
+        "ballotsIssued": 503,
+        "unusedBallots": 271,
+        "spoiledBallots": 0,
+        "rejectedVotes": 1,
+        "validVotes": 231,
+        "totalVotesCast": 232,
+        "totalUsedBallots": 232,
+        "serialNumber": "0001901",
+        "presidingOfficerName": "ADEDIRAN AOENI MATHIAS",
+        "electionDateOnForm": "15TH AUGUST, 2026"
+      },
+      "requiresHumanReview": false,
+      "auditLogs": [
+        {
+          "id": "audit-1792791138483",
+          "timestamp": "2026-10-23T21:32:18.483Z",
+          "actor": "user:Engr. Idris A.",
+          "action": "VERIFY_RESULT",
+          "target": "rs-29-17-02-001",
+          "details": "Decision: APPROVED. Notes: Transcribed from official Form EC8A (S/N 0001901). Presiding Officer: ADEDIRAN AOENI MATHIAS."
         }
       ]
     },
@@ -2056,38 +2387,80 @@
       "imageUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7034/97409/544abdd5-8d3a-4442-96bf-9cbfc8b6c8c6.jpg",
       "uploadTimestamp": "2026-08-15T18:39:06.019Z",
       "retrievalTimestamp": "2026-10-23T16:36:07.061Z",
-      "ocrConfidence": 0,
+      "ocrConfidence": 95,
       "sourceStatus": "ORIGINAL",
       "version": 1,
       "transcription": {
-        "validVotes": 0,
-        "rejectedVotes": 0,
-        "totalVotesCast": 0,
-        "partyVotes": {}
+        "validVotes": 209,
+        "rejectedVotes": 2,
+        "totalVotesCast": 211,
+        "partyVotes": {
+          "A": 90,
+          "APC": 129,
+          "SDP": 1,
+          "ZLP": 1
+        }
       },
       "ocrExtraction": {
-        "validVotes": 0,
-        "rejectedVotes": 0,
-        "totalVotesCast": 0,
-        "partyVotes": {},
-        "rawText": "INEC FORM EC8A — OJUDE OBAJOKO (29/17/02/006). Ready for AI OCR transcription."
+        "validVotes": 209,
+        "rejectedVotes": 2,
+        "totalVotesCast": 211,
+        "partyVotes": {
+          "A": 90,
+          "APC": 129,
+          "SDP": 1,
+          "ZLP": 1
+        },
+        "rawText": "INEC FORM EC8A — STATEMENT OF RESULT OF POLL FROM POLLING UNIT\nS/N: 0001906 | Date: 15/03/2026\nState: OSUN | LGA: ILA | Ward: EJIJBO II\nPolling Unit: OJUDE OBAJOKO (29-17-02-006)\n#1 Voters on Register: 435 | #2 Accredited Voters: 223\n#3 Ballots Issued: 223 | #4 Unused Ballots: 212 | #5 Spoiled Ballots: 1\n#6 Rejected Ballots: 2 | #7 Total Valid Votes: 209 | #8 Total Used Ballots: 204\nParty Votes Scored: A: 90 (Ninety) | APC: 129 (One hundred and twenty nine) | SDP: 1 (One) | ZLP: 1 (One)\nPresiding Officer: Adeogun T. Olumide"
       },
       "arithmeticCheck": {
-        "passed": true,
-        "difference": 0,
-        "formula": "Awaiting AI OCR extraction",
-        "details": "Form EC8A scan retrieved live from INEC Results Portal (IReV)."
+        "passed": false,
+        "difference": 12,
+        "formula": "Party Sum (221) = Valid (209) + Rejected (2) = Cast (211) | Used Ballots (#5+#6+#7) = 204",
+        "details": "Arithmetic Variance: Sum of party votes (221) differs from Total Valid Votes (209) by 12."
       },
-      "verifiedBy": "Pending AI OCR Transcription",
-      "verifiedAt": "2026-10-23T16:36:07.061Z",
-      "verifierNotes": "Official Form EC8A document from INEC IReV: https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7034/97409/544abdd5-8d3a-4442-96bf-9cbfc8b6c8c6.jpg",
+      "verifiedBy": "Engr. Idris A.",
+      "verifiedAt": "2026-10-23T21:36:51.621Z",
+      "verifierNotes": "Transcribed from official Form EC8A (S/N 0001906). Presiding Officer: Adeogun T. Olumide.",
       "versionHistory": [
+        {
+          "versionNumber": 1,
+          "actor": "Engr. Idris A.",
+          "actionType": "VERIFICATION_SIGN_OFF",
+          "timestamp": "2026-10-23T21:36:51.621Z",
+          "reason": "Transcribed from official Form EC8A (S/N 0001906). Presiding Officer: Adeogun T. Olumide."
+        },
         {
           "versionNumber": 1,
           "actor": "INEC Live Ingestion Pipeline",
           "actionType": "INITIAL_INGESTION",
           "timestamp": "2026-10-23T16:36:07.061Z",
           "reason": "Initial result sheet ingestion from INEC Results Portal (uploaded at 2026-08-15T18:39:06.019Z)"
+        }
+      ],
+      "ballotStatistics": {
+        "registeredVoters": 435,
+        "accreditedVoters": 223,
+        "ballotsIssued": 223,
+        "unusedBallots": 212,
+        "spoiledBallots": 1,
+        "rejectedVotes": 2,
+        "validVotes": 209,
+        "totalVotesCast": 211,
+        "totalUsedBallots": 204,
+        "serialNumber": "0001906",
+        "presidingOfficerName": "Adeogun T. Olumide",
+        "electionDateOnForm": "15/03/2026"
+      },
+      "requiresHumanReview": true,
+      "auditLogs": [
+        {
+          "id": "audit-1792791411621",
+          "timestamp": "2026-10-23T21:36:51.621Z",
+          "actor": "user:Engr. Idris A.",
+          "action": "VERIFY_RESULT",
+          "target": "rs-29-17-02-006",
+          "details": "Decision: APPROVED. Notes: Transcribed from official Form EC8A (S/N 0001906). Presiding Officer: Adeogun T. Olumide."
         }
       ]
     },
@@ -2101,38 +2474,95 @@
       "imageUrl": "https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7034/97411/59b15426-3871-4485-9974-2bb5a5a85a67.jpg",
       "uploadTimestamp": "2026-08-15T17:21:11.605Z",
       "retrievalTimestamp": "2026-10-23T16:36:07.061Z",
-      "ocrConfidence": 0,
+      "ocrConfidence": 95,
       "sourceStatus": "ORIGINAL",
       "version": 1,
       "transcription": {
-        "validVotes": 0,
-        "rejectedVotes": 0,
-        "totalVotesCast": 0,
-        "partyVotes": {}
+        "validVotes": 392,
+        "rejectedVotes": 1,
+        "totalVotesCast": 393,
+        "partyVotes": {
+          "A": 248,
+          "ADC": 3,
+          "ADP": 2,
+          "APC": 39
+        }
       },
       "ocrExtraction": {
-        "validVotes": 0,
-        "rejectedVotes": 0,
-        "totalVotesCast": 0,
-        "partyVotes": {},
-        "rawText": "INEC FORM EC8A — AWUGBO (29/17/02/008). Ready for AI OCR transcription."
+        "validVotes": 392,
+        "rejectedVotes": 1,
+        "totalVotesCast": 393,
+        "partyVotes": {
+          "A": 248,
+          "ADC": 3,
+          "ADP": 2,
+          "APC": 39
+        },
+        "rawText": "INEC FORM EC8A — STATEMENT OF RESULT OF POLL FROM POLLING UNIT\nS/N: 0001908 | Date: 15-08-2026\nState: OSUN | LGA: IJAGUN | Ward: EJIBO II\nPolling Unit: AWUGBO I (29/17/02/008)\n#1 Voters on Register: 690 | #2 Accredited Voters: 393\n#3 Ballots Issued: 890 | #4 Unused Ballots: 297 | #5 Spoiled Ballots: 0\n#6 Rejected Ballots: 1 | #7 Total Valid Votes: 392 | #8 Total Used Ballots: 393\nParty Votes Scored: A: 248 (TWO HUNDRED AND FORTY-EIGHT) | ADC: 3 (THREE) | ADP: 2 (TWO) | APC: 39 (ONE HUNDRED AND THIRTY-NINE)\nPresiding Officer: ADEO GUN JUSEFEM KEMI"
       },
       "arithmeticCheck": {
-        "passed": true,
-        "difference": 0,
-        "formula": "Awaiting AI OCR extraction",
-        "details": "Form EC8A scan retrieved live from INEC Results Portal (IReV)."
+        "passed": false,
+        "difference": 100,
+        "formula": "Party Sum (292) = Valid (392) + Rejected (1) = Cast (393) | Used Ballots (#5+#6+#7) = 393",
+        "details": "Arithmetic Variance: Sum of party votes (292) differs from Total Valid Votes (392) by 100."
       },
-      "verifiedBy": "Pending AI OCR Transcription",
-      "verifiedAt": "2026-10-23T16:36:07.061Z",
-      "verifierNotes": "Official Form EC8A document from INEC IReV: https://inc-s3-cache.incportals.com/cached/express/results/2998/30/615/7034/97411/59b15426-3871-4485-9974-2bb5a5a85a67.jpg",
+      "verifiedBy": "Engr. Idris A.",
+      "verifiedAt": "2026-10-23T21:58:22.414Z",
+      "verifierNotes": "Transcribed from official Form EC8A (S/N 0001908). Presiding Officer: ADEO GUN JUSEFEM KEMI.",
       "versionHistory": [
+        {
+          "versionNumber": 1,
+          "actor": "Engr. Idris A.",
+          "actionType": "DISCREPANCY_FLAG",
+          "timestamp": "2026-10-23T21:58:22.414Z",
+          "reason": "Transcribed from official Form EC8A (S/N 0001908). Presiding Officer: ADEO GUN JUSEFEM KEMI."
+        },
+        {
+          "versionNumber": 1,
+          "actor": "Engr. Idris A.",
+          "actionType": "VERIFICATION_SIGN_OFF",
+          "timestamp": "2026-10-23T21:53:27.143Z",
+          "reason": "Transcribed from official Form EC8A (S/N 0001908). Presiding Officer: ADEO GUN JUSEFEM KEMI."
+        },
         {
           "versionNumber": 1,
           "actor": "INEC Live Ingestion Pipeline",
           "actionType": "INITIAL_INGESTION",
           "timestamp": "2026-10-23T16:36:07.061Z",
           "reason": "Initial result sheet ingestion from INEC Results Portal (uploaded at 2026-08-15T17:21:11.605Z)"
+        }
+      ],
+      "ballotStatistics": {
+        "registeredVoters": 690,
+        "accreditedVoters": 393,
+        "ballotsIssued": 890,
+        "unusedBallots": 297,
+        "spoiledBallots": 0,
+        "rejectedVotes": 1,
+        "validVotes": 392,
+        "totalVotesCast": 393,
+        "totalUsedBallots": 393,
+        "serialNumber": "0001908",
+        "presidingOfficerName": "ADEO GUN JUSEFEM KEMI",
+        "electionDateOnForm": "15-08-2026"
+      },
+      "requiresHumanReview": true,
+      "auditLogs": [
+        {
+          "id": "audit-1792792702414",
+          "timestamp": "2026-10-23T21:58:22.414Z",
+          "actor": "user:Engr. Idris A.",
+          "action": "FLAG_DISCREPANCY",
+          "target": "rs-29-17-02-008",
+          "details": "Decision: DISCREPANCY_FLAGGED. Notes: Transcribed from official Form EC8A (S/N 0001908). Presiding Officer: ADEO GUN JUSEFEM KEMI."
+        },
+        {
+          "id": "audit-1792792407143",
+          "timestamp": "2026-10-23T21:53:27.143Z",
+          "actor": "user:Engr. Idris A.",
+          "action": "VERIFY_RESULT",
+          "target": "rs-29-17-02-008",
+          "details": "Decision: APPROVED. Notes: Transcribed from official Form EC8A (S/N 0001908). Presiding Officer: ADEO GUN JUSEFEM KEMI."
         }
       ]
     },
@@ -2444,9 +2874,9 @@
         "passed": true,
         "difference": 0,
         "formula": "Party Sum (249) = Valid (249) + Rejected (5) = Cast (254) | Used Ballots (#5+#6+#7) = 258",
-        "details": "Gemini Vision AI OCR verified: Party votes sum (249) matches Total Valid Votes (249) and is within Accredited Voters (254). Presiding Officer: ALABI ELIJAH SAMUEL."
+        "details": "Engr. Idris A. verified: Party votes sum (249) matches Total Valid Votes (249) and is within Accredited Voters (254). Presiding Officer: ALABI ELIJAH SAMUEL."
       },
-      "verifiedBy": "Gemini Vision AI OCR + Ballot Arithmetic Check",
+      "verifiedBy": "Engr. Idris A.",
       "verifiedAt": "2026-10-23T17:03:05.135Z",
       "verifierNotes": "Transcribed from official Form EC8A (S/N 0001996). Presiding Officer: ALABI ELIJAH SAMUEL.",
       "versionHistory": [
@@ -3337,12 +3767,14 @@
       "fullName": "Engr. Idris A.",
       "role": "SUPER_ADMIN",
       "isActive": true,
+      "approvalStatus": "APPROVED",
+      "approvedBy": "SYSTEM_ROOT",
+      "approvedAt": "2026-06-01T08:00:00Z",
       "badge": "NERAMP-DEV-001",
       "jurisdiction": "National Infrastructure & Security (Full System Access)",
-      "lastLogin": "2026-10-23T09:36:54.256Z",
+      "lastLogin": "2026-10-23T21:06:34.033Z",
       "createdAt": "2026-06-01T08:00:00Z",
-      "updatedAt": "2026-10-23T09:36:49.108Z",
-      "approvalStatus": "APPROVED"
+      "updatedAt": "2026-10-23T21:06:34.034Z"
     },
     {
       "id": "usr-proj-amina",
@@ -3350,12 +3782,12 @@
       "fullName": "Dr. Amina Bello",
       "role": "PROJECT_ADMIN",
       "isActive": true,
+      "approvalStatus": "APPROVED",
       "badge": "NERAMP-ADM-002",
       "jurisdiction": "National Operations & Policy Oversight",
-      "lastLogin": "2026-10-23T09:36:49.109Z",
+      "lastLogin": "2026-10-23T21:06:34.034Z",
       "createdAt": "2026-06-15T09:00:00Z",
-      "updatedAt": "2026-10-23T09:36:49.109Z",
-      "approvalStatus": "APPROVED"
+      "updatedAt": "2026-10-23T21:06:34.034Z"
     },
     {
       "id": "usr-analyst-chinedu",
@@ -3363,12 +3795,12 @@
       "fullName": "Chinedu Okafor",
       "role": "ELECTION_ANALYST",
       "isActive": true,
+      "approvalStatus": "APPROVED",
       "badge": "NERAMP-ANA-014",
       "jurisdiction": "Analytics, Data Ingestion & Turnout Modeling",
-      "lastLogin": "2026-10-23T09:36:49.109Z",
+      "lastLogin": "2026-10-23T21:06:34.034Z",
       "createdAt": "2026-08-01T10:00:00Z",
-      "updatedAt": "2026-10-23T09:36:49.109Z",
-      "approvalStatus": "APPROVED"
+      "updatedAt": "2026-10-23T21:06:34.034Z"
     },
     {
       "id": "usr-coord-adeyemi",
@@ -3376,13 +3808,13 @@
       "fullName": "Adeyemi Adeleke",
       "role": "STATE_COORDINATOR",
       "isActive": true,
+      "approvalStatus": "APPROVED",
       "assignedStateCode": "OSUN",
       "badge": "NERAMP-ST-029",
       "jurisdiction": "Osun & Ekiti State Joint Operations",
-      "lastLogin": "2026-10-23T09:36:49.109Z",
+      "lastLogin": "2026-10-23T21:06:34.034Z",
       "createdAt": "2026-09-01T11:00:00Z",
-      "updatedAt": "2026-10-23T09:36:49.109Z",
-      "approvalStatus": "APPROVED"
+      "updatedAt": "2026-10-23T21:06:34.034Z"
     },
     {
       "id": "usr-verif-funmi",
@@ -3390,12 +3822,12 @@
       "fullName": "Funmilayo Adebayo",
       "role": "RESULT_VERIFIER",
       "isActive": true,
+      "approvalStatus": "APPROVED",
       "badge": "NERAMP-VER-088",
       "jurisdiction": "Form EC8A Dual-Transcriber Queue",
-      "lastLogin": "2026-10-23T09:36:49.109Z",
+      "lastLogin": "2026-10-23T21:06:34.034Z",
       "createdAt": "2026-10-15T14:00:00Z",
-      "updatedAt": "2026-10-23T09:36:49.109Z",
-      "approvalStatus": "APPROVED"
+      "updatedAt": "2026-10-23T21:06:34.034Z"
     },
     {
       "id": "usr-obs-tunde",
@@ -3403,157 +3835,205 @@
       "fullName": "Tunde Oladipo",
       "role": "REGISTERED_OBSERVER",
       "isActive": true,
+      "approvalStatus": "APPROVED",
       "badge": "OBS-SW-042",
       "jurisdiction": "Osogbo LGA & Ife North LGA",
-      "lastLogin": "2026-10-23T09:36:49.109Z",
+      "lastLogin": "2026-10-23T21:06:34.034Z",
       "createdAt": "2026-11-15T16:00:00Z",
-      "updatedAt": "2026-10-23T09:36:49.109Z",
-      "approvalStatus": "APPROVED"
-    },
-    {
-      "id": "usr-1792757113629-0092cb",
-      "email": "babajide.staff@neramp.org.ng",
-      "fullName": "Babajide Sanwo-Olu Staff",
-      "role": "RESULT_VERIFIER",
-      "isActive": true,
-      "approvalStatus": "APPROVED",
-      "badge": "NERAMP-ST-207",
-      "jurisdiction": "National Monitoring Headquarters",
-      "createdAt": "2026-10-23T12:05:13.629Z",
-      "updatedAt": "2026-10-23T12:08:04.718Z",
-      "approvedBy": "drisatech@gmail.com",
-      "approvedAt": "2026-10-23T12:08:04.718Z",
-      "lastLogin": "2026-10-23T12:08:14.670Z"
+      "updatedAt": "2026-10-23T21:06:34.034Z"
     }
   ],
-  "discrepancies": [],
+  "discrepancies": [
+    {
+      "id": "disc-1792792330806-e44j",
+      "electionId": "elec-2026-gov-osun",
+      "pollingUnitCode": "29-17-02-008",
+      "pollingUnitName": "AWUGBO",
+      "stateName": "OSUN",
+      "lgaName": "IJAGUN",
+      "category": "ARITHMETIC_MISMATCH",
+      "severity": "HIGH",
+      "originalValue": "Valid Votes: 392 | Accredited: 393",
+      "comparedValue": "Sum of Party Votes: 292",
+      "detectedAt": "2026-10-23T21:52:10.806Z",
+      "status": "REQUIRES_REVIEW",
+      "reviewNotes": "Arithmetic Variance: Sum of party votes (292) differs from Total Valid Votes (392) by 100."
+    },
+    {
+      "id": "disc-1792791959948-rqx9",
+      "electionId": "elec-2026-gov-osun",
+      "pollingUnitCode": "29-17-03-006",
+      "pollingUnitName": "NEW GARAGE",
+      "stateName": "OSUN",
+      "lgaName": "ILA",
+      "category": "OVERVOTING_FLAG",
+      "severity": "HIGH",
+      "originalValue": "Valid Votes: 370 | Accredited: 312",
+      "comparedValue": "Sum of Party Votes: 370",
+      "detectedAt": "2026-10-23T21:45:59.948Z",
+      "status": "REQUIRES_REVIEW",
+      "reviewNotes": "Overvoting Alert: Total Valid Votes (370) exceeds Accredited Voters (312)."
+    },
+    {
+      "id": "disc-1792791583561-ban8",
+      "electionId": "elec-2026-gov-osun",
+      "pollingUnitCode": "29-17-03-003",
+      "pollingUnitName": "AJABA JUNCTION",
+      "stateName": "OSUN",
+      "lgaName": "ILA",
+      "category": "OVERVOTING_FLAG",
+      "severity": "HIGH",
+      "originalValue": "Valid Votes: 476 | Accredited: 182",
+      "comparedValue": "Sum of Party Votes: 477",
+      "detectedAt": "2026-10-23T21:39:43.561Z",
+      "status": "REQUIRES_REVIEW",
+      "reviewNotes": "Overvoting Alert: Total Valid Votes (476) exceeds Accredited Voters (182)."
+    },
+    {
+      "id": "disc-1792791184056-l9mt",
+      "electionId": "elec-2026-gov-osun",
+      "pollingUnitCode": "29-17-02-006",
+      "pollingUnitName": "OJUDE OBAJOKO",
+      "stateName": "OSUN",
+      "lgaName": "ILA",
+      "category": "ARITHMETIC_MISMATCH",
+      "severity": "HIGH",
+      "originalValue": "Valid Votes: 209 | Accredited: 223",
+      "comparedValue": "Sum of Party Votes: 221",
+      "detectedAt": "2026-10-23T21:33:04.056Z",
+      "status": "REQUIRES_REVIEW",
+      "reviewNotes": "Arithmetic Variance: Sum of party votes (221) differs from Total Valid Votes (209) by 12."
+    }
+  ],
   "incidents": [],
   "auditLogs": [
     {
-      "id": "audit-1792776016971",
-      "timestamp": "2026-10-23T17:20:16.971Z",
-      "actor": "admin:backup",
-      "action": "EXPORT_DATABASE_BACKUP",
-      "target": "neramp_database",
-      "details": "Exported full database backup containing 49 Polling Units and 49 Result Sheets. SHA-256 Checksum: 786a7237a78df5ce..."
+      "id": "audit-1792792702414",
+      "timestamp": "2026-10-23T21:58:22.414Z",
+      "actor": "user:Engr. Idris A.",
+      "action": "FLAG_DISCREPANCY",
+      "target": "rs-29-17-02-008",
+      "details": "Decision: DISCREPANCY_FLAGGED. Notes: Transcribed from official Form EC8A (S/N 0001908). Presiding Officer: ADEO GUN JUSEFEM KEMI."
     },
     {
-      "id": "audit-1792775944702",
-      "timestamp": "2026-10-23T17:19:04.702Z",
-      "actor": "admin:config_manager",
-      "action": "CREATE_ELECTION_CONFIG",
-      "target": "elec-1792775944696",
-      "details": "Added new election configuration: \"Presidential Election - 2027\" (PRESIDENTIAL) for 2027-01-16. Held: No."
-    },
-    {
-      "id": "audit-1792775690250",
-      "timestamp": "2026-10-23T17:14:50.250Z",
-      "actor": "user:Lead Observer Verifier",
+      "id": "audit-1792792407143",
+      "timestamp": "2026-10-23T21:53:27.143Z",
+      "actor": "user:Engr. Idris A.",
       "action": "VERIFY_RESULT",
-      "target": "rs-29-17-08-007",
-      "details": "Decision: APPROVED. Notes: Transcribed from official Form EC8A (S/N 0001971). Presiding Officer: OYE DARE BOLANLE."
+      "target": "rs-29-17-02-008",
+      "details": "Decision: APPROVED. Notes: Transcribed from official Form EC8A (S/N 0001908). Presiding Officer: ADEO GUN JUSEFEM KEMI."
     },
     {
-      "id": "audit-1792775515354",
-      "timestamp": "2026-10-23T17:11:55.354Z",
-      "actor": "user:Lead Observer Verifier",
+      "id": "audit-1792792287263",
+      "timestamp": "2026-10-23T21:51:27.263Z",
+      "actor": "user:Engr. Idris A.",
       "action": "VERIFY_RESULT",
-      "target": "rs-29-17-08-008",
-      "details": "Decision: APPROVED. Notes: Transcribed from official Form EC8A (S/N 0001972). Presiding Officer: OYENIYI IBRAHEM OLADIPO."
+      "target": "rs-29-17-08-001",
+      "details": "Decision: APPROVED. Notes: Transcribed from official Form EC8A (S/N 0001965). Presiding Officer: Akosola Olusofemi O.."
     },
     {
-      "id": "audit-1792774208937",
-      "timestamp": "2026-10-23T16:50:08.937Z",
-      "actor": "user:Lead Observer Verifier",
+      "id": "audit-1792792122676",
+      "timestamp": "2026-10-23T21:48:42.676Z",
+      "actor": "user:Engr. Idris A.",
       "action": "VERIFY_RESULT",
-      "target": "rs-29-17-03-007",
-      "details": "Decision: APPROVED. Notes: Transcribed from official Form EC8A (S/N 0001916). Presiding Officer: OLALEYE TANSO TOJI."
+      "target": "rs-29-17-03-005",
+      "details": "Decision: APPROVED. Notes: Transcribed from official Form EC8A (S/N 0001914). Presiding Officer: ADETAN DALAPO."
     },
     {
-      "id": "audit-1792773381617",
-      "timestamp": "2026-10-23T16:36:21.617Z",
-      "actor": "admin:manual_trigger",
-      "action": "TRIGGER_INGESTION_JOB",
-      "target": "job-1001",
-      "details": "Manual batch ingestion executed for elec-2026-gov-osun. 49 new Polling Units uploaded, 0 duplicate records skipped, 0 altered results updated with version history."
+      "id": "audit-1792792047903",
+      "timestamp": "2026-10-23T21:47:27.903Z",
+      "actor": "user:Engr. Idris A.",
+      "action": "VERIFY_RESULT",
+      "target": "rs-29-17-03-006",
+      "details": "Decision: APPROVED. Notes: Transcribed from official Form EC8A (S/N 0001915). Presiding Officer: AKINLAEDE IDRISU."
     },
     {
-      "id": "audit-1792772293253",
-      "timestamp": "2026-10-23T16:18:13.253Z",
+      "id": "audit-1792791893357",
+      "timestamp": "2026-10-23T21:44:53.357Z",
+      "actor": "user:Engr. Idris A.",
+      "action": "VERIFY_RESULT",
+      "target": "rs-29-17-03-003",
+      "details": "Decision: APPROVED. Notes: Correction applied by Engr. Idris A.: ADP was canceled in the result sheet but AI still counted it. Discrepancy resolved."
+    },
+    {
+      "id": "audit-1792791888190",
+      "timestamp": "2026-10-23T21:44:48.190Z",
+      "actor": "user:Engr. Idris A.",
+      "action": "CORRECT_TRANSCRIPTION",
+      "target": "rs-29-17-03-003",
+      "details": "Transcribed values corrected to v2. Reason: ADP was canceled in the result sheet but AI still counted it. Discrepancy resolved.. Old valid: 476, New: 476."
+    },
+    {
+      "id": "audit-1792791552153",
+      "timestamp": "2026-10-23T21:39:12.153Z",
+      "actor": "user:Engr. Idris A.",
+      "action": "VERIFY_RESULT",
+      "target": "rs-29-17-08-010",
+      "details": "Decision: APPROVED. Notes: Transcribed from official Form EC8A (S/N 0001974). Presiding Officer: Oyeode Adenise Akobami."
+    },
+    {
+      "id": "audit-1792791411621",
+      "timestamp": "2026-10-23T21:36:51.621Z",
+      "actor": "user:Engr. Idris A.",
+      "action": "VERIFY_RESULT",
+      "target": "rs-29-17-02-006",
+      "details": "Decision: APPROVED. Notes: Transcribed from official Form EC8A (S/N 0001906). Presiding Officer: Adeogun T. Olumide."
+    },
+    {
+      "id": "audit-1792791138483",
+      "timestamp": "2026-10-23T21:32:18.483Z",
+      "actor": "user:Engr. Idris A.",
+      "action": "VERIFY_RESULT",
+      "target": "rs-29-17-02-001",
+      "details": "Decision: APPROVED. Notes: Transcribed from official Form EC8A (S/N 0001901). Presiding Officer: ADEDIRAN AOENI MATHIAS."
+    },
+    {
+      "id": "audit-1792791061397",
+      "timestamp": "2026-10-23T21:31:01.397Z",
+      "actor": "user:Engr. Idris A.",
+      "action": "VERIFY_RESULT",
+      "target": "rs-29-17-08-011",
+      "details": "Decision: APPROVED. Notes: Transcribed from official Form EC8A (S/N 0001975). Presiding Officer: OYEWOLE TAWAKALITI F.."
+    },
+    {
+      "id": "audit-1792789876856",
+      "timestamp": "2026-10-23T21:11:16.856Z",
       "actor": "admin:config_manager",
       "action": "DELETE_ELECTION_CONFIG",
       "target": "elec-2027-presidential",
       "details": "Deleted election configuration: \"Presidential Election - 2027\" (ID: elec-2027-presidential)."
     },
     {
-      "id": "audit-1792772289735",
-      "timestamp": "2026-10-23T16:18:09.735Z",
+      "id": "audit-1792789836209",
+      "timestamp": "2026-10-23T21:10:36.209Z",
       "actor": "admin:config_manager",
       "action": "DELETE_ELECTION_CONFIG",
       "target": "elec-2027-sen-osun-central",
       "details": "Deleted election configuration: \"Senate Election - Osun Central Senatorial District\" (ID: elec-2027-sen-osun-central)."
     },
     {
-      "id": "audit-1792772282904",
-      "timestamp": "2026-10-23T16:18:02.904Z",
+      "id": "audit-1792789829871",
+      "timestamp": "2026-10-23T21:10:29.871Z",
       "actor": "admin:config_manager",
       "action": "DELETE_ELECTION_CONFIG",
       "target": "elec-2027-sen-lagos-west",
       "details": "Deleted election configuration: \"Senate Election - Lagos West Senatorial District\" (ID: elec-2027-sen-lagos-west)."
     },
     {
-      "id": "audit-1792772279694",
-      "timestamp": "2026-10-23T16:17:59.695Z",
+      "id": "audit-1792789823309",
+      "timestamp": "2026-10-23T21:10:23.309Z",
       "actor": "admin:config_manager",
       "action": "DELETE_ELECTION_CONFIG",
       "target": "elec-2027-reps-osun-osogbo",
       "details": "Deleted election configuration: \"House of Representative Election - Osogbo/Olorunda/Irepodun/Orolu Federal Constituency\" (ID: elec-2027-reps-osun-osogbo)."
     },
     {
-      "id": "audit-1792772276434",
-      "timestamp": "2026-10-23T16:17:56.434Z",
+      "id": "audit-1792789816950",
+      "timestamp": "2026-10-23T21:10:16.950Z",
       "actor": "admin:config_manager",
       "action": "DELETE_ELECTION_CONFIG",
       "target": "elec-2027-assembly-osun-osogbo",
       "details": "Deleted election configuration: \"House of Assembly - Osogbo State Constituency\" (ID: elec-2027-assembly-osun-osogbo)."
-    },
-    {
-      "id": "audit-1792757294671",
-      "timestamp": "2026-10-23T12:08:14.671Z",
-      "actor": "babajide.staff@neramp.org.ng",
-      "actorName": "Babajide Sanwo-Olu Staff",
-      "actorRole": "RESULT_VERIFIER",
-      "action": "MANAGEMENT_LOGIN_SUCCESS",
-      "target": "usr-1792757113629-0092cb",
-      "details": "Management user Babajide Sanwo-Olu Staff (babajide.staff@neramp.org.ng) logged in. Role: RESULT_VERIFIER, Badge: NERAMP-ST-207. Session: sess-1792757294670-ba4acf6352e7"
-    },
-    {
-      "id": "audit-1792757284718",
-      "timestamp": "2026-10-23T12:08:04.718Z",
-      "actor": "drisatech@gmail.com",
-      "action": "STAFF_REGISTRATION_APPROVED",
-      "target": "usr-1792757113629-0092cb",
-      "details": "Staff member Babajide Sanwo-Olu Staff (babajide.staff@neramp.org.ng) authorized by drisatech@gmail.com. Access granted for role: RESULT_VERIFIER."
-    },
-    {
-      "id": "audit-1792757113629",
-      "timestamp": "2026-10-23T12:05:13.629Z",
-      "actor": "babajide.staff@neramp.org.ng",
-      "actorName": "Babajide Sanwo-Olu Staff",
-      "actorRole": "RESULT_VERIFIER",
-      "action": "STAFF_REGISTRATION_SUBMITTED",
-      "target": "usr-1792757113629-0092cb",
-      "details": "Staff member Babajide Sanwo-Olu Staff (babajide.staff@neramp.org.ng) registered with requested role RESULT_VERIFIER. Status: PENDING_APPROVAL. Requires Super or Project Admin approval."
-    },
-    {
-      "id": "audit-1792748214257",
-      "timestamp": "2026-10-23T09:36:54.257Z",
-      "actor": "drisatech@gmail.com",
-      "actorName": "Engr. Idris A.",
-      "actorRole": "SUPER_ADMIN",
-      "action": "MANAGEMENT_LOGIN_SUCCESS",
-      "target": "usr-super-idris",
-      "details": "Management user Engr. Idris A. (drisatech@gmail.com) logged in. Role: SUPER_ADMIN, Badge: NERAMP-DEV-001. Session: sess-1792748214256-0fccfa98caab"
     }
   ]
 }
