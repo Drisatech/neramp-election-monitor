@@ -128,10 +128,10 @@ See `.env.example` for the full reference configuration:
 
 ```env
 PROJECT_NAME="NIGERIA ELECTION WATCH"
-DATA_SOURCE_MODE=DEVELOPMENT
-IS_DEMONSTRATION=true
-DATABASE_URL=postgresql+asyncpg://postgres:postgrespassword@localhost:5432/election_watch
-SYNC_DATABASE_URL=postgresql://postgres:postgrespassword@localhost:5432/election_watch
+DATA_SOURCE_MODE=OFFICIAL-SOURCE
+IS_DEMONSTRATION=false
+DATABASE_URL=
+SYNC_DATABASE_URL=
 SECRET_KEY=secure-jwt-secret-key-min-32-chars
 INEC_OFFICIAL_PORTAL_URL=https://inecelectionresults.ng/elections/types
 ```
