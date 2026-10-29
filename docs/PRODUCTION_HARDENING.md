@@ -36,10 +36,19 @@ Do not set DATA_SOURCE_MODE=OFFICIAL_SOURCE or publish data as official solely b
 
 ## Persistence and recovery
 
-The current Node service stores important state in JSON files and in-memory maps; it does not use the PostgreSQL models in backend/. The Render blueprint still uses the free plan and does not provision a persistent disk. Therefore durable persistence across deployments is **not guaranteed**.
+The Node JSON store now uses same-directory temporary files plus atomic rename for each JSON write, with file and best-effort directory fsync. This reduces the risk of truncated JSON after interrupted writes; it does not provide database transactions or multi-instance concurrency safety.
+
+- Recovery snapshots are kept only in `DATA_DIR`; the application no longer writes snapshots containing election records into `public/` or the source-tree `data/` directory.
+- Snapshot payloads exclude management account records. Up to five timestamped prior snapshots are rotated under `DATA_DIR/backups/` with restrictive file permissions.
+- Evidence uploads use `DATA_DIR/evidence`, not a code-directory path.
+- Management session tokens are stored as SHA-256 hashes in `neramp_auth_tokens.json`, never as raw bearer tokens. Valid, unexpired sessions can survive process restarts when the configured data directory is truly persistent. Expired, revoked, or inactive-account sessions are discarded.
+- The Render blueprint sets `NERAMP_REQUIRE_DURABLE_STORAGE=true`. Attach a real persistent disk mounted at `/var/data` before deploying this configuration. The current Render free plan does not provide persistent disks; do not upgrade the service plan without reviewing the cost in Render first. The readiness endpoint should fail when a persistent volume is not detected.
+- Local snapshot rotation is not an off-site backup. Before production use, export encrypted backups to a separate access-controlled storage account and perform a documented restore drill.
+
+The current Node service still stores operational state in JSON files and does not use the PostgreSQL models in backend/. Atomic writes and local snapshot rotation are implemented, but durable persistence across deployments depends on a real persistent disk being attached and detected. The Render blueprint now requires durable storage at readiness time; attach the disk before deployment.
 
 Before production use:
-1. Attach a persistent disk or migrate the canonical Node service to a managed database and object storage.
+1. Attach the required persistent disk or migrate the canonical Node service to a managed database and object storage.
 2. Keep election records, user accounts, sessions, result-sheet versions, incident evidence, and audit logs in durable stores.
 3. Create encrypted, access-controlled backups and perform a restore drill.
 4. Do not store incident evidence solely under a path derived from __dirname; route it through the configured persistent/object store.
