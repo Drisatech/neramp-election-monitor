@@ -148,6 +148,7 @@ class InecApprovedSourceAdapter(ElectionSourceAdapter):
                 "mode": "SYNTHETIC_TEST_ONLY",
                 "message": "Synthetic adapter mode is enabled; no live portal connection was tested.",
                 "portal_reference": f"{self.base_url}/elections/types",
+                "target_election": self.ELECTION_TITLE_OSUN_2026,
                 "timestamp": datetime.now(timezone.utc).isoformat(),
             }
         if not self.api_base_configured:
