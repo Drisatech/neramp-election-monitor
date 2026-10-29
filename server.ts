@@ -42,8 +42,8 @@ try {
   console.warn('[GCS] Google Cloud Storage SDK note:', err.message);
 }
 
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ limit: '50mb', extended: true }));
+app.use(express.json({ limit: '36mb' }));
+app.use(express.urlencoded({ limit: '36mb', extended: true }));
 
 // Production HTTP Security Headers (iframe-compatible for AI Studio preview)
 app.use((_req, res, next) => {
@@ -502,6 +502,7 @@ export interface StoredEvidenceItem {
   sizeBytes: number;
   buffer: Buffer;
   uploadedAt: string;
+  uploadedByUserId?: string;
   gcsPublicUrl?: string;
 }
 
@@ -1238,55 +1239,81 @@ app.get('/api/v1/health/live', (_req: Request, res: Response) => {
 });
 
 // Secure Evidence and Document Upload Handler (Integrated with Memory Store, Disk Cache, & Google Cloud Storage)
-app.post('/api/v1/evidence/upload', async (req: Request, res: Response) => {
-  const { filename, fileContentBase64, contentType } = req.body || {};
+app.post('/api/v1/evidence/upload', requireRoles(
+  ['REGISTERED_OBSERVER', 'STATE_COORDINATOR', 'LGA_COORDINATOR', 'MONITORING_COORDINATOR', 'SUPER_ADMIN', 'PROJECT_ADMIN'],
+  'evidence-upload',
+  12,
+  60 * 60 * 1000
+), async (req: Request, res: Response) => {
+  const { filename, fileContentBase64 } = req.body || {};
+  const user = res.locals.authUser as UserItem;
 
-  if (!filename || !fileContentBase64) {
+  if (typeof filename !== 'string' || !filename.trim() || typeof fileContentBase64 !== 'string' || !fileContentBase64.trim()) {
     res.status(400).json({ error: 'Filename and base64 file content are required' });
     return;
   }
 
-  const cleanName = path.basename(String(filename)).replace(/[^a-zA-Z0-9._-]/g, '_');
-  const ext = (path.extname(cleanName) || '.jpg').toLowerCase();
+  const cleanName = path.basename(filename).replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 160);
+  const cleanBase64 = fileContentBase64.replace(/^data:[^;]+;base64,/i, '').replace(/\s/g, '');
+  if (!cleanBase64 || !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(cleanBase64)) {
+    res.status(400).json({ error: 'File content must be valid base64 data.' });
+    return;
+  }
 
-  const cleanBase64 = String(fileContentBase64).replace(/^data:[^;]+;base64,/, '');
   const buffer = Buffer.from(cleanBase64, 'base64');
+  if (buffer.length === 0) {
+    res.status(400).json({ error: 'Uploaded file is empty.' });
+    return;
+  }
   if (buffer.length > 25 * 1024 * 1024) {
-    res.status(400).json({ error: 'File size exceeds 25MB maximum limit' });
+    res.status(413).json({ error: 'File size exceeds 25MB maximum limit' });
+    return;
+  }
+
+  // Detect supported file formats from bytes; never trust the caller-supplied MIME type.
+  let detectedMime: string | undefined;
+  let detectedExt: string | undefined;
+  if (buffer.length >= 8 && buffer.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) {
+    detectedMime = 'image/png'; detectedExt = '.png';
+  } else if (buffer.length >= 3 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) {
+    detectedMime = 'image/jpeg'; detectedExt = '.jpg';
+  } else if (buffer.subarray(0, 5).toString('ascii') === '%PDF-') {
+    detectedMime = 'application/pdf'; detectedExt = '.pdf';
+  }
+  if (!detectedMime || !detectedExt) {
+    res.status(415).json({ error: 'Unsupported evidence format. Upload a valid JPEG, PNG, or PDF file.' });
     return;
   }
 
   const sha256Hash = crypto.createHash('sha256').update(buffer).digest('hex');
   const randomSuffix = crypto.randomBytes(12).toString('hex');
   const timestamp = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14);
-  const storageKey = `evidence/${timestamp}_${randomSuffix}${ext}`;
-  const resolvedMime = contentType || (ext === '.pdf' ? 'application/pdf' : ext === '.png' ? 'image/png' : 'image/jpeg');
+  const storageKey = `evidence/${timestamp}_${randomSuffix}${detectedExt}`;
 
-  // 1. Store in memory map
   const item: StoredEvidenceItem = {
     storageKey,
-    filename: cleanName,
+    filename: path.basename(cleanName, path.extname(cleanName)) + detectedExt,
     fileHash: sha256Hash,
-    mimeType: resolvedMime,
+    mimeType: detectedMime,
     sizeBytes: buffer.length,
     buffer,
     uploadedAt: new Date().toISOString(),
+    uploadedByUserId: user.id,
   };
   EVIDENCE_FILES.set(storageKey, item);
 
-  // 2. Persist to disk in data/evidence
   try {
     const evidenceDir = path.join(DATA_DIR, 'evidence');
-    if (!fs.existsSync(evidenceDir)) fs.mkdirSync(evidenceDir, { recursive: true });
-    fs.writeFileSync(path.join(evidenceDir, `${timestamp}_${randomSuffix}${ext}`), buffer);
+    if (!fs.existsSync(evidenceDir)) fs.mkdirSync(evidenceDir, { recursive: true, mode: 0o700 });
+    const evidencePath = path.join(evidenceDir, path.basename(storageKey));
+    fs.writeFileSync(evidencePath, buffer, { mode: 0o600, flag: 'wx' });
   } catch (err) {
     console.warn('Local evidence disk persistence notice:', err);
   }
 
-  // 3. Upload to Google Cloud Storage
   let gcsPublicUrl: string | undefined;
   try {
-    gcsPublicUrl = (await uploadToGcsBucket(storageKey, buffer, resolvedMime)) || undefined;
+    gcsPublicUrl = (await uploadToGcsBucket(storageKey, buffer, detectedMime)) || undefined;
     item.gcsPublicUrl = gcsPublicUrl;
   } catch (err) {
     console.warn('Evidence upload fallback to local verified hash:', err);
@@ -1294,75 +1321,72 @@ app.post('/api/v1/evidence/upload', async (req: Request, res: Response) => {
 
   const downloadUrl = `/api/v1/evidence/download/${storageKey}`;
   const viewUrl = `/api/v1/evidence/file/${storageKey}`;
-
   res.status(201).json({
-    message: 'File successfully uploaded, validated, and saved to storage.',
+    message: 'Evidence uploaded and stored. It remains private until attached to an approved public incident.',
     storageKey,
     fileHash: sha256Hash,
     sizeBytes: buffer.length,
-    contentType: resolvedMime,
+    contentType: detectedMime,
     gcsUri: `gs://${GCS_BUCKET_NAME}/${storageKey}`,
-    gcsPublicUrl: gcsPublicUrl || viewUrl,
+    gcsPublicUrl: gcsPublicUrl || undefined,
     viewUrl,
     downloadUrl,
-    verifiedAt: new Date().toISOString(),
+    uploadedAt: item.uploadedAt,
   });
 });
 
 // Serve / View Stored Evidence File
-app.get(['/api/v1/evidence/file/:storageKey(*)', '/api/v1/evidence/file'], (req: Request, res: Response) => {
+app.get(['/api/v1/evidence/file/:storageKey(*)', '/api/v1/evidence/file'], requireAdminAuth, (req: Request, res: Response) => {
+  const user = res.locals.authUser as UserItem | undefined;
   const rawKey = req.params.storageKey || (req.query.key as string) || '';
-  const storageKey = rawKey.replace(/^\/+/, '');
-  
-  // Try memory map first
-  const item = EVIDENCE_FILES.get(storageKey) || EVIDENCE_FILES.get(`evidence/${storageKey}`) || Array.from(EVIDENCE_FILES.values()).find(e => e.filename === storageKey || e.fileHash === storageKey);
+  const storageKey = rawKey.replace(/^\\/+/, '');
+  const item = EVIDENCE_FILES.get(storageKey) || EVIDENCE_FILES.get(`evidence/${storageKey}`);
   if (item) {
+    if (!canAccessEvidence(user, item)) {
+      res.status(403).json({ error: 'You do not have permission to access this evidence file.' });
+      return;
+    }
     res.setHeader('Content-Type', item.mimeType);
-    res.setHeader('Cache-Control', 'public, max-age=86400');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('Cache-Control', 'private, no-store');
     res.send(item.buffer);
     return;
   }
 
-  // Check disk
   const filename = path.basename(storageKey);
-  const localPath = path.join(__dirname, 'data', 'evidence', filename);
-  if (fs.existsSync(localPath)) {
+  const localPath = path.join(DATA_DIR, 'evidence', filename);
+  if (user && ['SUPER_ADMIN', 'PROJECT_ADMIN', 'MONITORING_COORDINATOR'].includes(user.role) && fs.existsSync(localPath)) {
     const buf = fs.readFileSync(localPath);
     const mime = filename.endsWith('.pdf') ? 'application/pdf' : filename.endsWith('.png') ? 'image/png' : 'image/jpeg';
     res.setHeader('Content-Type', mime);
-    res.setHeader('Cache-Control', 'public, max-age=86400');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('Cache-Control', 'private, no-store');
     res.send(buf);
     return;
   }
-
-  res.status(404).json({ error: `Evidence file not found: ${storageKey}` });
+  res.status(404).json({ error: 'Evidence file not found' });
 });
 
 // Download Stored Evidence File as Attachment
-app.get(['/api/v1/evidence/download/:storageKey(*)', '/api/v1/evidence/download'], (req: Request, res: Response) => {
+app.get(['/api/v1/evidence/download/:storageKey(*)', '/api/v1/evidence/download'], requireAdminAuth, (req: Request, res: Response) => {
+  const user = res.locals.authUser as UserItem | undefined;
   const rawKey = req.params.storageKey || (req.query.key as string) || '';
-  const storageKey = rawKey.replace(/^\/+/, '');
-  
-  const item = EVIDENCE_FILES.get(storageKey) || EVIDENCE_FILES.get(`evidence/${storageKey}`) || Array.from(EVIDENCE_FILES.values()).find(e => e.filename === storageKey || e.fileHash === storageKey);
+  const storageKey = rawKey.replace(/^\\/+/, '');
+  const item = EVIDENCE_FILES.get(storageKey) || EVIDENCE_FILES.get(`evidence/${storageKey}`);
   if (item) {
+    if (!canAccessEvidence(user, item)) {
+      res.status(403).json({ error: 'You do not have permission to download this evidence file.' });
+      return;
+    }
+    const safeName = path.basename(item.filename || 'evidence-file').replace(/["\\\\\r\n]/g, '_');
     res.setHeader('Content-Type', item.mimeType);
-    res.setHeader('Content-Disposition', `attachment; filename="${item.filename || 'evidence.jpg'}"`);
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('Content-Disposition', `attachment; filename="${safeName}"`);
+    res.setHeader('Cache-Control', 'private, no-store');
     res.send(item.buffer);
     return;
   }
-
-  const filename = path.basename(storageKey);
-  const localPath = path.join(__dirname, 'data', 'evidence', filename);
-  if (fs.existsSync(localPath)) {
-    const buf = fs.readFileSync(localPath);
-    const mime = filename.endsWith('.pdf') ? 'application/pdf' : filename.endsWith('.png') ? 'image/png' : 'image/jpeg';
-    res.setHeader('Content-Type', mime);
-    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-    res.send(buf);
-    return;
-  }
-
-  res.status(404).json({ error: `Evidence file for download not found: ${storageKey}` });
+  res.status(404).json({ error: 'Evidence file not found' });
 });
 
 // Elections
@@ -3018,6 +3042,52 @@ function requireAdminAuth(req: Request, res: Response, next: () => void) {
   next();
 }
 
+// In-process request throttling is a best-effort safeguard for the current single-instance demo.
+// It is not a distributed rate limiter and must not be treated as election-day scale protection.
+const REQUEST_WINDOW_LIMITS = new Map<string, { count: number; resetAt: number }>();
+function allowWindowRequest(req: Request, res: Response, bucket: string, maxRequests: number, windowMs: number): boolean {
+  const ip = req.ip || req.socket.remoteAddress || 'unknown';
+  const key = `${bucket}:${ip}`;
+  const now = Date.now();
+  let entry = REQUEST_WINDOW_LIMITS.get(key);
+  if (!entry || entry.resetAt <= now) {
+    entry = { count: 0, resetAt: now + windowMs };
+    REQUEST_WINDOW_LIMITS.set(key, entry);
+  }
+  if (entry.count >= maxRequests) {
+    res.setHeader('Retry-After', String(Math.max(1, Math.ceil((entry.resetAt - now) / 1000))));
+    res.status(429).json({ error: 'Too many requests. Please wait before trying again.' });
+    return false;
+  }
+  entry.count += 1;
+  if (REQUEST_WINDOW_LIMITS.size > 5000) {
+    for (const [storedKey, value] of REQUEST_WINDOW_LIMITS) {
+      if (value.resetAt <= now) REQUEST_WINDOW_LIMITS.delete(storedKey);
+    }
+  }
+  return true;
+}
+
+function requireRoles(allowedRoles: string[], bucket: string, maxRequests: number, windowMs: number) {
+  return (req: Request, res: Response, next: () => void) => {
+    requireAdminAuth(req, res, () => {
+      const user = res.locals.authUser as UserItem | undefined;
+      if (!user || !allowedRoles.includes(user.role)) {
+        res.status(403).json({ error: 'Your account role is not permitted to perform this operation.' });
+        return;
+      }
+      if (!allowWindowRequest(req, res, bucket, maxRequests, windowMs)) return;
+      next();
+    });
+  };
+}
+
+function canAccessEvidence(user: UserItem | undefined, item: StoredEvidenceItem): boolean {
+  if (!user) return false;
+  if (['SUPER_ADMIN', 'PROJECT_ADMIN', 'MONITORING_COORDINATOR'].includes(user.role)) return true;
+  return Boolean(item.uploadedByUserId && item.uploadedByUserId === user.id);
+}
+
 // Permanent Management Authentication with Password Verification & Brute-Force Rate Limiting
 app.post('/api/v1/auth/login', (req: Request, res: Response) => {
   const { email, password } = req.body;
@@ -3390,22 +3460,43 @@ app.get('/api/v1/admin/management-monitoring', (_req: Request, res: Response) =>
 });
 
 // Observer Assignments
-app.get('/api/v1/observer/assignments', (_req: Request, res: Response) => {
-  res.json({ data: OBSERVER_ASSIGNMENTS, total: OBSERVER_ASSIGNMENTS.length });
+app.get('/api/v1/observer/assignments', requireRoles(
+  ['REGISTERED_OBSERVER', 'STATE_COORDINATOR', 'LGA_COORDINATOR', 'MONITORING_COORDINATOR', 'SUPER_ADMIN', 'PROJECT_ADMIN'],
+  'observer-read',
+  60,
+  60 * 1000
+), (req: Request, res: Response) => {
+  const user = res.locals.authUser as UserItem;
+  const assignments = ['SUPER_ADMIN', 'PROJECT_ADMIN', 'MONITORING_COORDINATOR', 'STATE_COORDINATOR', 'LGA_COORDINATOR'].includes(user.role)
+    ? OBSERVER_ASSIGNMENTS
+    : OBSERVER_ASSIGNMENTS.filter((a: any) => a.userId === user.id || a.observerBadge === user.badge);
+  res.json({ data: assignments, total: assignments.length });
 });
 
 // Observer Submissions
-app.get('/api/v1/observer/submissions', (_req: Request, res: Response) => {
-  res.json({
-    data: {
-      incidents: INCIDENTS,
-      assignedPus: POLLING_UNITS.slice(0, 25),
-    },
-  });
+app.get('/api/v1/observer/submissions', requireRoles(
+  ['REGISTERED_OBSERVER', 'STATE_COORDINATOR', 'LGA_COORDINATOR', 'MONITORING_COORDINATOR', 'SUPER_ADMIN', 'PROJECT_ADMIN'],
+  'observer-read',
+  60,
+  60 * 1000
+), (req: Request, res: Response) => {
+  const user = res.locals.authUser as UserItem;
+  const canReviewAll = ['SUPER_ADMIN', 'PROJECT_ADMIN', 'MONITORING_COORDINATOR', 'STATE_COORDINATOR', 'LGA_COORDINATOR'].includes(user.role);
+  const incidents = INCIDENTS.filter((incident) => incident.isPublished || canReviewAll || incident.observerBadge === (user.badge || user.id));
+  const assignedPus = user.assignedPus?.length
+    ? POLLING_UNITS.filter((pu) => user.assignedPus!.includes(pu.code) || user.assignedPus!.includes(pu.id))
+    : canReviewAll ? POLLING_UNITS.slice(0, 25) : [];
+  res.json({ data: { incidents, assignedPus } });
 });
 
-// Submit Incident
-app.post('/api/v1/observer/incidents', (req: Request, res: Response) => {
+// Submit Incident. Observer identity and publication state are controlled by the server.
+app.post('/api/v1/observer/incidents', requireRoles(
+  ['REGISTERED_OBSERVER', 'STATE_COORDINATOR', 'LGA_COORDINATOR', 'MONITORING_COORDINATOR', 'SUPER_ADMIN', 'PROJECT_ADMIN'],
+  'observer-incident-submit',
+  10,
+  60 * 60 * 1000
+), (req: Request, res: Response) => {
+  const user = res.locals.authUser as UserItem;
   const {
     electionId = 'elec-2026-gov-osun',
     category,
@@ -3417,134 +3508,121 @@ app.post('/api/v1/observer/incidents', (req: Request, res: Response) => {
     pollingUnitName,
     description,
     severity,
-    observerBadge,
-    evidenceCount,
     evidenceKey,
-    evidenceFilename,
-    evidenceHash,
-    evidenceUrl,
   } = req.body || {};
 
+  const allowedCategories = ['DELAYED_OPENING', 'BVAS_MALFUNCTION', 'RESULT_SHEET_UNAVAILABLE', 'BALLOT_DISRUPTION', 'SECURITY_INCIDENT', 'VOTER_INTIMIDATION'];
+  const allowedSeverities = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
+  if (typeof description !== 'string' || !description.trim() || description.trim().length > 5000) {
+    res.status(400).json({ error: 'A description between 1 and 5000 characters is required.' });
+    return;
+  }
+  if (category && !allowedCategories.includes(category)) {
+    res.status(400).json({ error: 'Invalid incident category.' });
+    return;
+  }
+  if (severity && !allowedSeverities.includes(severity)) {
+    res.status(400).json({ error: 'Invalid incident severity.' });
+    return;
+  }
+
   const resolvedSt = stateCode
-    ? STATES.find((s) => s.code === stateCode || s.name.toUpperCase() === String(stateName || '').toUpperCase())
-    : STATES.find((s) => s.name.toUpperCase() === String(stateName || 'Osun').toUpperCase());
-
+    ? STATES.find((st) => st.code === stateCode || st.name.toUpperCase() === String(stateName || '').toUpperCase())
+    : STATES.find((st) => st.name.toUpperCase() === String(stateName || 'Osun').toUpperCase());
   const resolvedLga = lgaCode
-    ? LGAS.find((l) => l.code === lgaCode)
-    : LGAS.find((l) => l.name.toUpperCase() === String(lgaName || '').toUpperCase());
+    ? LGAS.find((lga) => lga.code === lgaCode && (!resolvedSt || lga.stateCode === resolvedSt.code))
+    : LGAS.find((lga) => lga.name.toUpperCase() === String(lgaName || '').toUpperCase() && (!resolvedSt || lga.stateCode === resolvedSt.code));
 
-  const cleanEvidenceKey = evidenceKey ? String(evidenceKey).replace(/^\/+/, '') : undefined;
-  const resolvedEvidenceUrl = cleanEvidenceKey
-    ? (evidenceUrl && evidenceUrl.startsWith('http') ? evidenceUrl : `/api/v1/evidence/file/${cleanEvidenceKey}`)
-    : evidenceUrl;
+  const cleanEvidenceKey = typeof evidenceKey === 'string' ? evidenceKey.replace(/^\\/+/, '') : undefined;
+  const evidence = cleanEvidenceKey ? EVIDENCE_FILES.get(cleanEvidenceKey) : undefined;
+  if (cleanEvidenceKey && (!evidence || evidence.uploadedByUserId !== user.id)) {
+    res.status(400).json({ error: 'Attached evidence must be uploaded by your authenticated account first.' });
+    return;
+  }
 
+  const badge = user.badge || user.id;
   const newIncident: IncidentReport = {
-    id: 'inc-' + String(INCIDENTS.length + 1).padStart(3, '0') + '-' + Date.now().toString().slice(-4),
-    electionId: electionId || 'elec-2026-gov-osun',
+    id: 'inc-' + crypto.randomBytes(8).toString('hex'),
+    electionId: typeof electionId === 'string' && electionId.length <= 120 ? electionId : 'elec-2026-gov-osun',
     category: category || 'BVAS_MALFUNCTION',
-    stateCode: resolvedSt?.code || stateCode || 'OSUN',
-    stateName: stateName || resolvedSt?.name || 'Osun',
-    lgaCode: resolvedLga?.code || lgaCode || '',
-    lgaName: lgaName || resolvedLga?.name || 'Osogbo',
-    pollingUnitCode: pollingUnitCode || '',
-    pollingUnitName: pollingUnitName || '',
+    stateCode: resolvedSt?.code || '',
+    stateName: resolvedSt?.name || '',
+    lgaCode: resolvedLga?.code || '',
+    lgaName: resolvedLga?.name || '',
+    pollingUnitCode: typeof pollingUnitCode === 'string' ? pollingUnitCode.slice(0, 80) : '',
+    pollingUnitName: typeof pollingUnitName === 'string' ? pollingUnitName.slice(0, 200) : '',
     reportedAt: new Date().toISOString(),
-    description: description || 'Observer field report submitted.',
-    status: 'VERIFIED',
+    description: description.trim(),
+    status: 'SUBMITTED',
     severity: severity || 'MEDIUM',
-    isPublished: true,
-    evidenceCount: evidenceCount !== undefined ? Number(evidenceCount) : cleanEvidenceKey ? 1 : 0,
-    evidenceKey: cleanEvidenceKey,
-    evidenceFilename: evidenceFilename || (cleanEvidenceKey ? path.basename(cleanEvidenceKey) : undefined),
-    evidenceHash,
-    evidenceUrl: resolvedEvidenceUrl,
-    observerBadge: observerBadge || 'OBS-NG-2026-8841',
+    isPublished: false,
+    evidenceCount: evidence ? 1 : 0,
+    evidenceKey: evidence?.storageKey,
+    evidenceFilename: evidence?.filename,
+    evidenceHash: evidence?.fileHash,
+    evidenceUrl: evidence ? undefined : undefined,
+    evidenceSizeBytes: evidence?.sizeBytes,
+    evidenceMimeType: evidence?.mimeType,
+    observerBadge: badge,
   };
 
   INCIDENTS.unshift(newIncident);
-
   AUDIT_LOGS.unshift({
     id: 'audit-' + Date.now(),
     timestamp: new Date().toISOString(),
-    actor: `observer:${newIncident.observerBadge}`,
+    actor: user.email,
     action: 'SUBMIT_INCIDENT_REPORT',
     target: newIncident.id,
-    details: `Incident reported: ${newIncident.category} at ${newIncident.stateName} / ${newIncident.lgaName} (${newIncident.pollingUnitCode || 'LGA Level'}). Evidence files: ${newIncident.evidenceCount}.`,
+    details: `Incident submitted for review: ${newIncident.category} at ${newIncident.stateName || 'Unknown state'} / ${newIncident.lgaName || 'Unknown LGA'}.`,
   });
 
-  res.status(201).json({
-    data: newIncident,
-    message: 'Incident report and attached evidence submitted and published.',
-  });
+  res.status(201).json({ data: newIncident, message: 'Incident report submitted for review. It is not publicly visible until approved.' });
 });
 
-// Get Single Full Incident Report by ID
-app.get('/api/v1/observer/incidents/:id', (req: Request, res: Response) => {
-  const { id } = req.params;
-  const incident = INCIDENTS.find((i) => i.id === id);
-  if (!incident) {
-    res.status(404).json({ error: `Incident report '${id}' not found` });
+// Single incident: unpublished reports are visible only to their reporter and authorized reviewers.
+app.get('/api/v1/observer/incidents/:id', requireRoles(
+  ['REGISTERED_OBSERVER', 'STATE_COORDINATOR', 'LGA_COORDINATOR', 'MONITORING_COORDINATOR', 'SUPER_ADMIN', 'PROJECT_ADMIN'],
+  'observer-read',
+  60,
+  60 * 1000
+), (req: Request, res: Response) => {
+  const user = res.locals.authUser as UserItem;
+  const incident = INCIDENTS.find((item) => item.id === req.params.id);
+  const canReviewAll = ['SUPER_ADMIN', 'PROJECT_ADMIN', 'MONITORING_COORDINATOR', 'STATE_COORDINATOR', 'LGA_COORDINATOR'].includes(user.role);
+  if (!incident || (!incident.isPublished && !canReviewAll && incident.observerBadge !== (user.badge || user.id))) {
+    res.status(404).json({ error: 'Incident report not found' });
     return;
   }
   res.json({ data: incident });
 });
 
-// Stream or Download Attached Evidence File for an Incident Report
+// Evidence for an incident is public only after that incident is approved for publication.
 app.get('/api/v1/observer/incidents/:id/evidence', (req: Request, res: Response) => {
   const { id } = req.params;
+  const incident = INCIDENTS.find((item) => item.id === id);
+  if (!incident || !incident.isPublished || incident.status !== 'APPROVED_FOR_PUBLICATION') {
+    res.status(404).json({ error: 'No public evidence is available for this incident' });
+    return;
+  }
   const download = req.query.download === 'true' || req.query.download === '1';
-  const incident = INCIDENTS.find((i) => i.id === id);
-  if (!incident) {
-    res.status(404).json({ error: `Incident report '${id}' not found` });
+  const storageKey = incident.evidenceKey ? incident.evidenceKey.replace(/^\\/+/, '') : '';
+  const item = storageKey ? EVIDENCE_FILES.get(storageKey) : null;
+  if (!item) {
+    res.status(404).json({ error: 'No attached evidence file found for this incident' });
     return;
   }
-
-  const storageKey = incident.evidenceKey ? incident.evidenceKey.replace(/^\/+/, '') : '';
-  const item = storageKey
-    ? (EVIDENCE_FILES.get(storageKey) ||
-       EVIDENCE_FILES.get(`evidence/${storageKey}`) ||
-       Array.from(EVIDENCE_FILES.values()).find((e) => e.filename === storageKey || e.fileHash === incident.evidenceHash))
-    : null;
-
-  if (item) {
-    res.setHeader('Content-Type', item.mimeType);
-    if (download) {
-      res.setHeader('Content-Disposition', `attachment; filename="${item.filename || incident.evidenceFilename || 'evidence.jpg'}"`);
-    } else {
-      res.setHeader('Content-Disposition', `inline; filename="${item.filename || incident.evidenceFilename || 'evidence.jpg'}"`);
-    }
-    res.setHeader('Cache-Control', 'public, max-age=86400');
-    res.send(item.buffer);
-    return;
+  res.setHeader('Content-Type', item.mimeType);
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Cache-Control', 'public, max-age=300');
+  if (download) {
+    const safeName = path.basename(item.filename || 'evidence-file').replace(/["\\\\\r\n]/g, '_');
+    res.setHeader('Content-Disposition', `attachment; filename="${safeName}"`);
+  } else {
+    res.setHeader('Content-Disposition', 'inline');
   }
-
-  if (storageKey) {
-    const filename = path.basename(storageKey);
-    const localPath = path.join(__dirname, 'data', 'evidence', filename);
-    if (fs.existsSync(localPath)) {
-      const buf = fs.readFileSync(localPath);
-      const mime = filename.endsWith('.pdf') ? 'application/pdf' : filename.endsWith('.png') ? 'image/png' : 'image/jpeg';
-      res.setHeader('Content-Type', mime);
-      if (download) {
-        res.setHeader('Content-Disposition', `attachment; filename="${incident.evidenceFilename || filename}"`);
-      } else {
-        res.setHeader('Content-Disposition', `inline; filename="${incident.evidenceFilename || filename}"`);
-      }
-      res.send(buf);
-      return;
-    }
-  }
-
-  // If incident has an external URL, redirect or proxy
-  if (incident.evidenceUrl && incident.evidenceUrl.startsWith('http')) {
-    res.redirect(incident.evidenceUrl);
-    return;
-  }
-
-  res.status(404).json({ error: 'No attached evidence file found for this incident' });
+  res.send(item.buffer);
 });
 
-// Reopen / Edit Incident Report (Allows Field Observers and Management to rectify errors)
 app.patch('/api/v1/observer/incidents/:id', requireAdminAuth, (req: Request, res: Response) => {
   const { id } = req.params;
   const incident = INCIDENTS.find((i) => i.id === id);
