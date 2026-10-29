@@ -39,5 +39,11 @@ jobs:
 
       - name: Run security integration test suite
         run: npm run test:security
-        # API integration cases require a separately provisioned staging URL and
-        # test accounts. Without NERAMP_TEST_BASE_URL, node:test reports them skipped.
+        env:
+          NERAMP_TEST_BASE_URL: ${{ secrets.NERAMP_TEST_BASE_URL }}
+          NERAMP_TEST_ADMIN_EMAIL: ${{ secrets.NERAMP_TEST_ADMIN_EMAIL }}
+          NERAMP_TEST_ADMIN_PASSWORD: ${{ secrets.NERAMP_TEST_ADMIN_PASSWORD }}
+          NERAMP_TEST_LIMITED_EMAIL: ${{ secrets.NERAMP_TEST_LIMITED_EMAIL }}
+          NERAMP_TEST_LIMITED_PASSWORD: ${{ secrets.NERAMP_TEST_LIMITED_PASSWORD }}
+        # Configure the URL and dedicated test-account values as repository Actions
+        # secrets after deploying this branch to staging. Never use real admin credentials.
