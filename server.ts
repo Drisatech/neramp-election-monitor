@@ -759,65 +759,68 @@ let USERS: UserItem[] = [...DEFAULT_MANAGEMENT_USERS];
 
 let saveDbDebounceTimer: NodeJS.Timeout | null = null;
 
-function saveDatabaseToDisk(immediate: boolean = false) {
-  const doSave = () => {
-    try {
-      if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
-      fs.writeFileSync(POLLING_UNITS_FILE, JSON.stringify(POLLING_UNITS, null, 2), 'utf-8');
-      fs.writeFileSync(RESULT_SHEETS_FILE, JSON.stringify(RESULT_SHEETS, null, 2), 'utf-8');
-      fs.writeFileSync(USERS_FILE, JSON.stringify(USERS, null, 2), 'utf-8');
-      fs.writeFileSync(USER_SESSIONS_FILE, JSON.stringify(USER_SESSIONS, null, 2), 'utf-8');
-      fs.writeFileSync(AUDIT_LOGS_FILE, JSON.stringify(AUDIT_LOGS, null, 2), 'utf-8');
-      fs.writeFileSync(DISCREPANCIES_FILE, JSON.stringify(DISCREPANCIES, null, 2), 'utf-8');
-      fs.writeFileSync(INCIDENTS_FILE, JSON.stringify(INCIDENTS, null, 2), 'utf-8');
-      fs.writeFileSync(ELECTIONS_FILE, JSON.stringify(ELECTIONS, null, 2), 'utf-8');
-
-      // Auto-create consolidated snapshot if there are polling units or uploaded result sheets
-      if (POLLING_UNITS.length > 0 || Object.keys(RESULT_SHEETS).length > 0) {
-        const snapshotPayload = {
-          version: 2,
-          savedAt: new Date().toISOString(),
-          recordCount: POLLING_UNITS.length,
-          resultSheetsCount: Object.keys(RESULT_SHEETS).length,
-          elections: ELECTIONS,
-          pollingUnits: POLLING_UNITS,
-          resultSheets: RESULT_SHEETS,
-          users: USERS,
-          discrepancies: DISCREPANCIES,
-          incidents: INCIDENTS,
-          auditLogs: AUDIT_LOGS.slice(0, 100),
-        };
-        const snapJson = JSON.stringify(snapshotPayload, null, 2);
-        fs.writeFileSync(SNAPSHOT_FILE, snapJson, 'utf-8');
-
-        try {
-          const publicDir = path.join(__dirname, 'public');
-          if (!fs.existsSync(publicDir)) fs.mkdirSync(publicDir, { recursive: true });
-          fs.writeFileSync(PUBLIC_SNAPSHOT_FILE, snapJson, 'utf-8');
-        } catch {}
-
-        try {
-          const repoDataDir = path.join(__dirname, 'data');
-          if (!fs.existsSync(repoDataDir)) fs.mkdirSync(repoDataDir, { recursive: true });
-          if (repoDataDir !== DATA_DIR) {
-            fs.writeFileSync(REPO_SNAPSHOT_FILE, snapJson, 'utf-8');
-          }
-        } catch {}
-      }
-    } catch (err: any) {
-      console.error('[DATABASE PERSISTENCE] Error saving to disk:', err.message);
-    }
-  };
-
-  if (immediate) {
-    if (saveDbDebounceTimer) clearTimeout(saveDbDebounceTimer);
-    doSave();
-  } else {
-    if (saveDbDebounceTimer) clearTimeout(saveDbDebounceTimer);
-    saveDbDebounceTimer = setTimeout(doSave, 800);
+// Write each JSON file via a same-directory temporary file and atomic rename.
+// This prevents readers from observing truncated JSON after a process interruption.
+function atomicWriteFile(filePath: string, contents: string) {
+  const dir = path.dirname(filePath);
+  fs.mkdirSync(dir, { recursive: true });
+  const tempPath = path.join(dir, `.${path.basename(filePath)}.${process.pid}.${crypto.randomBytes(6).toString('hex')}.tmp`);
+  let fd: number | undefined;
+  try {
+    fd = fs.openSync(tempPath, 'wx', 0o600);
+    fs.writeFileSync(fd, contents, 'utf-8');
+    fs.fsyncSync(fd);
+    fs.closeSync(fd);
+    fd = undefined;
+    fs.renameSync(tempPath, filePath);
+    try { const dirFd = fs.openSync(dir, 'r'); try { fs.fsyncSync(dirFd); } finally { fs.closeSync(dirFd); } } catch {}
+  } catch (error) {
+    if (fd !== undefined) { try { fs.closeSync(fd); } catch {} }
+    try { fs.unlinkSync(tempPath); } catch {}
+    throw error;
   }
 }
 
+function rotateSnapshotBackup() {
+  if (!fs.existsSync(SNAPSHOT_FILE)) return;
+  const backupDir = path.join(DATA_DIR, 'backups');
+  fs.mkdirSync(backupDir, { recursive: true, mode: 0o700 });
+  const backupPath = path.join(backupDir, `neramp_snapshot_${new Date().toISOString().replace(/[:.]/g, '-')}.json`);
+  fs.copyFileSync(SNAPSHOT_FILE, backupPath, fs.constants.COPYFILE_EXCL);
+  try { fs.chmodSync(backupPath, 0o600); } catch {}
+  const backups = fs.readdirSync(backupDir).filter((name) => /^neramp_snapshot_.*\.json$/.test(name)).sort().reverse();
+  for (const stale of backups.slice(5)) { try { fs.unlinkSync(path.join(backupDir, stale)); } catch {} }
+}
+
+function saveDatabaseToDisk(immediate: boolean = false) {
+  const doSave = () => {
+    try {
+      if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true, mode: 0o700 });
+      atomicWriteFile(POLLING_UNITS_FILE, JSON.stringify(POLLING_UNITS, null, 2));
+      atomicWriteFile(RESULT_SHEETS_FILE, JSON.stringify(RESULT_SHEETS, null, 2));
+      atomicWriteFile(USERS_FILE, JSON.stringify(USERS, null, 2));
+      atomicWriteFile(USER_SESSIONS_FILE, JSON.stringify(USER_SESSIONS, null, 2));
+      atomicWriteFile(AUDIT_LOGS_FILE, JSON.stringify(AUDIT_LOGS, null, 2));
+      atomicWriteFile(DISCREPANCIES_FILE, JSON.stringify(DISCREPANCIES, null, 2));
+      atomicWriteFile(INCIDENTS_FILE, JSON.stringify(INCIDENTS, null, 2));
+      atomicWriteFile(ELECTIONS_FILE, JSON.stringify(ELECTIONS, null, 2));
+      // Keep recovery snapshots only in the configured data directory; never expose
+      // election records or account metadata via the public web root or source tree.
+      if (POLLING_UNITS.length > 0 || Object.keys(RESULT_SHEETS).length > 0) {
+        const snapshotPayload = {
+          version: 3, savedAt: new Date().toISOString(),
+          recordCount: POLLING_UNITS.length, resultSheetsCount: Object.keys(RESULT_SHEETS).length,
+          elections: ELECTIONS, pollingUnits: POLLING_UNITS, resultSheets: RESULT_SHEETS,
+          discrepancies: DISCREPANCIES, incidents: INCIDENTS, auditLogs: AUDIT_LOGS.slice(0, 100),
+        };
+        rotateSnapshotBackup();
+        atomicWriteFile(SNAPSHOT_FILE, JSON.stringify(snapshotPayload, null, 2));
+      }
+    } catch (err: any) { console.error('[DATABASE PERSISTENCE] Error saving to disk:', err.message); }
+  };
+  if (immediate) { if (saveDbDebounceTimer) clearTimeout(saveDbDebounceTimer); doSave(); }
+  else { if (saveDbDebounceTimer) clearTimeout(saveDbDebounceTimer); saveDbDebounceTimer = setTimeout(doSave, 800); }
+}
 function loadDatabaseFromDisk() {
   try {
     let loadedPus = false;
@@ -921,8 +924,18 @@ function loadDatabaseFromDisk() {
   }
 }
 
-// Initial load from disk
+// Initial load from disk. Bearer tokens remain process-local and are never persisted.
+// Sessions left active by a prior process are invalidated on restart.
 loadDatabaseFromDisk();
+let staleSessionsClosed = false;
+for (const session of USER_SESSIONS) {
+  if (session.status === 'ACTIVE') {
+    session.status = 'TIMED_OUT';
+    session.logoutAt = new Date().toISOString();
+    staleSessionsClosed = true;
+  }
+}
+if (staleSessionsClosed) saveDatabaseToDisk(true);
 
 // Remove the publicly known legacy password from persisted accounts. If a unique
 // bootstrap secret is configured, it may provision only the Super Admin account.
@@ -1207,15 +1220,20 @@ app.get('/api/v1/health', (_req: Request, res: Response) => {
 app.get('/api/v1/health/ready', (_req: Request, res: Response) => {
   let dataDirectoryWritable = false;
   try { fs.accessSync(DATA_DIR, fs.constants.W_OK); dataDirectoryWritable = true; } catch { dataDirectoryWritable = false; }
-  const persistenceConfigured = Boolean(process.env.DATA_DIR || process.env.RENDER_DISK_PATH) && dataDirectoryWritable;
-  const ready = dataDirectoryWritable;
+  // DATA_DIR alone is not proof of a persistent volume: the same path can exist on ephemeral storage.
+  const persistentVolumeConfigured = Boolean(process.env.RENDER_DISK_PATH) ||
+    (process.env.NERAMP_PERSISTENCE_MODE === 'persistent-disk' && process.env.DATA_DIR === '/var/data');
+  const persistenceConfigured = persistentVolumeConfigured && dataDirectoryWritable;
+  const ready = dataDirectoryWritable && (process.env.NERAMP_REQUIRE_DURABLE_STORAGE !== 'true' || persistenceConfigured);
   res.status(ready ? 200 : 503).json({
     status: ready ? 'READY' : 'NOT_READY',
     timestamp: new Date().toISOString(),
     storage: 'local-json-file-store',
     dataDirectoryWritable,
+    persistentVolumeConfigured,
     persistenceConfigured,
-    warning: persistenceConfigured ? 'File-backed storage is writable; backups and restore must still be configured and tested.' : 'Durable persistence is not confirmed. Local files may be lost across restarts or deployments.',
+    snapshotBackups: path.join(DATA_DIR, 'backups'),
+    warning: persistenceConfigured ? 'A persistent volume is configured; file-backed storage still requires an externally stored backup and a successful restore drill.' : 'Durable persistence is not confirmed. Local files may be lost across restarts or deployments.',
     databaseConnected: false,
     cacheAvailable: false,
     activeBackgroundLocks: isLoopExtractionRunningNow,
@@ -1269,7 +1287,7 @@ app.post('/api/v1/evidence/upload', async (req: Request, res: Response) => {
 
   // 2. Persist to disk in data/evidence
   try {
-    const evidenceDir = path.join(__dirname, 'data', 'evidence');
+    const evidenceDir = path.join(DATA_DIR, 'evidence');
     if (!fs.existsSync(evidenceDir)) fs.mkdirSync(evidenceDir, { recursive: true });
     fs.writeFileSync(path.join(evidenceDir, `${timestamp}_${randomSuffix}${ext}`), buffer);
   } catch (err) {
