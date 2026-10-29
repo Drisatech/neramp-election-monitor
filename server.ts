@@ -1339,7 +1339,7 @@ app.post('/api/v1/evidence/upload', requireRoles(
 app.get(['/api/v1/evidence/file/:storageKey(*)', '/api/v1/evidence/file'], requireAdminAuth, (req: Request, res: Response) => {
   const user = res.locals.authUser as UserItem | undefined;
   const rawKey = req.params.storageKey || (req.query.key as string) || '';
-  const storageKey = rawKey.replace(/^\\/+/, '');
+  const storageKey = rawKey.replace(/^\/+/, '');
   const item = EVIDENCE_FILES.get(storageKey) || EVIDENCE_FILES.get(`evidence/${storageKey}`);
   if (item) {
     if (!canAccessEvidence(user, item)) {
@@ -1371,7 +1371,7 @@ app.get(['/api/v1/evidence/file/:storageKey(*)', '/api/v1/evidence/file'], requi
 app.get(['/api/v1/evidence/download/:storageKey(*)', '/api/v1/evidence/download'], requireAdminAuth, (req: Request, res: Response) => {
   const user = res.locals.authUser as UserItem | undefined;
   const rawKey = req.params.storageKey || (req.query.key as string) || '';
-  const storageKey = rawKey.replace(/^\\/+/, '');
+  const storageKey = rawKey.replace(/^\/+/, '');
   const item = EVIDENCE_FILES.get(storageKey) || EVIDENCE_FILES.get(`evidence/${storageKey}`);
   if (item) {
     if (!canAccessEvidence(user, item)) {
@@ -3533,7 +3533,7 @@ app.post('/api/v1/observer/incidents', requireRoles(
     ? LGAS.find((lga) => lga.code === lgaCode && (!resolvedSt || lga.stateCode === resolvedSt.code))
     : LGAS.find((lga) => lga.name.toUpperCase() === String(lgaName || '').toUpperCase() && (!resolvedSt || lga.stateCode === resolvedSt.code));
 
-  const cleanEvidenceKey = typeof evidenceKey === 'string' ? evidenceKey.replace(/^\\/+/, '') : undefined;
+  const cleanEvidenceKey = typeof evidenceKey === 'string' ? evidenceKey.replace(/^\/+/, '') : undefined;
   const evidence = cleanEvidenceKey ? EVIDENCE_FILES.get(cleanEvidenceKey) : undefined;
   if (cleanEvidenceKey && (!evidence || evidence.uploadedByUserId !== user.id)) {
     res.status(400).json({ error: 'Attached evidence must be uploaded by your authenticated account first.' });
@@ -3605,7 +3605,7 @@ app.get('/api/v1/observer/incidents/:id/evidence', (req: Request, res: Response)
     return;
   }
   const download = req.query.download === 'true' || req.query.download === '1';
-  const storageKey = incident.evidenceKey ? incident.evidenceKey.replace(/^\\/+/, '') : '';
+  const storageKey = incident.evidenceKey ? incident.evidenceKey.replace(/^\/+/, '') : '';
   const item = storageKey ? EVIDENCE_FILES.get(storageKey) : null;
   if (!item) {
     res.status(404).json({ error: 'No attached evidence file found for this incident' });
