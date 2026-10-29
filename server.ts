@@ -9,6 +9,7 @@ import sharp from 'sharp';
 import { GoogleGenAI, Type } from '@google/genai';
 import { Storage } from '@google-cloud/storage';
 import { classifyIngestionOutcome, IngestionValidationError, validateUpstreamBaseUrl } from './src/services/ingestionContract.ts';
+import { validateUploadBuffer } from './src/services/uploadValidation.ts';
 import {
   type InecStateStatistic,
   OFFICIAL_INEC_STATES,
@@ -1296,21 +1297,25 @@ app.post('/api/v1/evidence/upload', async (req: Request, res: Response) => {
     return;
   }
 
-  const cleanName = path.basename(String(filename)).replace(/[^a-zA-Z0-9._-]/g, '_');
-  const ext = (path.extname(cleanName) || '.jpg').toLowerCase();
-
+  const rawFilename = String(filename);
+  const cleanName = path.basename(rawFilename).replace(/[^a-zA-Z0-9._-]/g, '_');
   const cleanBase64 = String(fileContentBase64).replace(/^data:[^;]+;base64,/, '');
-  const buffer = Buffer.from(cleanBase64, 'base64');
-  if (buffer.length > 25 * 1024 * 1024) {
-    res.status(400).json({ error: 'File size exceeds 25MB maximum limit' });
+  if (!/^[A-Za-z0-9+/]*={0,2}$/.test(cleanBase64) || cleanBase64.length % 4 === 1) {
+    res.status(400).json({ error: 'File content is not valid base64.' });
     return;
   }
-
-  const sha256Hash = crypto.createHash('sha256').update(buffer).digest('hex');
+  const buffer = Buffer.from(cleanBase64, 'base64');
+  const validation = validateUploadBuffer(rawFilename, buffer, contentType, 25 * 1024 * 1024);
+  if (!validation.valid) {
+    res.status(400).json({ error: validation.error });
+    return;
+  }
+  const ext = path.extname(cleanName).toLowerCase();
+  const sha256Hash = validation.sha256;
   const randomSuffix = crypto.randomBytes(12).toString('hex');
   const timestamp = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14);
   const storageKey = `evidence/${timestamp}_${randomSuffix}${ext}`;
-  const resolvedMime = contentType || (ext === '.pdf' ? 'application/pdf' : ext === '.png' ? 'image/png' : 'image/jpeg');
+  const resolvedMime = validation.mimeType;
 
   // 1. Store in memory map
   const item: StoredEvidenceItem = {
@@ -6225,12 +6230,22 @@ app.post('/api/v1/ocr/upload-and-transcribe', async (req: Request, res: Response
 
   try {
     const cleanBase64 = String(imageBase64).replace(/^data:[^;]+;base64,/, '');
+    if (!/^[A-Za-z0-9+/]*={0,2}$/.test(cleanBase64) || cleanBase64.length % 4 === 1) {
+      res.status(400).json({ error: 'Image content is not valid base64.' });
+      return;
+    }
     const imgBuffer = Buffer.from(cleanBase64, 'base64');
-    const shaHash = crypto.createHash('sha256').update(imgBuffer).digest('hex');
+    const uploadValidation = validateUploadBuffer(String(fileName), imgBuffer, String(mimeType), 15 * 1024 * 1024);
+    if (!uploadValidation.valid || uploadValidation.mimeType === 'application/pdf') {
+      res.status(400).json({ error: uploadValidation.valid ? 'EC8A OCR accepts image files only.' : uploadValidation.error });
+      return;
+    }
+    const validatedMimeType = uploadValidation.mimeType;
+    const shaHash = uploadValidation.sha256;
 
     let extracted: any = await transcribeFormEc8aMultiProvider({
       base64Data: cleanBase64,
-      mimeType,
+      mimeType: validatedMimeType,
       forceRefresh: true,
     });
 
@@ -6262,7 +6277,7 @@ app.post('/api/v1/ocr/upload-and-transcribe', async (req: Request, res: Response
       resultSheetId,
       pollingUnitCode: normalizedCode,
       fileName,
-      mimeType,
+      mimeType: validatedMimeType,
       buffer: imgBuffer,
       uploadedAt: new Date().toISOString(),
     };
@@ -6316,13 +6331,13 @@ app.post('/api/v1/ocr/upload-and-transcribe', async (req: Request, res: Response
       gcsUploadedUrl = await uploadToGcsBucket(
         `ec8a-result-sheets/${normalizedCode}.jpg`,
         imgBuffer,
-        mimeType
+        validatedMimeType
       );
     } catch (gcsErr) {
       console.warn('GCS bucket upload notice:', gcsErr);
     }
 
-    const inlineDataUri = `data:${mimeType};base64,${cleanBase64}`;
+    const inlineDataUri = `data:${validatedMimeType};base64,${cleanBase64}`;
     RESULT_SHEETS[resultSheetId] = {
       id: resultSheetId,
       pollingUnitCode: normalizedCode,
