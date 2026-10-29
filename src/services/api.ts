@@ -147,7 +147,7 @@ export async function submitIncidentReport(payload: {
 }) {
   const res = await fetch(`${API_BASE}/observer/incidents`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
     body: JSON.stringify(payload),
   });
   if (!res.ok) throw new Error('Failed to submit incident report');
@@ -183,7 +183,7 @@ export async function updateIncidentReport(
 ): Promise<{ data: IncidentReport; message: string }> {
   const res = await fetch(`${API_BASE}/observer/incidents/${encodeURIComponent(id)}`, {
     method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
     body: JSON.stringify(payload),
   });
   if (!res.ok) {
@@ -258,7 +258,7 @@ export async function triggerIngestionRun(
 ) {
   const res = await fetch(`${API_BASE}/admin/ingestion/run`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
     body: JSON.stringify({ adapter, electionId, maxWards }),
   });
   if (!res.ok) throw new Error('Failed to trigger ingestion run');
@@ -268,7 +268,7 @@ export async function triggerIngestionRun(
 export async function testSourceConnection(adapter = 'InecApprovedSourceAdapter') {
   const res = await fetch(`${API_BASE}/admin/ingestion/test-connection`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
     body: JSON.stringify({ adapter }),
   });
   if (!res.ok) throw new Error('Failed to test source connection');
@@ -289,7 +289,7 @@ export async function updateSchedulerConfig(data: {
 }) {
   const res = await fetch(`${API_BASE}/admin/ingestion/scheduler`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
     body: JSON.stringify(data),
   });
   if (!res.ok) throw new Error('Failed to update scheduler configuration');
@@ -311,7 +311,7 @@ export async function fetchAuditLogs() {
 export async function setDataSourceMode(mode: string) {
   const res = await fetch(`${API_BASE}/admin/set-data-source`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
     body: JSON.stringify({ mode }),
   });
   if (!res.ok) throw new Error('Failed to set data source mode');
@@ -394,7 +394,7 @@ export async function updateDataQualityAlert(
 ) {
   const res = await fetch(`${API_BASE}/analytics/alerts/${alertId}`, {
     method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
     body: JSON.stringify(payload),
   });
   if (!res.ok) throw new Error('Failed to update alert');
@@ -451,7 +451,7 @@ export async function fetchAdminUsers(params?: { role?: string; isActive?: boole
 export async function createAdminUser(data: any) {
   const res = await fetch(`${API_BASE}/admin/users`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
     body: JSON.stringify(data),
   });
   if (!res.ok) {
@@ -464,7 +464,7 @@ export async function createAdminUser(data: any) {
 export async function updateAdminUser(id: string, data: any) {
   const res = await fetch(`${API_BASE}/admin/users/${id}`, {
     method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
     body: JSON.stringify(data),
   });
   if (!res.ok) {
@@ -547,7 +547,7 @@ export async function fetchVerifierSupervision() {
 export async function reassignDisputedResult(resultSheetId: string, secondaryVerifierName: string, reason: string) {
   const res = await fetch(`${API_BASE}/admin/supervision/reassign-disputed`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
     body: JSON.stringify({ resultSheetId, secondaryVerifierName, reason }),
   });
   if (!res.ok) throw new Error('Failed to reassign disputed result');
@@ -557,7 +557,7 @@ export async function reassignDisputedResult(resultSheetId: string, secondaryVer
 export async function verifyObserverCredentials(observerId: string, badge: string) {
   const res = await fetch(`${API_BASE}/admin/observers/${observerId}/verify-credentials`, {
     method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
     body: JSON.stringify({ badge }),
   });
   if (!res.ok) throw new Error('Failed to verify observer credentials');
@@ -567,7 +567,7 @@ export async function verifyObserverCredentials(observerId: string, badge: strin
 export async function publishProtectedIncident(incidentId: string, publishNotes?: string) {
   const res = await fetch(`${API_BASE}/admin/incidents/${incidentId}/publish`, {
     method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
     body: JSON.stringify({ publishNotes }),
   });
   if (!res.ok) throw new Error('Failed to publish protected incident');
@@ -577,7 +577,7 @@ export async function publishProtectedIncident(incidentId: string, publishNotes?
 export async function pauseIngestionScheduler(paused: boolean) {
   const res = await fetch(`${API_BASE}/admin/operations/pause-scheduler`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
     body: JSON.stringify({ paused }),
   });
   if (!res.ok) throw new Error('Failed to update scheduler state');
@@ -615,7 +615,7 @@ export async function fetchConfigElections() {
 export async function createConfigElection(data: any) {
   const res = await fetch(`${API_BASE}/admin/config/elections`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
     body: JSON.stringify(data),
   });
   if (!res.ok) {
@@ -628,7 +628,7 @@ export async function createConfigElection(data: any) {
 export async function updateConfigElection(id: string, data: any) {
   const res = await fetch(`${API_BASE}/admin/config/elections/${encodeURIComponent(id)}`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
     body: JSON.stringify(data),
   });
   if (!res.ok) {
@@ -658,7 +658,7 @@ export async function fetchConfigCandidates() {
 export async function createConfigCandidate(data: any) {
   const res = await fetch(`${API_BASE}/admin/config/candidates`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
     body: JSON.stringify(data),
   });
   if (!res.ok) throw new Error('Failed to save candidate');
@@ -674,7 +674,7 @@ export async function fetchConfigParties() {
 export async function uploadEvidenceFile(filename: string, fileContentBase64: string, contentType?: string) {
   const res = await fetch(`${API_BASE}/evidence/upload`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
     body: JSON.stringify({ filename, fileContentBase64, contentType }),
   });
   if (!res.ok) {
@@ -705,7 +705,7 @@ export async function fetchReadinessStatus() {
 export async function runReadinessDrill(drillType: string) {
   const res = await fetch(`${API_BASE}/admin/readiness/run-drill`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
     body: JSON.stringify({ drillType }),
   });
   if (!res.ok) {
@@ -718,7 +718,7 @@ export async function runReadinessDrill(drillType: string) {
 export async function toggleReadinessChecklist(checklist: string, taskId: string) {
   const res = await fetch(`${API_BASE}/admin/readiness/toggle-checklist`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
     body: JSON.stringify({ checklist, taskId }),
   });
   if (!res.ok) throw new Error('Failed to toggle checklist task');
@@ -728,7 +728,7 @@ export async function toggleReadinessChecklist(checklist: string, taskId: string
 export async function purgeDemonstrationData() {
   const res = await fetch(`${API_BASE}/admin/data/purge-demo`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
@@ -752,7 +752,7 @@ export async function importRegisteredVotersFile(payload: {
 }) {
   const res = await fetch(`${API_BASE}/geography/registered-voters/import`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
     body: JSON.stringify(payload),
   });
   if (!res.ok) {
@@ -845,7 +845,7 @@ export async function deleteStorageFile(id: string) {
 export async function editStorageFile(id: string, updates: any) {
   const res = await fetch(`${API_BASE}/admin/storage/files/${encodeURIComponent(id)}`, {
     method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
     body: JSON.stringify(updates),
   });
   if (!res.ok) {
@@ -879,7 +879,7 @@ export async function setCustomGeminiApiKey(
 ) {
   const res = await fetch(`${API_BASE}/ocr/api-key`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
     body: JSON.stringify({ apiKey, provider, model }),
   });
   if (!res.ok) {
@@ -896,7 +896,7 @@ export async function testGeminiOcrConnection(
 ) {
   const res = await fetch(`${API_BASE}/ocr/test-connection`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
     body: JSON.stringify({ provider, model, apiKey }),
   });
   if (!res.ok) {
@@ -928,7 +928,7 @@ export function getAuthHeaders(): Record<string, string> {
 export async function loginManagement(email: string, password?: string) {
   const res = await fetch(`${API_BASE}/auth/login`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
     body: JSON.stringify({ email, password }),
   });
   if (!res.ok) {
@@ -948,7 +948,7 @@ export async function registerManagement(data: {
 }) {
   const res = await fetch(`${API_BASE}/auth/register`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
     body: JSON.stringify(data),
   });
   if (!res.ok) {
@@ -962,7 +962,7 @@ export async function sendSessionHeartbeat(sessionId: string, userEmail?: string
   try {
     await fetch(`${API_BASE}/auth/session-heartbeat`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
       body: JSON.stringify({ sessionId, userEmail }),
     });
   } catch {
@@ -974,7 +974,7 @@ export async function logoutManagement(sessionId?: string, userEmail?: string) {
   try {
     await fetch(`${API_BASE}/auth/logout`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
       body: JSON.stringify({ sessionId, userEmail }),
     });
   } catch {
