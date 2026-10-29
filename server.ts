@@ -646,8 +646,18 @@ export interface UserSession {
 
 let USER_SESSIONS: UserSession[] = [];
 
-const DEFAULT_PASS = 'Admin@Neramp2026!';
-const defaultCreds = hashPassword(DEFAULT_PASS);
+// Never ship a known default credential. Configure a unique, 16+ character
+// NERAMP_BOOTSTRAP_ADMIN_PASSWORD in the deployment secret store for initial admin access.
+const LEGACY_DEFAULT_PASS = 'Admin@Neramp2026!';
+const bootstrapAdminPassword = process.env.NERAMP_BOOTSTRAP_ADMIN_PASSWORD?.trim();
+const bootstrapAdminCreds =
+  bootstrapAdminPassword && bootstrapAdminPassword !== LEGACY_DEFAULT_PASS && bootstrapAdminPassword.length >= 16
+    ? hashPassword(bootstrapAdminPassword)
+    : null;
+if (bootstrapAdminPassword && !bootstrapAdminCreds) {
+  console.warn('[AUTH] NERAMP_BOOTSTRAP_ADMIN_PASSWORD must be unique, at least 16 characters, and not the legacy default. Bootstrap login remains disabled.');
+}
+const defaultCreds = bootstrapAdminCreds || { hash: '', salt: '' };
 
 const DEFAULT_MANAGEMENT_USERS: UserItem[] = [
   {
@@ -913,6 +923,36 @@ function loadDatabaseFromDisk() {
 
 // Initial load from disk
 loadDatabaseFromDisk();
+
+// Remove the publicly known legacy password from persisted accounts. If a unique
+// bootstrap secret is configured, it may provision only the Super Admin account.
+let authCredentialMigrationChanged = false;
+for (const user of USERS) {
+  const hasLegacyPassword = Boolean(user.passwordHash && user.salt &&
+    verifyPassword(LEGACY_DEFAULT_PASS, user.passwordHash, user.salt));
+  if (hasLegacyPassword) {
+    if (user.role === 'SUPER_ADMIN' && bootstrapAdminCreds) {
+      user.passwordHash = bootstrapAdminCreds.hash;
+      user.salt = bootstrapAdminCreds.salt;
+    } else {
+      user.passwordHash = '';
+      user.salt = '';
+    }
+    user.updatedAt = new Date().toISOString();
+    authCredentialMigrationChanged = true;
+  }
+}
+const bootstrapAdmin = USERS.find((user) => user.role === 'SUPER_ADMIN' || user.email.toLowerCase() === 'drisatech@gmail.com');
+if (bootstrapAdmin && (!bootstrapAdmin.passwordHash || !bootstrapAdmin.salt) && bootstrapAdminCreds) {
+  bootstrapAdmin.passwordHash = bootstrapAdminCreds.hash;
+  bootstrapAdmin.salt = bootstrapAdminCreds.salt;
+  bootstrapAdmin.updatedAt = new Date().toISOString();
+  authCredentialMigrationChanged = true;
+}
+if (authCredentialMigrationChanged) {
+  console.warn('[AUTH] Legacy/default credentials were disabled or replaced. Review account access and rotate bootstrap credentials.');
+  saveDatabaseToDisk(true);
+}
 
 // Data-Quality Alerts & Statistical Lead Queues
 let DATA_QUALITY_ALERTS: any[] = [];
