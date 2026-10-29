@@ -9,7 +9,7 @@
 
 **Nigeria Election Watch** is a modern, data-driven web application designed for analyzing Nigerian election results, monitoring the availability of official Form EC8A polling-unit result sheets, supporting independent election observers, verifying transcribed figures against source documents, and identifying data discrepancies using deterministic rules.
 
-Initially architected for monitoring Nigeria's 2027 general elections, the system utilizes a **Python-first architecture** with **FastAPI**, **PostgreSQL** with PostGIS, **React**, **TypeScript**, **Apache ECharts**, and **Leaflet**.
+The current Render production entry point is **React/Vite + Node.js/Express** (`server.ts`), and its API is the canonical application API for this repository. The separate **FastAPI/PostgreSQL/PostGIS** implementation is a prototype/reference backend and is not wired into the Render blueprint or the frontend API path. Do not run both as competing production sources of election data. See [Production Hardening](docs/PRODUCTION_HARDENING.md).
 
 Official reference portal:
 https://inecelectionresults.ng/elections/types
@@ -77,7 +77,9 @@ https://inecelectionresults.ng/elections/types
 
 ---
 
-### Option B: Python FastAPI Backend & PostgreSQL
+### Option B: FastAPI reference backend (development only)
+
+> **Not the production API.** This parallel implementation contains independent in-memory services and fixtures. Do not use it as a second production backend or treat its health checks as evidence of production database readiness. The Node/Express API remains canonical until a deliberate, tested migration replaces it.
 
 1. **Navigate to the backend directory**:
    ```bash
@@ -134,6 +136,8 @@ DATABASE_URL=
 SYNC_DATABASE_URL=
 SECRET_KEY=secure-jwt-secret-key-min-32-chars
 INEC_OFFICIAL_PORTAL_URL=https://inecelectionresults.ng/elections/types
+# Required for live retrieval; configure only after verifying the endpoint, access permission, and response contract.
+INEC_RESULTS_API_BASE_URL=
 ```
 
 ---
