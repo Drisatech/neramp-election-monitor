@@ -1,88 +1,72 @@
-# Production Architecture Overview - Nigeria Election Watch 2027
+# NERAMP backend architecture and hardening decisions
 
-## 1. System Topology & Production Components
+## Canonical production API
 
-Nigeria Election Watch is architected as an independent, enterprise-grade, fault-tolerant election monitoring and verification platform designed to handle peak election-day loads across 176,846 polling units across all 36 States and the Federal Capital Territory (FCT).
+The current Render blueprint builds and starts the root Node/Express application (server.ts). The React client uses the same-origin /api/v1 endpoints. **Node/Express is therefore the canonical production API for this branch.**
 
-```
-                      ┌───────────────────────────────────────────────┐
-                      │    Public Traffic & Election Observers        │
-                      └──────────────────────┬────────────────────────┘
-                                             │ HTTPS (TLS 1.3)
-                                             ▼
-                      ┌───────────────────────────────────────────────┐
-                      │    Cloud Armor / WAF / CDN / Rate Limiting   │
-                      └──────────────────────┬────────────────────────┘
-                                             │
-                      ┌──────────────────────┴────────────────────────┐
-                      │                                               │
-                      ▼                                               ▼
-     ┌───────────────────────────────────┐           ┌───────────────────────────────────┐
-     │    React Web Application (SPA)    │           │    FastAPI Application Gateway    │
-     │  - Vite / Tailwind CSS / Leaflet  │           │  - Non-blocking async endpoints   │
-     │  - Strict CSP & Security Headers  │           │  - Role-based authorization (RBAC)│
-     │  - Google Cloud Run (Autoscaling) │           │  - Rate limiting & Audit logger   │
-     └───────────────────────────────────┘           └─────────────────┬─────────────────┘
-                                                                       │
-                                   ┌───────────────────────────────────┼──────────────────────────────────┐
-                                   │                                   │                                  │
-                                   ▼                                   ▼                                  ▼
-                    ┌────────────────────────────┐      ┌─────────────────────────────┐    ┌──────────────────────────────┐
-                    │ Managed PostgreSQL+PostGIS │      │ Redis Cache & Mutex Lock    │    │ Persistent Object Storage    │
-                    │ - 30 Normalized tables     │      │ - Results summary caching   │    │ - Immutable EC8A form scans  │
-                    │ - Geospatial indexes       │      │ - Distributed job locks     │    │ - Observer incident photos   │
-                    │ - Append-only audit trails │      │ - Rate limit tracking       │    │ - SHA-256 verified integrity │
-                    └────────────────────────────┘      └──────────────┬──────────────┘    └──────────────────────────────┘
-                                                                       │
-                                                                       ▼
-                                                        ┌─────────────────────────────┐
-                                                        │ Background Processing Pool  │
-                                                        │ - Dedicated container jobs  │
-                                                        │ - Scheduled INEC ingestion  │
-                                                        │ - Tesseract/PyMuPDF OCR     │
-                                                        │ - Anomaly & Alert engine    │
-                                                        └──────────────┬──────────────┘
-                                                                       │
-                                                                       ▼
-                                                        ┌─────────────────────────────┐
-                                                        │ INEC Official Portal (IReV) │
-                                                        │ (Rate limited, retried with │
-                                                        │  exponential backoff & CB)  │
-                                                        └─────────────────────────────┘
-```
+The backend/ FastAPI application, PostgreSQL/PostGIS models, Redis configuration and worker are a separate legacy/experimental implementation. They are not started by the current Render blueprint and must not be treated as sharing users, sessions, election records, verification history or audit logs with Node. Do not add new product features to both implementations. Before migrating any route or data, write a separate migration plan and reconcile the data models.
 
-## 2. Infrastructure Tiers
+## Source access: current state
 
-### A. Web Tier (React SPA)
-- Deployed on autoscaling container platform (Google Cloud Run / Kubernetes).
-- Min instances: 2, Max instances: 100 on election day.
-- Hardened HTTP security headers: Content-Security-Policy (CSP), `X-Content-Type-Options: nosniff`, `X-Frame-Options: SAMEORIGIN`, and strict CORS policies.
-- Client-side data masking guaranteeing observer privacy in all public dashboards.
+- Public portal reference: https://inecelectionresults.ng/elections/types
+- The public portal URL is not, by itself, a documented API contract.
+- Live ingestion now requires INEC_RESULTS_API_BASE_URL to be explicitly configured to a documented, authorized HTTPS API endpoint. INEC_API_KEY, when issued for that endpoint, is sent as a Bearer token.
+- The previous implicit third-party DigitalOcean endpoint is no longer used as a fallback.
+- The connection check performs an HTTP request to the public INEC portal and reports **portal reachability only**. It does not claim API authentication, authorization, or successful retrieval of election records.
+- Configuring an upstream URL does not establish that it is operated or authorized by INEC. Until the API contract and access are independently confirmed, records are marked CONFIGURED_UPSTREAM_NOT_VERIFIED.
 
-### B. API Gateway Tier (FastAPI)
-- High-concurrency async Python runtime with Uvicorn workers.
-- Stateless design enabling seamless horizontal autoscaling.
-- Cryptographically verified JWT sessions with token revocation blocklist (`jti`).
-- Built-in brute force lockout and IP-level rate-limiting.
-- Readiness (`/api/v1/health/ready`) and Liveness (`/api/v1/health/live`) probes.
+## Ingestion outcome contract
 
-### C. Persistent Storage Tier
-- **Managed PostgreSQL 16 with PostGIS**: Geographic polygons and centroids for all 36 States, 774 LGAs, 8,809 Wards, and 176,846 Polling Units. Connection pooling via PgBouncer.
-- **Encrypted Object Storage (GCS / S3)**: Append-only storage for original Form EC8A scans, verified transcription proofs, and incident evidence. Content addressed by SHA-256 hashes to prevent tampering or overwriting.
+The Node API records explicit outcomes:
 
-### D. Dedicated Background Worker Tier
-- Background workers decoupled from user-facing API containers to prevent resource contention during heavy OCR and image processing.
-- Handles polling unit batch ingestion, OCR extraction, arithmetic reconciliation, and statistical anomaly detection.
-- Distributed job locks managed via Redis to prevent concurrent duplicate ingestion runs.
+- SUCCEEDED: a non-empty live retrieval completed without failed ward requests.
+- PARTIAL_SUCCESS: some records were retrieved but one or more ward requests failed.
+- FAILED: upstream retrieval failed; local baseline records are not counted as retrieved records.
+- SUCCEEDED_EMPTY: the configured upstream responded successfully but returned no polling-unit records.
+- SIMULATED: the explicit DevelopmentFixtureAdapter was selected; no live source was queried.
 
-## 3. Data Protection & Security Perimeter
+Each job records counts, source endpoint where available, provenance state, failed ward fetches and error information. A job outcome does not certify the source as official.
 
-1. **Role-Based Access Control (RBAC)**:
-   - `SUPER_ADMIN`: System configuration, user account management, read-only audit exports.
-   - `PROJECT_ADMIN`: Observer and coordinator supervision, approval workflows.
-   - `MONITORING_COORDINATOR`: Regional report review, clarification requests, publication authorizations.
-   - `RESULT_VERIFIER`: Result-sheet transcription verification, discrepancy logging.
-   - `REGISTERED_OBSERVER`: Geo-assigned PU incident submission, evidence upload, draft tracking.
-   - `PUBLIC_USER`: Read-only access to published, verified election results and incidents.
-2. **Observer Anonymity Guarantee**: Personal telephone numbers, home addresses, and real-time GPS locations are never exposed to public APIs or frontend code. Public incident feeds display only administrative jurisdictions and masked accreditation badges.
-3. **Audit Trail Immutability**: All modifications generate immutable records tracking actor, timestamp, prior value, new value, and justification. Exported audit streams include cryptographic SHA-256 hashes for independent verification.
+The outcome classifier and HTTPS URL validation have unit tests. Run npm test.
+
+## Provenance and verification semantics
+
+- sourceProvenance: where the source came from and whether that upstream is independently verified.
+- sourceReferenceHash: a fingerprint of a source URL only; it is not a document checksum.
+- documentHashStatus: whether a document checksum was calculated from bytes. User-uploaded files are hashed from their uploaded bytes; upstream documents are marked NOT_DOWNLOADED until their actual bytes are retrieved.
+- transcriptionProvenance: NOT_PROCESSED, OCR_EXTRACTED, or HUMAN_CORRECTED.
+- humanVerified: separate sign-off state; OCR is never treated as human verification.
+- New records from a configured but unverified upstream remain pending verification. A human review of figures does not independently authenticate the source.
+- An anomaly or arithmetic mismatch is a review flag, not proof of fraud or wrongdoing.
+- Fixture records in the legacy Python adapter are explicitly marked demonstration data and use reserved example.invalid URLs.
+
+Older stored records may lack these fields. Missing provenance must be treated as **unknown**, not inferred to be official.
+
+## Authentication boundary
+
+The Node application now issues in-memory management tokens at login and requires a valid, unexpired server-issued Bearer token for administrative routes and verification writes. The server derives actor identity and role from the token-backed user record instead of trusting client-supplied x-actor-role / x-actor-email headers.
+
+Tokens expire after eight hours and are revoked on logout. They are in-memory, so a process restart invalidates existing sessions. This is a hardening step, not a substitute for a mature persistent identity provider or distributed session store. The existing seeded management accounts still require a secure production credential/bootstrap process; this branch does not claim that credential rotation is complete.
+
+## Persistence and deployment
+
+The Node app persists JSON stores to DATA_DIR. It does not use the FastAPI PostgreSQL database. Local files may be ephemeral unless the hosting provider's durable disk is attached and correctly mounted.
+
+On Render:
+1. Attach a persistent disk mounted at /var/data (requires a paid service plan).
+2. Set DATA_DIR=/var/data.
+3. Set PERSISTENT_STORAGE_CONFIGURED=true only after confirming the disk is attached, writable, and tested through a restart/redeploy.
+4. Keep independent, access-controlled backups and perform restore drills. A disk is not a backup.
+5. The readiness endpoint reports degraded status in production until durable storage is explicitly confirmed.
+
+The Render blueprint remains on the existing free plan and does not silently enable a paid disk. Consequently, production durability is **not yet established** until the operator performs the steps above.
+
+## Validation still required
+
+Before public election-day operation:
+- Confirm INEC's written technical authorization, the real API endpoint, auth mechanism, schema, pagination, rate limits and document download workflow.
+- Download source documents through a constrained, authorized workflow and compute SHA-256 from actual bytes before marking document hashes verified.
+- Add integration tests for source timeout, invalid payload, partial ward failure, retries, duplicate records, revisions, provenance and verification permissions.
+- Test every admin write route against anonymous, expired-token, inactive-user and insufficient-role requests.
+- Verify all result/user/session/verification/evidence/audit data survives process restart and redeploy; test backup restoration.
+- Run dependency/security scanning, upload validation tests, concurrent traffic tests, queue/retry recovery and storage capacity tests.
