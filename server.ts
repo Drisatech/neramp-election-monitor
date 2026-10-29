@@ -199,6 +199,18 @@ export interface ResultSheet {
   retrievalTimestamp: string;
   ocrConfidence: number; // 0 to 100
   sourceStatus: 'ORIGINAL' | 'REVISED_VERSION';
+  /** Provenance is explicit and verification is never inferred from a URL alone. */
+  provenance?: {
+    recordOrigin: 'OFFICIAL_SOURCE' | 'DEMONSTRATION' | 'MANUAL_IMPORT' | 'UNKNOWN';
+    processingStage: 'SOURCE_DOCUMENT' | 'OCR_EXTRACTION' | 'HUMAN_CORRECTED' | 'VERIFIED' | 'UNVERIFIED';
+    sourcePortalUrl?: string;
+    sourceDocumentUrl?: string;
+    retrievedAt?: string;
+    documentSha256?: string;
+    verificationStatus: 'PENDING' | 'VERIFIED' | 'REJECTED';
+    verifiedBy?: string;
+    verifiedAt?: string;
+  };
   version: number;
   transcription: {
     validVotes: number;
@@ -1153,12 +1165,20 @@ app.get('/api/v1/health', (_req: Request, res: Response) => {
 
 // Kubernetes / Cloud Run Readiness Probe
 app.get('/api/v1/health/ready', (_req: Request, res: Response) => {
-  res.json({
-    status: 'READY',
+  let dataDirectoryWritable = false;
+  try { fs.accessSync(DATA_DIR, fs.constants.W_OK); dataDirectoryWritable = true; } catch { dataDirectoryWritable = false; }
+  const persistenceConfigured = Boolean(process.env.DATA_DIR || process.env.RENDER_DISK_PATH) && dataDirectoryWritable;
+  const ready = dataDirectoryWritable;
+  res.status(ready ? 200 : 503).json({
+    status: ready ? 'READY' : 'NOT_READY',
     timestamp: new Date().toISOString(),
-    databaseConnected: true,
-    cacheAvailable: true,
-    activeBackgroundLocks: false,
+    storage: 'local-json-file-store',
+    dataDirectoryWritable,
+    persistenceConfigured,
+    warning: persistenceConfigured ? 'File-backed storage is writable; backups and restore must still be configured and tested.' : 'Durable persistence is not confirmed. Local files may be lost across restarts or deployments.',
+    databaseConnected: false,
+    cacheAvailable: false,
+    activeBackgroundLocks: isLoopExtractionRunningNow,
   });
 });
 
@@ -3698,39 +3718,32 @@ app.get('/api/v1/admin/ingestion/status', (_req: Request, res: Response) => {
 });
 
 // Source Connection Health Check
-app.post('/api/v1/admin/ingestion/test-connection', (req: Request, res: Response) => {
-  const { adapter = 'InecApprovedSourceAdapter' } = req.body;
+app.post('/api/v1/admin/ingestion/test-connection', async (req: Request, res: Response) => {
+  const { adapter = 'InecApprovedSourceAdapter' } = req.body || {};
   const isOfficial = adapter === 'InecApprovedSourceAdapter';
-
-  const healthCheckResult = {
-    adapter,
-    isOfficial,
-    status: 'CONNECTED',
-    portalUrl: 'https://inecelectionresults.ng',
-    targetElection: 'Governorship election - 2026-08-15 - OSUN',
-    latencyMs: Math.floor(Math.random() * 45) + 35,
-    rateLimitQuota: '60 req/min (0 used in current window)',
-    authMode: process.env.INEC_API_KEY ? 'BEARER_TOKEN' : 'SYNTHETIC_SCHEMA_EVALUATION',
-    credentialsConfigured: Boolean(process.env.INEC_API_KEY),
-    timestamp: new Date().toISOString(),
-    message: process.env.INEC_API_KEY
-      ? 'Live production connection authenticated with INEC IReV results portal.'
-      : 'Source connection validated with official INEC documented schema and synthetic test adapter.',
-  };
-
-  AUDIT_LOGS.unshift({
-    id: 'audit-' + Date.now(),
-    timestamp: new Date().toISOString(),
-    actor: 'admin:connection_checker',
-    action: 'TEST_SOURCE_CONNECTION',
-    target: adapter,
-    details: `Health check executed for ${adapter}. Status: ${healthCheckResult.status}. Latency: ${healthCheckResult.latencyMs}ms.`,
-  });
-
-  res.json({
-    data: healthCheckResult,
-    message: 'Data source connection health verified.',
-  });
+  const portalUrl = 'https://inecelectionresults.ng/elections/types';
+  const startedAt = Date.now();
+  let healthCheckResult: Record<string, any>;
+  if (!isOfficial) {
+    healthCheckResult = { adapter, isOfficial: false, status: 'SIMULATED', simulated: true, latencyMs: null, portalUrl: null, timestamp: new Date().toISOString(), message: 'No live connection was attempted for this adapter. This result is explicitly simulated.' };
+  } else {
+    try {
+      const response = await new Promise<{ statusCode: number }>((resolve, reject) => {
+        const request = https.get(portalUrl, { timeout: 10000, headers: { 'User-Agent': 'NERAMP-source-health-check/1.0', Accept: 'text/html,application/xhtml+xml' } }, (response) => {
+          const result = { statusCode: response.statusCode || 0 }; response.resume(); resolve(result);
+        });
+        request.on('timeout', () => { request.destroy(); reject(new Error('Request timed out after 10 seconds')); });
+        request.on('error', reject);
+      });
+      const reachable = response.statusCode >= 200 && response.statusCode < 400;
+      healthCheckResult = { adapter, isOfficial: true, status: reachable ? 'PORTAL_REACHABLE_API_UNVERIFIED' : 'PORTAL_HTTP_ERROR', simulated: false, httpStatus: response.statusCode, latencyMs: Date.now() - startedAt, portalUrl, credentialsConfigured: Boolean(process.env.INEC_API_KEY), authMode: 'NOT_TESTED', timestamp: new Date().toISOString(), message: reachable ? 'The official portal responded to HTTP. This does not verify an API endpoint, credentials, result-sheet retrieval, or data integrity.' : `The official portal returned HTTP ${response.statusCode}. Live ingestion must not be considered healthy.` };
+    } catch (error: any) {
+      healthCheckResult = { adapter, isOfficial: true, status: 'UNREACHABLE', simulated: false, latencyMs: Date.now() - startedAt, portalUrl, credentialsConfigured: Boolean(process.env.INEC_API_KEY), authMode: 'NOT_TESTED', timestamp: new Date().toISOString(), error: error?.message || 'Unknown connection error', message: 'The official portal could not be reached. No live connection has been verified.' };
+    }
+  }
+  AUDIT_LOGS.unshift({ id: 'audit-' + Date.now(), timestamp: new Date().toISOString(), actor: (req.headers['x-actor-email'] as string) || 'admin:connection_checker', action: 'TEST_SOURCE_CONNECTION', target: adapter, details: `Connection check for ${adapter}. Status: ${healthCheckResult.status}. Simulated: ${Boolean(healthCheckResult.simulated)}.` });
+  saveDatabaseToDisk(true);
+  res.status(healthCheckResult.status === 'UNREACHABLE' || healthCheckResult.status === 'PORTAL_HTTP_ERROR' ? 502 : 200).json({ data: healthCheckResult, message: healthCheckResult.message });
 });
 
 // Configurable Scheduled Ingestion Service Endpoints
@@ -5207,7 +5220,11 @@ async function fetchInecLiveElectionResults(electionIdKey: string, maxWards: num
   const targetStateCode = isEkiti ? 'EKITI' : 'OSUN';
   const targetElectionId = isEkiti ? 'elec-2026-gov-ekiti' : 'elec-2026-gov-osun';
   const targetTitle = isEkiti ? 'Ekiti State' : 'Osun State';
-  const base = 'https://dolphin-app-sleqh.ondigitalocean.app/api/v1';
+  const configuredBase = process.env.INEC_RESULTS_API_BASE_URL?.trim();
+  if (!configuredBase) {
+    throw new Error('INEC_RESULTS_API_BASE_URL is not configured. Live retrieval is disabled until the source endpoint and access method are verified.');
+  }
+  const base = configuredBase.replace(/\\/$/, '');
 
   const lgaRes = await httpsGetJson(`${base}/elections/${targetInecId}/lga`, 12000);
   const lgaData = lgaRes?.data || [];
@@ -6131,75 +6148,47 @@ app.post('/api/v1/ocr/upload-and-transcribe', async (req: Request, res: Response
 
 // Trigger Ingestion Run (Manual Ingestion Command for Authorized Administrators)
 app.post('/api/v1/admin/ingestion/run', async (req: Request, res: Response) => {
-  const { adapter = 'InecApprovedSourceAdapter', electionId = 'elec-2026-gov-osun', maxWards = 20 } = req.body;
-
-  const isLiveElection =
-    electionId === 'elec-2026-gov-osun' ||
-    electionId === 'elec-2026-gov-ekiti' ||
-    adapter === 'InecApprovedSourceAdapter';
-
+  const { adapter = 'InecApprovedSourceAdapter', electionId = 'elec-2026-gov-osun', maxWards = 20 } = req.body || {};
+  const startedAt = new Date().toISOString();
   let liveResult: any = null;
-  if (isLiveElection) {
+  let failureReason: string | undefined;
+  const isSimulation = adapter === 'DevelopmentFixtureAdapter';
+  if (adapter === 'InecApprovedSourceAdapter') {
     try {
-      console.log(`[INGESTION] Commencing live retrieval from official INEC Results Portal for ${electionId}...`);
+      console.log(`[INGESTION] Attempting configured source retrieval for ${electionId}...`);
       liveResult = await fetchInecLiveElectionResults(electionId, Number(maxWards) || 20);
-      console.log(`[INGESTION] Live retrieval completed: ${liveResult.totalPusProcessed} PUs, ${liveResult.photosCount} photos.`);
+      console.log(`[INGESTION] Retrieval returned ${liveResult.totalPusProcessed} polling units.`);
     } catch (err: any) {
-      console.error('[INGESTION] Live INEC ingestion error, fallback to baseline:', err.message);
+      failureReason = err?.message || 'Unknown retrieval error';
+      console.error('[INGESTION] Source retrieval failed; no demo fallback will be reported as live data:', failureReason);
     }
+  } else if (!isSimulation) {
+    failureReason = `Unsupported ingestion adapter: ${adapter}`;
   }
-
-  const processedCount = liveResult ? liveResult.totalPusProcessed : (POLLING_UNITS.filter((p) => p.electionId === electionId).length || 0);
-  const photosCount = liveResult ? liveResult.photosCount : processedCount;
+  const processedCount = liveResult ? Number(liveResult.totalPusProcessed) || 0 : 0;
   const skippedDuplicates = liveResult?.skippedDuplicatesCount || 0;
   const revisedCount = liveResult?.revisedCount || 0;
   const newPusCount = liveResult?.newPusCount || 0;
-
+  const outcome = isSimulation ? 'SIMULATED' : failureReason ? 'FAILED' : processedCount > 0 ? 'SUCCESS' : 'SUCCESS_NO_RECORDS';
+  const finishedAt = new Date().toISOString();
   const newJob = {
-    id: 'job-' + (INGESTION_JOBS.length + 1001),
-    adapter,
-    electionId,
-    status: 'COMPLETED',
-    startedAt: new Date().toISOString(),
-    finishedAt: new Date().toISOString(),
-    recordsRetrieved: processedCount,
-    recordsProcessed: newPusCount + revisedCount,
-    recordsRejected: 0,
-    recordsSkippedDuplicate: skippedDuplicates,
-    recordsRevised: revisedCount,
-    discrepanciesDetected: 0,
-    sourceAttribution: liveResult
-      ? liveResult.sourceNote
-      : `Official INEC Results Portal (IReV) - ${electionId}`,
+    id: 'job-' + (INGESTION_JOBS.length + 1001), adapter, electionId, status: outcome, outcome,
+    simulated: isSimulation, sourceKind: isSimulation ? 'DEMONSTRATION' : 'LIVE_SOURCE', startedAt, finishedAt,
+    recordsRetrieved: processedCount, recordsProcessed: newPusCount + revisedCount, recordsRejected: 0,
+    recordsSkippedDuplicate: skippedDuplicates, recordsRevised: revisedCount, discrepanciesDetected: 0,
+    error: failureReason,
+    sourceAttribution: liveResult?.sourceNote || (isSimulation ? 'DEMONSTRATION FIXTURES — NOT OFFICIAL RESULTS' : 'Configured results endpoint; provenance must be checked per document.'),
   };
-
   INGESTION_JOBS.unshift(newJob);
-  schedulerConfig.lastRunAt = newJob.finishedAt;
+  schedulerConfig.lastRunAt = finishedAt;
   schedulerConfig.nextRunAt = new Date(Date.now() + schedulerConfig.intervalMinutes * 60 * 1000).toISOString();
-
-  AUDIT_LOGS.unshift({
-    id: 'audit-' + Date.now(),
-    timestamp: new Date().toISOString(),
-    actor: (req.headers['x-actor-email'] as string) || 'admin:manual_trigger',
-    action: 'TRIGGER_INGESTION_JOB',
-    target: newJob.id,
-    details: liveResult
-      ? `Manual batch ingestion executed for ${electionId}. ${newPusCount} new Polling Units uploaded, ${skippedDuplicates} duplicate records skipped, ${revisedCount} altered results updated with version history.`
-      : `Manual ingestion executed via ${adapter} for ${electionId}.`,
-  });
-
+  AUDIT_LOGS.unshift({ id: 'audit-' + Date.now(), timestamp: finishedAt, actor: (req.headers['x-actor-email'] as string) || 'admin:manual_trigger', action: 'TRIGGER_INGESTION_JOB', target: newJob.id, details: `Ingestion outcome=${outcome}; adapter=${adapter}; election=${electionId}; retrieved=${processedCount}; error=${failureReason || 'none'}.` });
   saveDatabaseToDisk(true);
-
-  res.json({
-    message: `Ingestion completed: ${newPusCount} newly uploaded, ${skippedDuplicates} duplicates skipped, ${revisedCount} revised version(s).`,
-    data: newJob,
-    stats: {
-      newPusCount,
-      skippedDuplicates,
-      revisedCount,
-      totalPusProcessed: processedCount,
-    },
-  });
+  if (outcome === 'FAILED') {
+    res.status(502).json({ message: 'Ingestion failed. No live data was reported as successfully retrieved.', data: newJob });
+    return;
+  }
+  res.json({ message: isSimulation ? 'Simulation completed; records are not official.' : `Retrieval outcome: ${outcome}.`, data: newJob, stats: { newPusCount, skippedDuplicates, revisedCount, totalPusProcessed: processedCount } });
 });
 
 // Purge Demo Fixtures and Reset Entire App to Zero
