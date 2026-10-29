@@ -183,6 +183,7 @@ export interface PollingUnit {
   sourceUploadTimestamp?: string;
   lastRetrievedTimestamp?: string;
   resultSheetId?: string;
+  sourceProvenance?: 'DEMONSTRATION' | 'CONFIGURED_UPSTREAM_NOT_VERIFIED' | 'OFFICIAL_SOURCE_VERIFIED';
   latitude?: number;
   longitude?: number;
 }
@@ -198,7 +199,10 @@ export interface ResultSheet {
   uploadTimestamp: string;
   retrievalTimestamp: string;
   ocrConfidence: number; // 0 to 100
-  sourceStatus: 'ORIGINAL' | 'REVISED_VERSION';
+  sourceStatus: 'ORIGINAL' | 'REVISED_VERSION' | 'SOURCE_UNVERIFIED' | 'DEMONSTRATION';
+  sourceProvenance?: 'DEMONSTRATION' | 'CONFIGURED_UPSTREAM_NOT_VERIFIED' | 'OFFICIAL_SOURCE_VERIFIED';
+  transcriptionProvenance?: 'NOT_PROCESSED' | 'OCR_EXTRACTED' | 'HUMAN_CORRECTED';
+  humanVerified?: boolean;
   version: number;
   transcription: {
     validVotes: number;
@@ -5384,6 +5388,9 @@ async function fetchInecLiveElectionResults(electionIdKey: string, maxWards: num
               );
               existingSheet.version += 1;
               existingSheet.sourceStatus = 'REVISED_VERSION';
+              existingSheet.sourceProvenance = 'CONFIGURED_UPSTREAM_NOT_VERIFIED';
+              existingSheet.humanVerified = false;
+              existingSheet.transcriptionProvenance = 'NOT_PROCESSED';
               const prevUploadTime = existingSheet.uploadTimestamp;
               const prevHash = existingSheet.fileHash;
 
@@ -5440,9 +5447,10 @@ async function fetchInecLiveElectionResults(electionIdKey: string, maxWards: num
               electionId: targetElectionId,
               uploadStatus: hasPhoto ? 'UPLOADED' : 'NOT_YET_UPLOADED',
               transcriptionStatus: hasPhoto ? (cachedOcr ? 'COMPLETED' : 'IN_PROGRESS') : 'NOT_APPLICABLE',
-              verificationStatus: hasPhoto ? (cachedOcr ? 'VERIFIED' : 'PENDING_VERIFICATION') : 'NOT_APPLICABLE',
+              verificationStatus: hasPhoto ? 'PENDING_VERIFICATION' : 'NOT_APPLICABLE',
               sourceUploadTimestamp: doc.updated_at || new Date().toISOString(),
               lastRetrievedTimestamp: new Date().toISOString(),
+              sourceProvenance: 'CONFIGURED_UPSTREAM_NOT_VERIFIED',
               resultSheetId: hasPhoto ? resultSheetId : undefined,
               latitude: isEkiti ? 7.6 + Math.random() * 0.3 : 7.5 + Math.random() * 0.4,
               longitude: isEkiti ? 5.2 + Math.random() * 0.3 : 4.4 + Math.random() * 0.4,
@@ -5463,7 +5471,10 @@ async function fetchInecLiveElectionResults(electionIdKey: string, maxWards: num
                 uploadTimestamp: doc.updated_at || new Date().toISOString(),
                 retrievalTimestamp: new Date().toISOString(),
                 ocrConfidence: 0,
-                sourceStatus: 'ORIGINAL',
+                sourceStatus: 'SOURCE_UNVERIFIED',
+                sourceProvenance: 'CONFIGURED_UPSTREAM_NOT_VERIFIED',
+                transcriptionProvenance: cachedOcr ? 'OCR_EXTRACTED' : 'NOT_PROCESSED',
+                humanVerified: false,
                 version: 1,
                 transcription: {
                   validVotes: 0,
@@ -5479,14 +5490,13 @@ async function fetchInecLiveElectionResults(electionIdKey: string, maxWards: num
                   rawText: `INEC FORM EC8A — ${puName} (${rawCode}). Ready for AI OCR transcription.`,
                 },
                 arithmeticCheck: {
-                  passed: true,
+                  passed: false,
                   difference: 0,
-                  formula: 'Awaiting AI OCR extraction',
-                  details: 'Form EC8A scan retrieved live from INEC Results Portal (IReV).',
+                  formula: 'Awaiting OCR extraction and arithmetic validation',
+                  details: 'No arithmetic validation has been completed. Source is a configured upstream that has not been independently verified.',
                 },
-                verifiedBy: 'Pending AI OCR Transcription',
-                verifiedAt: new Date().toISOString(),
-                verifierNotes: `Official Form EC8A document from INEC IReV: ${docUrl}`,
+                verifiedBy: 'Pending human verification',
+                verifierNotes: `Unverified upstream document reference: ${docUrl}`,
                 versionHistory: [
                   {
                     versionNumber: 1,
