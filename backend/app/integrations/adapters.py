@@ -108,11 +108,9 @@ class InecApprovedSourceAdapter(ElectionSourceAdapter):
         backoff_factor: float = 2.0,
         synthetic_mode: Optional[bool] = None,
     ):
-        self.base_url = (
-            base_url
-            or os.getenv("INEC_API_BASE_URL")
-            or "https://inecelectionresults.ng"
-        ).rstrip("/")
+        configured_base_url = base_url or os.getenv("INEC_API_BASE_URL")
+        self.api_base_configured = bool(configured_base_url)
+        self.base_url = (configured_base_url or "https://inecelectionresults.ng").rstrip("/")
         self.api_key = api_key or os.getenv("INEC_API_KEY")
         self.client_cert_path = client_cert_path or os.getenv("INEC_CLIENT_CERT_PATH")
         self.rate_limit_per_minute = rate_limit_per_minute
@@ -130,7 +128,8 @@ class InecApprovedSourceAdapter(ElectionSourceAdapter):
         return "InecApprovedSourceAdapter (Official Portal Integration)"
 
     def is_live_official_source(self) -> bool:
-        return True
+        # Credentials and a URL alone do not establish that the upstream is an authorized INEC API.
+        return False
 
     async def _throttle(self):
         """Enforces authorized rate limiting (minimum spacing between requests)."""
@@ -141,43 +140,56 @@ class InecApprovedSourceAdapter(ElectionSourceAdapter):
         self._last_request_time = time.time()
 
     async def test_connection(self) -> Dict[str, Any]:
-        """
-        Tests connectivity against official INEC portal.
-        Returns connection health and authentication status.
-        """
-        # If API key is not configured and not in synthetic mode, report pending configuration
-        if not self.api_key and not self.synthetic_mode:
+        """Check public portal reachability; this does not validate API credentials or authorize data access."""
+        if self.synthetic_mode:
             return {
-                "status": "PENDING_CONFIGURATION",
+                "status": "SIMULATED",
                 "is_active": False,
+                "mode": "SYNTHETIC_TEST_ONLY",
+                "message": "Synthetic adapter mode is enabled; no live portal connection was tested.",
+                "portal_reference": f"{self.base_url}/elections/types",
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            }
+        if httpx is None:
+            return {
+                "status": "CLIENT_UNAVAILABLE",
+                "is_active": False,
+                "message": "httpx is unavailable; no network check was performed.",
+                "portal_reference": f"{self.base_url}/elections/types",
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            }
+        try:
+            async with httpx.AsyncClient(timeout=self.request_timeout, follow_redirects=True) as client:
+                response = await client.get(f"{self.base_url}/elections/types", headers={
+                    "User-Agent": "NERAMP-PortalReachabilityCheck/1.1",
+                    "Accept": "text/html,application/xhtml+xml",
+                })
+            reachable = response.is_success
+            return {
+                "status": "PORTAL_REACHABLE" if reachable else "PORTAL_UNREACHABLE",
+                "is_active": reachable,
+                "http_status": response.status_code,
+                "api_credentials_configured": bool(self.api_key),
+                "api_access_verified": False,
                 "message": (
-                    "Official INEC Portal adapter requires formal technical access credentials (INEC_API_KEY) "
-                    "for live network syndication per project authorization."
+                    "Public portal returned a successful HTTP response. API access, credentials, authorization, and data provenance remain unverified."
+                    if reachable else "Public portal returned a non-success HTTP response."
                 ),
-                "portal_reference": "https://inecelectionresults.ng",
+                "portal_reference": f"{self.base_url}/elections/types",
                 "target_election": self.ELECTION_TITLE_OSUN_2026,
                 "timestamp": datetime.now(timezone.utc).isoformat(),
             }
-
-        return {
-            "status": "CONNECTED",
-            "is_active": True,
-            "message": "Authorized connection established with official INEC results portal.",
-            "portal_reference": f"{self.base_url}/elections/types",
-            "target_election": self.ELECTION_TITLE_OSUN_2026,
-            "rate_limit": f"{self.rate_limit_per_minute} req/min",
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-        }
-
-        return {
-            "status": "CONNECTED",
-            "is_active": True,
-            "message": "Authorized connection established with official INEC results portal.",
-            "portal_reference": f"{self.base_url}/elections/types",
-            "target_election": self.ELECTION_TITLE_OSUN_2026,
-            "rate_limit": f"{self.rate_limit_per_minute} req/min",
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-        }
+        except Exception as exc:
+            return {
+                "status": "PORTAL_UNREACHABLE",
+                "is_active": False,
+                "api_credentials_configured": bool(self.api_key),
+                "api_access_verified": False,
+                "message": f"Public portal reachability check failed: {type(exc).__name__}.",
+                "portal_reference": f"{self.base_url}/elections/types",
+                "target_election": self.ELECTION_TITLE_OSUN_2026,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            }
 
     def _generate_synthetic_osun_records(
         self,
@@ -277,8 +289,8 @@ class InecApprovedSourceAdapter(ElectionSourceAdapter):
                 registered_voters=fix["registered"],
                 accredited_voters=fix["accredited"],
                 raw_payload=fix,
-                is_demonstration=False,  # This is the official documented source schema
-                source_status="ORIGINAL",
+                is_demonstration=True,
+                source_status="DEMONSTRATION",
                 version=1,
             )
             records.append(record)
@@ -296,8 +308,8 @@ class InecApprovedSourceAdapter(ElectionSourceAdapter):
         Fetches polling unit records and Form EC8A references from the official portal.
         Handles pagination, authentication headers, rate limits, and idempotent ingestion.
         """
-        # If API key is provided and live network is enabled, perform HTTP retrieval
-        if self.api_key and httpx is not None:
+        # Require an explicitly configured upstream API URL and credentials. The public portal URL alone is not an API contract.
+        if self.api_key and self.api_base_configured and httpx is not None:
             await self._throttle()
             headers = {
                 "Authorization": f"Bearer {self.api_key}",
@@ -352,8 +364,11 @@ class InecApprovedSourceAdapter(ElectionSourceAdapter):
         if self.synthetic_mode:
             return self._generate_synthetic_osun_records(election_id, limit, offset)
 
-        # Official live source requires server-side INEC API credentials
-        raise RuntimeError("INEC official access credentials (INEC_API_KEY) are required to query live official election records.")
+        # Do not silently call the public website as if it were a documented API.
+        raise RuntimeError(
+            "Live retrieval is disabled until INEC_API_BASE_URL points to a documented, authorized API endpoint "
+            "and INEC_API_KEY is configured. The public portal URL alone is not a verified API contract."
+        )
 
 
 class DevelopmentFixtureAdapter(ElectionSourceAdapter):
