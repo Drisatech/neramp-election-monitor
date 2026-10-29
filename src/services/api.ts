@@ -246,7 +246,7 @@ export async function fetchVerificationHistory(resultSheetId: string) {
 }
 
 export async function fetchIngestionStatus() {
-  const res = await fetch(`${API_BASE}/admin/ingestion/status`);
+  const res = await fetch(`${API_BASE}/admin/ingestion/status`, { headers: getAuthHeaders() });
   if (!res.ok) throw new Error('Failed to fetch ingestion status');
   return res.json();
 }
@@ -276,7 +276,7 @@ export async function testSourceConnection(adapter = 'InecApprovedSourceAdapter'
 }
 
 export async function fetchSchedulerConfig() {
-  const res = await fetch(`${API_BASE}/admin/ingestion/scheduler`);
+  const res = await fetch(`${API_BASE}/admin/ingestion/scheduler`, { headers: getAuthHeaders() });
   if (!res.ok) throw new Error('Failed to fetch scheduler configuration');
   return res.json();
 }
@@ -297,13 +297,13 @@ export async function updateSchedulerConfig(data: {
 }
 
 export async function fetchIngestionJobs() {
-  const res = await fetch(`${API_BASE}/admin/ingestion/jobs`);
+  const res = await fetch(`${API_BASE}/admin/ingestion/jobs`, { headers: getAuthHeaders() });
   if (!res.ok) throw new Error('Failed to fetch ingestion jobs');
   return res.json();
 }
 
 export async function fetchAuditLogs() {
-  const res = await fetch(`${API_BASE}/admin/audit-logs`);
+  const res = await fetch(`${API_BASE}/admin/audit-logs`, { headers: getAuthHeaders() });
   if (!res.ok) throw new Error('Failed to fetch audit logs');
   return res.json();
 }
@@ -432,7 +432,7 @@ export function getAnalyticsCsvExportUrl(electionId: string, state?: string) {
 // ==========================================
 
 export async function fetchCommandCenterMetrics() {
-  const res = await fetch(`${API_BASE}/admin/command-center/metrics`);
+  const res = await fetch(`${API_BASE}/admin/command-center/metrics`, { headers: getAuthHeaders() });
   if (!res.ok) throw new Error('Failed to fetch command center metrics');
   return res.json();
 }
@@ -443,7 +443,7 @@ export async function fetchAdminUsers(params?: { role?: string; isActive?: boole
   if (params?.isActive !== undefined) q.set('isActive', String(params.isActive));
   if (params?.search) q.set('search', params.search);
 
-  const res = await fetch(`${API_BASE}/admin/users?${q.toString()}`);
+  const res = await fetch(`${API_BASE}/admin/users?${q.toString()}`, { headers: getAuthHeaders() });
   if (!res.ok) throw new Error('Failed to fetch admin users');
   return res.json();
 }
@@ -519,6 +519,7 @@ export async function rejectStaffUser(id: string) {
 export async function resetUserAccess(id: string) {
   const res = await fetch(`${API_BASE}/admin/users/${id}/reset-access`, {
     method: 'POST',
+    headers: getAuthHeaders(),
   });
   if (!res.ok) throw new Error('Failed to reset user access');
   return res.json();
@@ -527,19 +528,20 @@ export async function resetUserAccess(id: string) {
 export async function deleteAdminUser(id: string) {
   const res = await fetch(`${API_BASE}/admin/users/${id}`, {
     method: 'DELETE',
+    headers: getAuthHeaders(),
   });
   if (!res.ok) throw new Error('Failed to delete user');
   return res.json();
 }
 
 export async function fetchAuditLogsExport() {
-  const res = await fetch(`${API_BASE}/admin/audit-logs/export`);
+  const res = await fetch(`${API_BASE}/admin/audit-logs/export`, { headers: getAuthHeaders() });
   if (!res.ok) throw new Error('Failed to export audit logs');
   return res.json();
 }
 
 export async function fetchVerifierSupervision() {
-  const res = await fetch(`${API_BASE}/admin/supervision/verifiers`);
+  const res = await fetch(`${API_BASE}/admin/supervision/verifiers`, { headers: getAuthHeaders() });
   if (!res.ok) throw new Error('Failed to fetch verifier supervision data');
   return res.json();
 }
@@ -587,13 +589,14 @@ export async function pauseIngestionScheduler(paused: boolean) {
 export async function clearVolatileCache() {
   const res = await fetch(`${API_BASE}/admin/operations/clear-cache`, {
     method: 'POST',
+    headers: getAuthHeaders(),
   });
   if (!res.ok) throw new Error('Failed to clear volatile cache');
   return res.json();
 }
 
 export async function triggerSystemDiagnostics() {
-  const res = await fetch(`${API_BASE}/admin/operations/diagnostics`);
+  const res = await fetch(`${API_BASE}/admin/operations/diagnostics`, { headers: getAuthHeaders() });
   if (!res.ok) throw new Error('Failed to run system diagnostics');
   return res.json();
 }
@@ -601,13 +604,14 @@ export async function triggerSystemDiagnostics() {
 export async function retryFailedJob(jobId: string) {
   const res = await fetch(`${API_BASE}/admin/operations/retry-job/${jobId}`, {
     method: 'POST',
+    headers: getAuthHeaders(),
   });
   if (!res.ok) throw new Error('Failed to retry job');
   return res.json();
 }
 
 export async function fetchConfigElections() {
-  const res = await fetch(`${API_BASE}/admin/config/elections`);
+  const res = await fetch(`${API_BASE}/admin/config/elections`, { headers: getAuthHeaders() });
   if (!res.ok) throw new Error('Failed to fetch elections configuration');
   return res.json();
 }
@@ -641,6 +645,7 @@ export async function updateConfigElection(id: string, data: any) {
 export async function deleteConfigElection(id: string) {
   const res = await fetch(`${API_BASE}/admin/config/elections/${encodeURIComponent(id)}`, {
     method: 'DELETE',
+    headers: getAuthHeaders(),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
@@ -650,7 +655,7 @@ export async function deleteConfigElection(id: string) {
 }
 
 export async function fetchConfigCandidates() {
-  const res = await fetch(`${API_BASE}/admin/config/candidates`);
+  const res = await fetch(`${API_BASE}/admin/config/candidates`, { headers: getAuthHeaders() });
   if (!res.ok) throw new Error('Failed to fetch candidates configuration');
   return res.json();
 }
@@ -666,7 +671,7 @@ export async function createConfigCandidate(data: any) {
 }
 
 export async function fetchConfigParties() {
-  const res = await fetch(`${API_BASE}/admin/config/parties`);
+  const res = await fetch(`${API_BASE}/admin/config/parties`, { headers: getAuthHeaders() });
   if (!res.ok) throw new Error('Failed to fetch parties');
   return res.json();
 }
@@ -697,7 +702,7 @@ export async function fetchReadinessProbe() {
 }
 
 export async function fetchReadinessStatus() {
-  const res = await fetch(`${API_BASE}/admin/readiness/status`);
+  const res = await fetch(`${API_BASE}/admin/readiness/status`, { headers: getAuthHeaders() });
   if (!res.ok) throw new Error('Failed to fetch readiness status');
   return res.json();
 }
@@ -807,7 +812,7 @@ export async function uploadAndTranscribeFormEc8a(payload: {
 }
 
 export async function fetchStorageSummary() {
-  const res = await fetch(`${API_BASE}/admin/storage/summary`);
+  const res = await fetch(`${API_BASE}/admin/storage/summary`, { headers: getAuthHeaders() });
   if (!res.ok) throw new Error('Failed to fetch storage summary');
   return res.json();
 }
@@ -826,7 +831,7 @@ export async function fetchStorageFiles(params?: {
   if (params?.limit) q.set('limit', String(params.limit));
   if (params?.offset) q.set('offset', String(params.offset));
 
-  const res = await fetch(`${API_BASE}/admin/storage/files?${q.toString()}`);
+  const res = await fetch(`${API_BASE}/admin/storage/files?${q.toString()}`, { headers: getAuthHeaders() });
   if (!res.ok) throw new Error('Failed to fetch storage files');
   return res.json();
 }
@@ -834,6 +839,7 @@ export async function fetchStorageFiles(params?: {
 export async function deleteStorageFile(id: string) {
   const res = await fetch(`${API_BASE}/admin/storage/files/${encodeURIComponent(id)}`, {
     method: 'DELETE',
+    headers: getAuthHeaders(),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
@@ -858,6 +864,7 @@ export async function editStorageFile(id: string, updates: any) {
 export async function initGcsFolders() {
   const res = await fetch(`${API_BASE}/admin/storage/init-folders`, {
     method: 'POST',
+    headers: getAuthHeaders(),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
@@ -996,7 +1003,7 @@ export async function fetchManagementMonitoring() {
 
 // Live Collation Loop Extraction APIs
 export async function fetchLoopExtractionStatus() {
-  const res = await fetch(`${API_BASE}/admin/ingestion/loop/status`);
+  const res = await fetch(`${API_BASE}/admin/ingestion/loop/status`, { headers: getAuthHeaders() });
   if (!res.ok) throw new Error('Failed to fetch loop status');
   return res.json();
 }
