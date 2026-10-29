@@ -187,7 +187,8 @@ export const ObserverPortalPage: React.FC = () => {
         gcsPublicUrl: uploadRes.gcsPublicUrl,
       });
     } catch (err: any) {
-      setFileError(err.message || 'Evidence upload notice: file will be attached locally with report.');
+      setUploadedEvidence(null);
+      setFileError(err.message || 'Evidence upload failed. Please retry or remove the attachment.');
     } finally {
       setIsUploadingFile(false);
     }
