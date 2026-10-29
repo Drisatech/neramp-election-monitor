@@ -56,6 +56,7 @@ app.use((_req, res, next) => {
 
 // In-Memory Rate Limiter for Login & High-Sensitivity Endpoints
 const RATE_LIMIT_STORE = new Map<string, { count: number; lockedUntil?: number }>();
+const MANAGEMENT_TOKENS = new Map<string, { userId: string; role: string; email: string; sessionId: string; expiresAt: number }>();
 
 function checkRateLimit(key: string, maxAttempts = 5): { allowed: boolean; remainingSeconds?: number } {
   const now = Date.now();
@@ -85,6 +86,35 @@ function recordAttempt(key: string, success: boolean, maxAttempts = 5, lockoutDu
   }
   RATE_LIMIT_STORE.set(key, entry);
 }
+
+// Administrative writes and verification decisions must be backed by a server-issued token.
+// Client-supplied x-actor-* headers are never trusted as identity or authorization.
+app.use((req, res, next) => {
+  const protectedAdminPath = req.path.startsWith('/api/v1/admin/');
+  const protectedVerificationWrite = req.path.startsWith('/api/v1/verification/') && req.method !== 'GET';
+  const isProtected = protectedAdminPath || protectedVerificationWrite;
+  if (!isProtected) return next();
+
+  const authorization = String(req.headers.authorization || '');
+  const match = authorization.match(/^Bearer\\s+(.+)$/i);
+  const token = match?.[1];
+  const session = token ? MANAGEMENT_TOKENS.get(token) : undefined;
+  if (!session || session.expiresAt <= Date.now()) {
+    if (token) MANAGEMENT_TOKENS.delete(token);
+    res.status(401).json({ error: 'A valid management session is required for this administrative action.' });
+    return;
+  }
+  const user = USERS.find((candidate) => candidate.id === session.userId);
+  if (!user || !user.isActive || user.approvalStatus === 'PENDING_APPROVAL' || user.approvalStatus === 'REJECTED') {
+    MANAGEMENT_TOKENS.delete(token!);
+    res.status(403).json({ error: 'This management account is not authorized for administrative actions.' });
+    return;
+  }
+  req.headers['x-actor-role'] = user.role;
+  req.headers['x-actor-email'] = user.email;
+  req.headers['x-actor-name'] = user.fullName;
+  next();
+});
 
 // Request logging middleware
 app.use((req, res, next) => {
@@ -3021,6 +3051,13 @@ app.post('/api/v1/auth/login', (req: Request, res: Response) => {
   if (USER_SESSIONS.length > 250) USER_SESSIONS.pop();
 
   const token = 'jwt-sec2027-' + crypto.randomBytes(24).toString('hex');
+  MANAGEMENT_TOKENS.set(token, {
+    userId: user.id,
+    role: user.role,
+    email: user.email,
+    sessionId,
+    expiresAt: Date.now() + 8 * 60 * 60 * 1000,
+  });
 
   AUDIT_LOGS.unshift({
     id: 'audit-' + Date.now(),
@@ -3176,6 +3213,13 @@ app.get('/api/v1/auth/me', (req: Request, res: Response) => {
 
 app.post('/api/v1/auth/logout', (req: Request, res: Response) => {
   const { sessionId, userEmail } = req.body;
+  const bearer = String(req.headers.authorization || '').match(/^Bearer\\s+(.+)$/i)?.[1];
+  if (bearer) MANAGEMENT_TOKENS.delete(bearer);
+  if (sessionId) {
+    for (const [token, session] of MANAGEMENT_TOKENS.entries()) {
+      if (session.sessionId === sessionId) MANAGEMENT_TOKENS.delete(token);
+    }
+  }
   if (sessionId) {
     const session = USER_SESSIONS.find((s) => s.id === sessionId);
     if (session) {
