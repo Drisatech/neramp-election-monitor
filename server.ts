@@ -8249,7 +8249,7 @@ async function startServer() {
     console.log(`=======================================================`);
 
     console.log('[STARTUP] Platform initialized in CLEAN mode (0 pre-populated demo records).');
-    console.log(`[STORAGE] GCS Bucket: gs://${GCS_BUCKET_NAME} | Cloud SQL Instance: ${CLOUD_SQL_INSTANCE}`);
+    console.log(`[STORAGE] GCS Bucket: gs://${GCS_BUCKET_NAME} | Node data directory: ${DATA_DIR}`);
   });
 
   serverInstance.on('error', (err: any) => {
