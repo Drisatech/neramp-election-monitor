@@ -21,6 +21,46 @@ async function login(email, password) {
 }
 
 suite('NERAMP administrative API authorization', () => {
+  test('rejects anonymous evidence uploads before processing file content', async () => {
+    const response = await request('/api/v1/evidence/upload', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ filename: 'probe.jpg', fileContentBase64: 'not-a-real-upload' }),
+    });
+    assert.equal(response.status, 401);
+  });
+
+  test('rejects anonymous observer incident submissions', async () => {
+    const response = await request('/api/v1/observer/incidents', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ description: 'Security integration test; must not be created.' }),
+    });
+    assert.equal(response.status, 401);
+  });
+
+  test('protects observer assignments and submissions from anonymous access', async () => {
+    for (const path of ['/api/v1/observer/assignments', '/api/v1/observer/submissions']) {
+      const response = await request(path);
+      assert.equal(response.status, 401, `${path} must require authentication`);
+    }
+  });
+
+  test('protects generic evidence file and download endpoints', async () => {
+    for (const path of [
+      '/api/v1/evidence/file/evidence/nonexistent.jpg',
+      '/api/v1/evidence/download/evidence/nonexistent.jpg',
+    ]) {
+      const response = await request(path);
+      assert.equal(response.status, 401, `${path} must require authentication`);
+    }
+  });
+
+  test('does not expose a non-existent or unapproved incident through the public evidence route', async () => {
+    const response = await request('/api/v1/observer/incidents/security-test-nonexistent/evidence');
+    assert.equal(response.status, 404);
+  });
+
   test('rejects admin read without a bearer token even if identity headers are forged', async () => {
     const response = await request('/api/v1/admin/ingestion/status', {
       headers: {
