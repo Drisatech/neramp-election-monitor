@@ -2108,6 +2108,9 @@ app.get('/api/v1/analytics/alerts', (req: Request, res: Response) => {
 });
 
 // Update Alert Workflow Status
+// Alert state changes are management operations; require a server-issued token.
+app.use('/api/v1/analytics/alerts', requireAdminAuth);
+
 app.patch('/api/v1/analytics/alerts/:alertId', (req: Request, res: Response) => {
   const { alertId } = req.params;
   const { status, assignedTo, reviewNotes, reviewerName = 'Monitoring Coordinator' } = req.body;
@@ -2337,6 +2340,9 @@ function parseNumericCell(val: any): number | null {
 }
 
 // Import Registered Voters & PVC Collection from Excel (.xlsx / .xls) or CSV
+// Importing registered-voter data is restricted to authenticated management users.
+app.use('/api/v1/geography/registered-voters/import', requireAdminAuth);
+
 app.post('/api/v1/geography/registered-voters/import', (req: Request, res: Response) => {
   try {
     const { fileBase64, fileName, records } = req.body;
@@ -2912,10 +2918,15 @@ function requireAdminAuth(req: Request, res: Response, next: () => void) {
     return;
   }
   const pathname = new URL(req.originalUrl, 'http://localhost').pathname;
-  const privilegedWrite = /\/api\/v1\/admin\/(?:data\/(?:restore|purge-demo|backup)|users(?:\/|$)|config(?:\/|$)|operations(?:\/|$)|storage\/init-folders|observers\/[^/]+\/verify-credentials|incidents\/[^/]+\/publish)/i.test(pathname);
   const isWrite = !['GET', 'HEAD', 'OPTIONS'].includes(req.method.toUpperCase());
+  const privilegedWrite = /\/api\/v1\/admin\/(?:data\/(?:restore|purge-demo|backup)|users(?:\/|$)|config(?:\/|$)|operations(?:\/|$)|storage\/init-folders|observers\/[^/]+\/verify-credentials|incidents\/[^/]+\/publish)|\/api\/v1\/(?:ocr\/api-key|geography\/registered-voters\/import)/i.test(pathname);
   if (isWrite && privilegedWrite && !['SUPER_ADMIN', 'PROJECT_ADMIN'].includes(user.role)) {
     res.status(403).json({ error: 'This administrative operation requires SUPER_ADMIN or PROJECT_ADMIN privileges.' });
+    return;
+  }
+  const verificationWrite = /\/api\/v1\/(?:verification\/[^/]+\/(?:review|correct-transcription)|ocr\/(?:transcribe-sheet\/[^/]+|transcribe-batch|upload-and-transcribe|test-connection))/i.test(pathname);
+  if (isWrite && verificationWrite && !['SUPER_ADMIN', 'PROJECT_ADMIN', 'RESULT_VERIFIER'].includes(user.role)) {
+    res.status(403).json({ error: 'This verification or OCR operation requires a verifier or administrator role.' });
     return;
   }
   session.lastActiveAt = new Date().toISOString();
@@ -3533,6 +3544,9 @@ app.delete('/api/v1/observer/incidents/:id', (req: Request, res: Response) => {
 });
 
 // Verification Workspace: Review & Correct Transcription
+// Result review and transcription correction require an authenticated management session.
+app.use('/api/v1/verification', requireAdminAuth);
+
 app.post('/api/v1/verification/:resultSheetId/review', (req: Request, res: Response) => {
   const { resultSheetId } = req.params;
   const { decision, notes, verifierName } = req.body;
@@ -5743,6 +5757,9 @@ app.get('/api/v1/ocr/quota-status', (_req: Request, res: Response) => {
 });
 
 // Update AI OCR Provider, Selected Model, or Custom API Key
+// OCR configuration, transcription, and uploads are restricted to authenticated management users.
+app.use('/api/v1/ocr', requireAdminAuth);
+
 app.post('/api/v1/ocr/api-key', (req: Request, res: Response) => {
   const { provider, apiKey, model } = req.body || {};
 
