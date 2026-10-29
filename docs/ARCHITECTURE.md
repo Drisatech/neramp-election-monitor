@@ -1,5 +1,7 @@
 # Production Architecture Overview - Nigeria Election Watch 2027
 
+> **Implementation status (important):** This document includes a target-state architecture, not proof that all components are deployed or connected. The active Render blueprint currently deploys the Node.js/Express API in `server.ts`. The frontend calls `/api/v1` on that server. The separate FastAPI/PostgreSQL/Redis stack in `docker-compose.yml` is a development/reference implementation and is not the canonical production API. The current Node service uses JSON-file/in-memory stores; it does not yet use the PostgreSQL/PostGIS schema described below. Do not infer production readiness, durable backups, or a live INEC integration from the target-state diagram.
+
 ## 1. System Topology & Production Components
 
 Nigeria Election Watch is architected as an independent, enterprise-grade, fault-tolerant election monitoring and verification platform designed to handle peak election-day loads across 176,846 polling units across all 36 States and the Federal Capital Territory (FCT).
