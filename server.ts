@@ -549,6 +549,7 @@ const POLLING_UNITS_FILE = path.join(DATA_DIR, 'neramp_polling_units.json');
 const RESULT_SHEETS_FILE = path.join(DATA_DIR, 'neramp_result_sheets.json');
 const USERS_FILE = path.join(DATA_DIR, 'neramp_users.json');
 const USER_SESSIONS_FILE = path.join(DATA_DIR, 'neramp_user_sessions.json');
+const AUTH_TOKENS_FILE = path.join(DATA_DIR, 'neramp_auth_tokens.json');
 const AUDIT_LOGS_FILE = path.join(DATA_DIR, 'neramp_audit_logs.json');
 const DISCREPANCIES_FILE = path.join(DATA_DIR, 'neramp_discrepancies.json');
 const INCIDENTS_FILE = path.join(DATA_DIR, 'neramp_incidents.json');
@@ -924,18 +925,9 @@ function loadDatabaseFromDisk() {
   }
 }
 
-// Initial load from disk. Bearer tokens remain process-local and are never persisted.
-// Sessions left active by a prior process are invalidated on restart.
+// Load durable records before serving requests. Token hashes are loaded below after
+// the authentication registry is initialized; raw bearer tokens are never persisted.
 loadDatabaseFromDisk();
-let staleSessionsClosed = false;
-for (const session of USER_SESSIONS) {
-  if (session.status === 'ACTIVE') {
-    session.status = 'TIMED_OUT';
-    session.logoutAt = new Date().toISOString();
-    staleSessionsClosed = true;
-  }
-}
-if (staleSessionsClosed) saveDatabaseToDisk(true);
 
 // Remove the publicly known legacy password from persisted accounts. If a unique
 // bootstrap secret is configured, it may provision only the Super Admin account.
@@ -2957,13 +2949,39 @@ app.get('/api/v1/elections/:electionId/published-incidents', (req: Request, res:
 // Server-side bearer-token registry. Tokens expire after 8 hours; process restart invalidates them.
 const ACTIVE_AUTH_TOKENS = new Map<string, { userId: string; sessionId: string; expiresAt: number }>();
 const AUTH_TOKEN_TTL_MS = 8 * 60 * 60 * 1000;
+const hashAuthToken = (token: string) => crypto.createHash('sha256').update(token).digest('hex');
+function persistAuthTokens() {
+  atomicWriteFile(AUTH_TOKENS_FILE, JSON.stringify(Array.from(ACTIVE_AUTH_TOKENS.entries()), null, 2));
+}
+try {
+  if (fs.existsSync(AUTH_TOKENS_FILE)) {
+    const persistedTokens = JSON.parse(fs.readFileSync(AUTH_TOKENS_FILE, 'utf-8'));
+    if (Array.isArray(persistedTokens)) {
+      for (const entry of persistedTokens) {
+        if (!Array.isArray(entry) || entry.length !== 2) continue;
+        const [tokenHash, record] = entry;
+        if (typeof tokenHash !== 'string' || !/^[a-f0-9]{64}$/.test(tokenHash) ||
+            !record || typeof record.userId !== 'string' || typeof record.sessionId !== 'string' ||
+            !Number.isFinite(record.expiresAt) || record.expiresAt <= Date.now()) continue;
+        const session = USER_SESSIONS.find((item) => item.id === record.sessionId && item.status === 'ACTIVE');
+        const user = USERS.find((item) => item.id === record.userId && item.isActive && item.approvalStatus !== 'REJECTED' && item.approvalStatus !== 'PENDING_APPROVAL');
+        if (session && user) ACTIVE_AUTH_TOKENS.set(tokenHash, record);
+      }
+    }
+    persistAuthTokens();
+  }
+} catch (err: any) {
+  console.error('[AUTH] Could not load persisted session token hashes; sessions will require sign-in:', err.message);
+  ACTIVE_AUTH_TOKENS.clear();
+}
 
 function requireAdminAuth(req: Request, res: Response, next: () => void) {
   const match = (req.headers.authorization || '').match(/^Bearer\s+(.+)$/i);
   const token = match?.[1];
-  const tokenRecord = token ? ACTIVE_AUTH_TOKENS.get(token) : undefined;
+  const tokenHash = token ? hashAuthToken(token) : undefined;
+  const tokenRecord = tokenHash ? ACTIVE_AUTH_TOKENS.get(tokenHash) : undefined;
   if (!tokenRecord || tokenRecord.expiresAt <= Date.now()) {
-    if (token) ACTIVE_AUTH_TOKENS.delete(token);
+    if (tokenHash) { ACTIVE_AUTH_TOKENS.delete(tokenHash); persistAuthTokens(); }
     res.status(401).json({ error: 'Authentication required. Sign in again with a valid management session.' });
     return;
   }
@@ -2971,7 +2989,8 @@ function requireAdminAuth(req: Request, res: Response, next: () => void) {
   const session = USER_SESSIONS.find((candidate) => candidate.id === tokenRecord.sessionId);
   if (!user || !session || session.status !== 'ACTIVE' || !user.isActive ||
       user.approvalStatus === 'PENDING_APPROVAL' || user.approvalStatus === 'REJECTED') {
-    ACTIVE_AUTH_TOKENS.delete(token!);
+    ACTIVE_AUTH_TOKENS.delete(tokenHash!);
+    persistAuthTokens();
     res.status(401).json({ error: 'Management account or session is no longer active.' });
     return;
   }
@@ -3104,7 +3123,8 @@ app.post('/api/v1/auth/login', (req: Request, res: Response) => {
   if (USER_SESSIONS.length > 250) USER_SESSIONS.pop();
 
   const token = crypto.randomBytes(32).toString('hex');
-  ACTIVE_AUTH_TOKENS.set(token, { userId: user.id, sessionId, expiresAt: Date.now() + AUTH_TOKEN_TTL_MS });
+  ACTIVE_AUTH_TOKENS.set(hashAuthToken(token), { userId: user.id, sessionId, expiresAt: Date.now() + AUTH_TOKEN_TTL_MS });
+  persistAuthTokens();
 
   AUDIT_LOGS.unshift({
     id: 'audit-' + Date.now(),
@@ -3261,7 +3281,7 @@ app.get('/api/v1/auth/me', (req: Request, res: Response) => {
 app.post('/api/v1/auth/logout', (req: Request, res: Response) => {
   const { sessionId, userEmail } = req.body || {};
   const bearer = (req.headers.authorization || '').match(/^Bearer\s+(.+)$/i)?.[1];
-  if (bearer) ACTIVE_AUTH_TOKENS.delete(bearer);
+  if (bearer) { ACTIVE_AUTH_TOKENS.delete(hashAuthToken(bearer)); persistAuthTokens(); }
   if (sessionId) {
     const session = USER_SESSIONS.find((s) => s.id === sessionId);
     if (session) {
