@@ -2959,14 +2959,23 @@ function requireAdminAuth(req: Request, res: Response, next: () => void) {
   }
   const pathname = new URL(req.originalUrl, 'http://localhost').pathname;
   const isWrite = !['GET', 'HEAD', 'OPTIONS'].includes(req.method.toUpperCase());
-  const privilegedWrite = /\/api\/v1\/admin\/(?:data\/(?:restore|purge-demo|backup)|users(?:\/|$)|config(?:\/|$)|operations(?:\/|$)|storage\/init-folders|observers\/[^/]+\/verify-credentials|incidents\/[^/]+\/publish)|\/api\/v1\/(?:ocr\/api-key|geography\/registered-voters\/import)/i.test(pathname);
-  if (isWrite && privilegedWrite && !['SUPER_ADMIN', 'PROJECT_ADMIN'].includes(user.role)) {
+  const privilegedPath = /\/api\/v1\/admin\/(?:data\/(?:restore|purge-demo|backup)|users(?:\/|$)|config(?:\/|$)|operations(?:\/|$)|storage\/init-folders|observers\/[^/]+\/verify-credentials|incidents\/[^/]+\/publish)|\/api\/v1\/(?:ocr\/api-key|geography\/registered-voters\/import)/i.test(pathname);
+  if (privilegedPath && !['SUPER_ADMIN', 'PROJECT_ADMIN'].includes(user.role)) {
     res.status(403).json({ error: 'This administrative operation requires SUPER_ADMIN or PROJECT_ADMIN privileges.' });
     return;
   }
   const verificationWrite = /\/api\/v1\/(?:verification\/[^/]+\/(?:review|correct-transcription)|ocr\/(?:transcribe-sheet\/[^/]+|transcribe-batch|upload-and-transcribe|test-connection))/i.test(pathname);
   if (isWrite && verificationWrite && !['SUPER_ADMIN', 'PROJECT_ADMIN', 'RESULT_VERIFIER'].includes(user.role)) {
     res.status(403).json({ error: 'This verification or OCR operation requires a verifier or administrator role.' });
+    return;
+  }
+  const incidentPath = /\/api\/v1\/observer\/incidents\/[^/]+$/i.test(pathname);
+  if (incidentPath && req.method.toUpperCase() === 'DELETE' && !['SUPER_ADMIN', 'PROJECT_ADMIN'].includes(user.role)) {
+    res.status(403).json({ error: 'Deleting an incident requires SUPER_ADMIN or PROJECT_ADMIN privileges.' });
+    return;
+  }
+  if (incidentPath && req.method.toUpperCase() === 'PATCH' && !['SUPER_ADMIN', 'PROJECT_ADMIN', 'MONITORING_COORDINATOR'].includes(user.role)) {
+    res.status(403).json({ error: 'Updating an incident requires a monitoring coordinator or administrator role.' });
     return;
   }
   session.lastActiveAt = new Date().toISOString();
@@ -3487,7 +3496,7 @@ app.get('/api/v1/observer/incidents/:id/evidence', (req: Request, res: Response)
 });
 
 // Reopen / Edit Incident Report (Allows Field Observers and Management to rectify errors)
-app.patch('/api/v1/observer/incidents/:id', (req: Request, res: Response) => {
+app.patch('/api/v1/observer/incidents/:id', requireAdminAuth, (req: Request, res: Response) => {
   const { id } = req.params;
   const incident = INCIDENTS.find((i) => i.id === id);
   if (!incident) {
@@ -3557,7 +3566,7 @@ app.patch('/api/v1/observer/incidents/:id', (req: Request, res: Response) => {
 });
 
 // Delete Incident Report
-app.delete('/api/v1/observer/incidents/:id', (req: Request, res: Response) => {
+app.delete('/api/v1/observer/incidents/:id', requireAdminAuth, (req: Request, res: Response) => {
   const { id } = req.params;
   const idx = INCIDENTS.findIndex((i) => i.id === id);
   if (idx === -1) {
