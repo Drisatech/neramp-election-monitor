@@ -24,6 +24,8 @@ services:
         sync: false
       - key: INEC_RESULTS_API_BASE_URL
         sync: false
+      - key: NERAMP_BOOTSTRAP_ADMIN_PASSWORD
+        sync: false
     # To permanently prevent data from resetting on deployment, attach a Render Persistent Disk:
     # (Requires Render Starter plan or above: Render Dashboard -> Your Service -> Disks -> Add Disk: Mount Path /var/data)
     # disk:
