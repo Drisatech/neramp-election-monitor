@@ -3208,6 +3208,9 @@ app.post('/api/v1/auth/logout', (req: Request, res: Response) => {
 });
 
 // Super Admin Management Monitoring Logs: Who logged in, when, how long, and activities carried out
+// Protect every admin route, including the management-monitoring route defined before ingestion endpoints.
+app.use('/api/v1/admin', requireAdminAuth);
+
 app.get('/api/v1/admin/management-monitoring', (_req: Request, res: Response) => {
   // Identity comes only from the server-validated bearer token, never from request headers.
   const authenticatedUser = res.locals.authUser as UserItem | undefined;
@@ -3713,7 +3716,6 @@ app.get('/api/v1/verification/:resultSheetId/history', (req: Request, res: Respo
 // ==========================================
 
 // All /api/v1/admin endpoints require a server-issued management token.
-app.use('/api/v1/admin', requireAdminAuth);
 
 let schedulerConfig = {
   enabled: true,
