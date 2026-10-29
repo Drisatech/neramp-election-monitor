@@ -6220,7 +6220,7 @@ app.post('/api/v1/admin/ingestion/run', async (req: Request, res: Response) => {
     res.status(502).json({ message: 'Ingestion failed. No live data was reported as successfully retrieved.', data: newJob });
     return;
   }
-  res.json({ message: isSimulation ? 'Simulation completed; records are not official.' : `Retrieval outcome: ${outcome}.`, data: newJob, stats: { newPusCount, skippedDuplicates, revisedCount, totalPusProcessed: processedCount } });
+  res.json({ message: isSimulation ? 'Simulation mode selected; this endpoint did not retrieve or ingest any records. No records are official.' : `Retrieval outcome: ${outcome}.`, data: newJob, stats: { newPusCount, skippedDuplicates, revisedCount, totalPusProcessed: processedCount } });
 });
 
 // Purge Demo Fixtures and Reset Entire App to Zero
