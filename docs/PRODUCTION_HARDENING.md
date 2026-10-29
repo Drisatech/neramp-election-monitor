@@ -47,12 +47,13 @@ Before production use:
 
 ## Security and scale — remaining release blockers
 
-This branch is not a production security certification. The existing Express application has many administrative write routes whose authorization patterns are inconsistent; several routes rely on caller-supplied role/name headers, which are not a trustworthy identity proof. Do not expose administrative endpoints publicly until they are protected by server-validated sessions or tokens and server-side role checks. The login currently issues a token-like string that must not be assumed to be a cryptographically validated JWT.
+This branch is not a production security certification. The main administrative route groups now require server-issued bearer tokens, and sensitive operations have initial role gates. Endpoint-by-endpoint authorization review is still required; some non-administrative upload/observer routes remain intentionally public or require a separate observer identity design. Do not expose the service for production election operations until staging authorization tests and the remaining upload/persistence checks pass.
 
 Additional release blockers:
 - [x] Centralize server-issued bearer-token authentication for the /api/v1/admin route group, alert mutations, registered-voter imports, result verification, and OCR management/transcription endpoints. Caller-supplied x-actor-role and x-actor-email headers no longer authenticate admin requests.
 - [x] Apply role gates to sensitive admin operations (restore/purge, user management, configuration, operations, OCR API-key changes, and registered-voter imports); restrict verification/OCR writes to verifiers or administrators.
 - [x] Prevent passwordless login and prevent the login endpoint from setting a missing account password based only on knowledge of the account email.
+- [x] Remove the shared default password from seeded management accounts, disable it for persisted accounts, and support a unique deployment secret via NERAMP_BOOTSTRAP_ADMIN_PASSWORD.
 - [x] Add negative API integration tests for missing tokens, forged identity headers, invalid tokens, passwordless login, limited-role access, and logout token revocation. Run with npm run test:security against a dedicated test deployment; set NERAMP_TEST_BASE_URL, and optional test-account variables documented in the test file.
 - [ ] Run the negative tests against a dedicated staging instance and add role-by-role positive/negative coverage for every administrative route before merge.
 - Validate file content by magic bytes as well as extension/MIME; enforce strict request and decoded-upload size limits. Review the global JSON body limit.
