@@ -19,6 +19,9 @@ This is a deployment decision based on the checked-in configuration, not a claim
 
 ## Required environment configuration
 
+Set `NERAMP_BOOTSTRAP_ADMIN_PASSWORD` in the deployment secret store to a unique password of at least 16 characters before enabling management access. Never use the former shared default password `Admin@Neramp2026!`. The application now disables that legacy password in persisted accounts; the migration replaces it with the configured bootstrap secret for the Super Admin only, or clears it when no valid secret is configured. Other seeded management accounts no longer share a default password and must be securely provisioned by an administrator.
+
+
 Set INEC_RESULTS_API_BASE_URL in the deployment environment **only after confirming that the endpoint is permitted, technically accessible, and returns the expected documented contract**. The application currently does not establish that the endpoint is an official INEC API merely because the official portal is used as a reference. The source connection check probes https://inecelectionresults.ng/elections/types; it does not validate the configured results API.
 
 Do not set DATA_SOURCE_MODE=OFFICIAL_SOURCE or publish data as official solely because an ingestion job ran. Each result sheet needs source-document provenance and verification.
