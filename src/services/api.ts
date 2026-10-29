@@ -127,6 +127,15 @@ export async function fetchPublishedIncidents(electionId: string): Promise<{ dat
   return res.json();
 }
 
+export async function fetchObserverSubmissions(): Promise<{ data: { incidents: IncidentReport[]; assignedPus: PollingUnit[] } }> {
+  const res = await fetch(`${API_BASE}/observer/submissions`, { headers: getAuthHeaders() });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Failed to fetch observer submissions');
+  }
+  return res.json();
+}
+
 export async function submitIncidentReport(payload: {
   electionId?: string;
   category: string;
@@ -147,7 +156,7 @@ export async function submitIncidentReport(payload: {
 }) {
   const res = await fetch(`${API_BASE}/observer/incidents`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders(),
     body: JSON.stringify(payload),
   });
   if (!res.ok) throw new Error('Failed to submit incident report');
@@ -155,7 +164,7 @@ export async function submitIncidentReport(payload: {
 }
 
 export async function fetchIncidentById(id: string): Promise<{ data: IncidentReport }> {
-  const res = await fetch(`${API_BASE}/observer/incidents/${encodeURIComponent(id)}`);
+  const res = await fetch(`${API_BASE}/observer/incidents/${encodeURIComponent(id)}`, { headers: getAuthHeaders() });
   if (!res.ok) throw new Error('Failed to fetch incident report details');
   return res.json();
 }
@@ -183,7 +192,7 @@ export async function updateIncidentReport(
 ): Promise<{ data: IncidentReport; message: string }> {
   const res = await fetch(`${API_BASE}/observer/incidents/${encodeURIComponent(id)}`, {
     method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders(),
     body: JSON.stringify(payload),
   });
   if (!res.ok) {
@@ -196,6 +205,7 @@ export async function updateIncidentReport(
 export async function deleteIncidentReport(id: string): Promise<{ message: string; deletedId: string }> {
   const res = await fetch(`${API_BASE}/observer/incidents/${encodeURIComponent(id)}`, {
     method: 'DELETE',
+    headers: getAuthHeaders(),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
@@ -674,7 +684,7 @@ export async function fetchConfigParties() {
 export async function uploadEvidenceFile(filename: string, fileContentBase64: string, contentType?: string) {
   const res = await fetch(`${API_BASE}/evidence/upload`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders(),
     body: JSON.stringify({ filename, fileContentBase64, contentType }),
   });
   if (!res.ok) {
