@@ -80,18 +80,11 @@ class ElectionSourceAdapter(ABC):
 
 class InecApprovedSourceAdapter(ElectionSourceAdapter):
     """
-    Authorised integration point for the official INEC election results portal:
-    https://inecelectionresults.ng
+    Legacy/experimental adapter retained for migration and test compatibility.
 
-    Configured specifically for:
-    'Governorship election - 2026-08-15 - OSUN'
-
-    Key Capabilities:
-    - Enforces strict server-side credentials and rate limiting (max 60 req/min).
-    - Preserves zero-padded official polling unit identifiers (e.g. 29-24-01-001).
-    - Preserves source document links, SHA-256 hashes, and upload timestamps.
-    - Idempotent ingestion pipeline preventing duplicate re-records.
-    - Supports synthetic responses for isolated CI testing without live credentials.
+    This adapter does not establish an authenticated or authorized INEC integration.
+    A documented upstream API contract and explicit URL/credentials are required before
+    retrieval is attempted. Synthetic records are demonstration fixtures only.
     """
 
     ELECTION_ID_OSUN_2026 = "elec-2026-gov-osun"
@@ -125,7 +118,7 @@ class InecApprovedSourceAdapter(ElectionSourceAdapter):
         self._last_request_time = 0.0
 
     def get_adapter_name(self) -> str:
-        return "InecApprovedSourceAdapter (Official Portal Integration)"
+        return "InecApprovedSourceAdapter (Unverified legacy adapter)"
 
     def is_live_official_source(self) -> bool:
         # Credentials and a URL alone do not establish that the upstream is an authorized INEC API.
@@ -209,10 +202,10 @@ class InecApprovedSourceAdapter(ElectionSourceAdapter):
         offset: int,
     ) -> List[SourceRecord]:
         """
-        Generates canonical Osun State Governorship records conforming exactly
-        to the documented INEC IReV response schema for testing and development.
+        Generates fictional demonstration records for testing only. These records
+        are not retrieved from INEC and must never be presented as official results.
         """
-        # Osun State official polling units with preserved zero-padded codes
+        # Fictional fixture records with zero-padded example identifiers.
         osun_raw_fixtures = [
             {
                 "pu_code": "29-24-01-001",
