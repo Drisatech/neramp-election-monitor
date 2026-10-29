@@ -58,6 +58,7 @@ The app includes native `render.yaml` blueprint configuration for automated cont
 4. In the **Environment Variables** section, add:
    - `NODE_ENV` = `production`
    - `PORT` = `10000` (Render sets this dynamically, but `server.ts` handles it automatically)
+   - `NERAMP_INITIAL_ADMIN_PASSWORD`: set a unique secret of at least 32 characters. Production startup intentionally fails if this is missing or uses the known development password.
    - `INEC_RESULTS_API_BASE_URL`: required only after a documented and authorized upstream API endpoint is confirmed. Do not assume the public portal URL is an API endpoint.
    - `INEC_API_KEY`: only if INEC issues credentials for that documented API.
    - (Optional) `GEMINI_API_KEY`, `OPENAI_API_KEY`, `GROQ_API_KEY`, or `ANTHROPIC_API_KEY` for AI OCR.
@@ -72,7 +73,11 @@ The app includes native `render.yaml` blueprint configuration for automated cont
 # Install dependencies
 npm install
 
-# Build client bundle
+# Run contract tests
+npm test
+
+# Type-check and build client bundle
+npm run lint
 npm run build
 
 # Start production server
