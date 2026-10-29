@@ -40,7 +40,7 @@ suite('NERAMP administrative API authorization', () => {
     assert.equal(response.status, 401);
   });
 
-  test('rejects malformed and expired-looking bearer tokens', async () => {
+  test('rejects unknown bearer tokens', async () => {
     const response = await request('/api/v1/admin/ingestion/status', {
       headers: { authorization: 'Bearer definitely-not-a-valid-token' },
     });
