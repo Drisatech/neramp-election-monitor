@@ -47,12 +47,23 @@ Before production use:
 This branch is not a production security certification. The existing Express application has many administrative write routes whose authorization patterns are inconsistent; several routes rely on caller-supplied role/name headers, which are not a trustworthy identity proof. Do not expose administrative endpoints publicly until they are protected by server-validated sessions or tokens and server-side role checks. The login currently issues a token-like string that must not be assumed to be a cryptographically validated JWT.
 
 Additional release blockers:
-- Centralize authentication/authorization for every administrative write endpoint and add negative authorization tests.
+- [x] Centralize server-issued bearer-token authentication for the /api/v1/admin route group, alert mutations, registered-voter imports, result verification, and OCR management/transcription endpoints. Caller-supplied x-actor-role and x-actor-email headers no longer authenticate admin requests.
+- [x] Apply role gates to sensitive admin operations (restore/purge, user management, configuration, operations, OCR API-key changes, and registered-voter imports); restrict verification/OCR writes to verifiers or administrators.
+- [x] Prevent passwordless login and prevent the login endpoint from setting a missing account password based only on knowledge of the account email.
+- [x] Add negative API integration tests for missing tokens, forged identity headers, invalid tokens, passwordless login, limited-role access, and logout token revocation. Run with npm run test:security against a dedicated test deployment; set NERAMP_TEST_BASE_URL, and optional test-account variables documented in the test file.
+- [ ] Run the negative tests against a dedicated staging instance and add role-by-role positive/negative coverage for every administrative route before merge.
 - Validate file content by magic bytes as well as extension/MIME; enforce strict request and decoded-upload size limits. Review the global JSON body limit.
 - Keep provider keys and storage credentials server-side; rotate any credentials that may have been committed or exposed.
 - Add durable audit logging and ensure restore/import operations are authorized and logged before and after mutation.
 - Add request timeouts, bounded retries with backoff, per-source rate limits, idempotency keys, queue persistence, and dead-letter/retry handling.
 - Add concurrency/load tests, database/object-storage capacity tests, dependency/security scans, and backup/restore drills.
+
+
+### Authentication implementation notes
+
+The current Node API issues random opaque bearer tokens stored in a process-local registry, with an eight-hour expiry. Restarting the Node process invalidates these tokens. This is a containment improvement over trusting caller-supplied headers, not a durable session architecture. Before production, move sessions to a shared durable store, add CSRF/origin protections if cookie auth is introduced, enforce secure transport, and audit every endpoint's role policy. Administrative endpoints should not be publicly exposed until staging authorization tests pass.
+
+The integration tests intentionally skip when NERAMP_TEST_BASE_URL is not configured. They were added to the repository but have not been executed from this environment. Use dedicated test accounts only; never put production credentials in test configuration.
 
 ## Verification status
 
