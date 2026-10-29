@@ -1,8 +1,8 @@
-import test from 'node:test';
+import test, { describe } from 'node:test';
 import assert from 'node:assert/strict';
 
 const baseUrl = process.env.NERAMP_TEST_BASE_URL?.replace(/\/$/, '');
-const describeIfConfigured = baseUrl ? test : (name, options, fn) => test(name, { ...options, skip: 'Set NERAMP_TEST_BASE_URL to run API security integration tests' }, fn);
+const suite = baseUrl ? describe : describe.skip;
 
 async function request(path, options = {}) {
   return fetch(new URL(path, baseUrl), options);
@@ -20,7 +20,7 @@ async function login(email, password) {
   return body;
 }
 
-describeIfConfigured('NERAMP administrative API authorization', { concurrency: false }, () => {
+suite('NERAMP administrative API authorization', () => {
   test('rejects admin read without a bearer token even if identity headers are forged', async () => {
     const response = await request('/api/v1/admin/ingestion/status', {
       headers: {
