@@ -5362,7 +5362,7 @@ async function fetchInecLiveElectionResults(electionIdKey: string, maxWards: num
   if (parsedBase.protocol !== 'https:') {
     throw new Error('INEC_RESULTS_API_BASE_URL must use HTTPS.');
   }
-  const base = configuredBase.replace(/\\/+$/, '');
+  const base = configuredBase.replace(/\/+$/, '');
   const sourceHeaders: Record<string, string> = process.env.INEC_API_KEY
     ? { Authorization: `Bearer ${process.env.INEC_API_KEY}` }
     : {};
