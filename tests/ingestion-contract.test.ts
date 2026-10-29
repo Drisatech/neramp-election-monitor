@@ -1,10 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { classifyIngestionOutcome, validateUpstreamBaseUrl } from '../src/services/ingestionContract.ts';
+import { classifyIngestionOutcome, IngestionValidationError, validateUpstreamBaseUrl } from '../src/services/ingestionContract.ts';
 
 test('failed live retrieval is never classified as success', () => {
   assert.equal(classifyIngestionOutcome({ retrievalFailed: true, recordsRetrieved: 0 }), 'FAILED');
   assert.equal(classifyIngestionOutcome({ retrievalFailed: true, recordsRetrieved: 12 }), 'FAILED');
+});
+
+test('invalid upstream data/configuration has a distinct validation outcome', () => {
+  assert.equal(classifyIngestionOutcome({ validationRejected: true }), 'VALIDATION_REJECTED');
+  assert.throws(() => validateUpstreamBaseUrl('http://example.com/api'), IngestionValidationError);
 });
 
 test('partial retrieval has a distinct outcome', () => {
