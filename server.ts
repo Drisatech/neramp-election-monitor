@@ -8,6 +8,7 @@ import * as XLSX from 'xlsx';
 import sharp from 'sharp';
 import { GoogleGenAI, Type } from '@google/genai';
 import { Storage } from '@google-cloud/storage';
+import { classifyIngestionOutcome, validateUpstreamBaseUrl } from './src/services/ingestionContract.ts';
 import {
   type InecStateStatistic,
   OFFICIAL_INEC_STATES,
@@ -5349,20 +5350,8 @@ async function fetchInecLiveElectionResults(electionIdKey: string, maxWards: num
   const targetStateCode = isEkiti ? 'EKITI' : 'OSUN';
   const targetElectionId = isEkiti ? 'elec-2026-gov-ekiti' : 'elec-2026-gov-osun';
   const targetTitle = isEkiti ? 'Ekiti State' : 'Osun State';
-  const configuredBase = process.env.INEC_RESULTS_API_BASE_URL?.trim();
-  if (!configuredBase) {
-    throw new Error('Live ingestion is disabled: configure INEC_RESULTS_API_BASE_URL with a documented, authorized upstream API endpoint before requesting live records.');
-  }
-  let parsedBase: URL;
-  try {
-    parsedBase = new URL(configuredBase);
-  } catch {
-    throw new Error('INEC_RESULTS_API_BASE_URL must be a valid HTTPS URL.');
-  }
-  if (parsedBase.protocol !== 'https:') {
-    throw new Error('INEC_RESULTS_API_BASE_URL must use HTTPS.');
-  }
-  const base = configuredBase.replace(/\/+$/, '');
+  const parsedBase = validateUpstreamBaseUrl(process.env.INEC_RESULTS_API_BASE_URL);
+  const base = parsedBase.toString().replace(/\/+$/, '');
   const sourceHeaders: Record<string, string> = process.env.INEC_API_KEY
     ? { Authorization: `Bearer ${process.env.INEC_API_KEY}` }
     : {};
@@ -5698,9 +5687,10 @@ async function executeLoopCycle(triggerSource: string = 'SCHEDULED_TIMER') {
       id: 'loop-job-' + Date.now(),
       adapter: 'InecApprovedSourceAdapter',
       electionId: loopExtractionConfig.electionId,
-      status: result.failedWardFetches > 0
-        ? (result.totalPusProcessed > 0 ? 'PARTIAL_SUCCESS' : 'FAILED')
-        : (result.totalPusProcessed > 0 ? 'SUCCEEDED' : 'SUCCEEDED_EMPTY'),
+      status: classifyIngestionOutcome({
+        failedWardFetches: result.failedWardFetches,
+        recordsRetrieved: result.totalPusProcessed,
+      }),
       startedAt,
       finishedAt: new Date().toISOString(),
       recordsRetrieved: result.totalPusProcessed,
@@ -6376,15 +6366,12 @@ app.post('/api/v1/admin/ingestion/run', async (req: Request, res: Response) => {
   const revisedCount = liveResult?.revisedCount || 0;
   const newPusCount = liveResult?.newPusCount || 0;
   const failedWardFetches = liveResult?.failedWardFetches || 0;
-  const status = isFixtureAdapter
-    ? 'SIMULATED'
-    : failureReason
-      ? 'FAILED'
-      : failedWardFetches > 0
-        ? (processedCount > 0 ? 'PARTIAL_SUCCESS' : 'FAILED')
-        : processedCount > 0
-          ? 'SUCCEEDED'
-          : 'SUCCEEDED_EMPTY';
+  const status = classifyIngestionOutcome({
+    isSimulation: isFixtureAdapter,
+    retrievalFailed: Boolean(failureReason),
+    failedWardFetches,
+    recordsRetrieved: processedCount,
+  });
 
   const newJob = {
     id: 'job-' + (INGESTION_JOBS.length + 1001),
