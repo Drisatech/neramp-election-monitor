@@ -27,7 +27,7 @@ import {
   uploadEvidenceFile,
   fetchLgas,
   fetchPollingUnits,
-  fetchPublishedIncidents,
+  fetchObserverSubmissions,
 } from '../services/api';
 import { LGA, PollingUnit, IncidentReport } from '../types';
 import { DisclaimerBanner } from '../components/DisclaimerBanner';
@@ -141,10 +141,10 @@ export const ObserverPortalPage: React.FC = () => {
   // Load existing incidents for this election
   const loadSubmittedIncidents = async () => {
     try {
-      const res = await fetchPublishedIncidents(selectedElectionId);
-      setSubmittedIncidents(res.data || []);
+      const res = await fetchObserverSubmissions();
+      setSubmittedIncidents(res.data?.incidents || []);
     } catch (err) {
-      console.error('Failed to load observer incidents:', err);
+      console.error('Failed to load observer submissions:', err);
     }
   };
 
@@ -254,7 +254,7 @@ export const ObserverPortalPage: React.FC = () => {
       }
 
       setStatusMessage(
-        'Incident report and supporting evidence submitted successfully! It is now live in the Field Submissions & Incidents Feed.'
+        'Incident report submitted for review. It will appear publicly only after approval.'
       );
       setDescription('');
       setSelectedFile(null);
