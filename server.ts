@@ -105,7 +105,11 @@ app.use((req, res, next) => {
   ].includes(req.path);
   const protectedAdminPath = req.path.startsWith('/api/v1/admin/') && !publicAdminStatusRead;
   const protectedVerificationWrite = req.path.startsWith('/api/v1/verification/') && req.method !== 'GET';
-  const isProtected = protectedAdminPath || protectedVerificationWrite;
+  const protectedUpload = req.method !== 'GET' && [
+    '/api/v1/evidence/upload',
+    '/api/v1/ocr/upload-and-transcribe',
+  ].includes(req.path);
+  const isProtected = protectedAdminPath || protectedVerificationWrite || protectedUpload;
   if (!isProtected) return next();
 
   const authorization = String(req.headers.authorization || '');
