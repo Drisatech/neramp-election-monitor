@@ -1,6 +1,6 @@
-# Production Deployment Guide - Nigeria Election Watch
+# NERAMP Deployment Guide
 
-This guide outlines deployment procedures for the unified Nigeria Election Watch platform, including instructions to disconnect legacy Google Cloud Run triggers and deploy to Render.com or any Node/Docker hosting provider.
+The current Render deployment runs the root Node/Express application in server.ts. The separate FastAPI service under backend/ is not started by the current Render blueprint. See [Backend Architecture and Hardening Decisions](ARCHITECTURE.md) before configuring source ingestion or preparing for production.
 
 ---
 
@@ -44,7 +44,7 @@ The app includes native `render.yaml` blueprint configuration for automated cont
    - **Runtime**: Node.js
    - **Build Command**: `npm install && npm run build`
    - **Start Command**: `npm start`
-   - **Health Check**: `/api/v1/health`
+   - **Health Check**: `/api/v1/health` (process health only; use `/api/v1/health/ready` to check readiness)
 5. Click **Apply**. Render will automatically deploy new commits whenever you push to GitHub.
 
 ### Option 2: Manual Web Service on Render
@@ -58,7 +58,10 @@ The app includes native `render.yaml` blueprint configuration for automated cont
 4. In the **Environment Variables** section, add:
    - `NODE_ENV` = `production`
    - `PORT` = `10000` (Render sets this dynamically, but `server.ts` handles it automatically)
+   - `INEC_RESULTS_API_BASE_URL`: required only after a documented and authorized upstream API endpoint is confirmed. Do not assume the public portal URL is an API endpoint.
+   - `INEC_API_KEY`: only if INEC issues credentials for that documented API.
    - (Optional) `GEMINI_API_KEY`, `OPENAI_API_KEY`, `GROQ_API_KEY`, or `ANTHROPIC_API_KEY` for AI OCR.
+   - `PERSISTENT_STORAGE_CONFIGURED=true` only after a durable disk is attached and verified.
 
 ---
 
@@ -93,4 +96,20 @@ Once deployed, verify the service using the built-in health probes:
 ```bash
 curl -f https://<your-render-url>/api/v1/health
 curl -f https://<your-render-url>/api/v1/health/live
+```
+
+## 5. Durable storage is a production prerequisite
+
+The current blueprint points DATA_DIR to /var/data, but the disk declaration is commented out and the service is on the free plan. This does not establish durable storage. To enable it, move to a plan that supports a persistent disk, attach a disk mounted at /var/data, verify writes and restart/redeploy recovery, then set PERSISTENT_STORAGE_CONFIGURED=true. Keep separate backups and test restoring them. Do not set the flag merely to make readiness green.
+
+## 6. Source integration prerequisites
+
+The source connection check verifies public portal HTTP reachability only. It does not prove API access or official data provenance. Live ingestion is disabled until INEC_RESULTS_API_BASE_URL is configured to a documented, authorized HTTPS API. The previous third-party DigitalOcean endpoint is no longer used implicitly. Review [Backend Architecture and Hardening Decisions](ARCHITECTURE.md) for the ingestion outcome and provenance contract.
+
+## 7. Verify deployment
+
+```bash
+curl -i https://<your-render-url>/api/v1/health
+curl -i https://<your-render-url>/api/v1/health/ready
+curl -i https://<your-render-url>/api/v1/health/live
 ```
