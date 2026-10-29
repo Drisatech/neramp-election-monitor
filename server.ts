@@ -3549,6 +3549,11 @@ app.post('/api/v1/verification/:resultSheetId/review', (req: Request, res: Respo
 
   sheet.verifiedBy = officerName;
   sheet.verifiedAt = new Date().toISOString();
+  sheet.humanVerified = decision === 'APPROVED';
+  if (decision === 'APPROVED' && sheet.sourceProvenance === 'CONFIGURED_UPSTREAM_NOT_VERIFIED') {
+    // Human review validates the transcription, not the authenticity of the upstream source.
+    sheet.sourceProvenance = 'CONFIGURED_UPSTREAM_NOT_VERIFIED';
+  }
   sheet.verifierNotes = notes || 'Reviewed via verification queue.';
   if (sheet.arithmeticCheck?.details) {
     sheet.arithmeticCheck.details = sheet.arithmeticCheck.details.replace(
@@ -3625,6 +3630,8 @@ app.post('/api/v1/verification/:resultSheetId/correct-transcription', (req: Requ
   };
 
   sheet.version += 1;
+  sheet.transcriptionProvenance = 'HUMAN_CORRECTED';
+  sheet.humanVerified = false; // A correction is not a final verification sign-off.
   sheet.verifierNotes = `Correction applied by ${officerName}: ${correctionReason}`;
   sheet.verifiedBy = officerName;
   sheet.verifiedAt = new Date().toISOString();
@@ -3651,8 +3658,9 @@ app.post('/api/v1/verification/:resultSheetId/correct-transcription', (req: Requ
 
   const targetPu = POLLING_UNITS.find((p) => p.code === sheet.pollingUnitCode);
   if (targetPu) {
-    targetPu.verificationStatus = calcSum === cast ? 'VERIFIED' : 'DISCREPANCY_FLAGGED';
+    targetPu.verificationStatus = 'PENDING_VERIFICATION';
     targetPu.transcriptionStatus = 'COMPLETED';
+    targetPu.sourceProvenance = sheet.sourceProvenance || targetPu.sourceProvenance;
   }
 
   sheet.auditLogs = sheet.auditLogs || [];
@@ -3728,18 +3736,19 @@ app.get('/api/v1/admin/ingestion/status', (_req: Request, res: Response) => {
       currentMode: currentDataSourceMode,
       officialPortalUrl: 'https://inecelectionresults.ng',
       targetElection: 'Governorship election - 2026-08-15 - OSUN',
-      connectionStatus: currentDataSourceMode === 'OFFICIAL_SOURCE' ? 'CONNECTED_SYNTHETIC_EVALUATION' : 'DEVELOPMENT_SIMULATION_ACTIVE',
-      lastSuccessfulRetrieval: INGESTION_JOBS[0]?.finishedAt || '2026-08-15T18:35:00Z',
-      lastAttemptedRetrieval: INGESTION_JOBS[0]?.startedAt || new Date().toISOString(),
+      connectionStatus: process.env.INEC_RESULTS_API_BASE_URL ? 'CONFIGURED_NOT_INDEPENDENTLY_VERIFIED' : 'PENDING_CONFIGURATION',
+      lastSuccessfulRetrieval: INGESTION_JOBS.find((j) => ['SUCCEEDED', 'PARTIAL_SUCCESS', 'SUCCEEDED_EMPTY'].includes(j.status) && j.sourceBaseUrl)?.finishedAt || null,
+      lastAttemptedRetrieval: INGESTION_JOBS[0]?.startedAt || null,
       totalRecordsRetrieved: INGESTION_JOBS.reduce((acc, j) => acc + j.recordsRetrieved, 0),
       totalRecordsProcessed: INGESTION_JOBS.reduce((acc, j) => acc + j.recordsProcessed, 0),
-      totalRecordsRejected: 0,
-      activeAdapter: currentDataSourceMode === 'OFFICIAL_SOURCE' ? 'InecApprovedSourceAdapter' : 'DevelopmentFixtureAdapter',
-      rateLimit: '60 requests/minute',
+      totalRecordsRejected: INGESTION_JOBS.reduce((acc, j) => acc + (j.recordsRejected || 0), 0),
+      totalFailedWardFetches: INGESTION_JOBS.reduce((acc, j) => acc + (j.failedWardFetches || 0), 0),
+      activeAdapter: schedulerConfig.adapter,
+      rateLimit: 'Configured upstream rate limits must be confirmed before production use',
       scheduler: schedulerConfig,
-      notes: currentDataSourceMode === 'OFFICIAL_SOURCE'
-        ? 'Official portal integration configured for Osun Governorship (2026-08-15). Tested against approved schema.'
-        : 'Development demonstration mode: Generating isolated, verifiable simulation records.',
+      notes: process.env.INEC_RESULTS_API_BASE_URL
+        ? 'An upstream API base URL is configured, but official INEC access and record provenance are not independently verified.'
+        : 'Live ingestion is disabled until a documented, authorized upstream API base URL is configured. Use the explicit DevelopmentFixtureAdapter for simulation.',
     },
   });
 });
