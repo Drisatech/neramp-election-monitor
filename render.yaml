@@ -26,8 +26,12 @@ services:
         sync: false
       - key: NERAMP_BOOTSTRAP_ADMIN_PASSWORD
         sync: false
-    # To permanently prevent data from resetting on deployment, attach a Render Persistent Disk:
-    # (Requires Render Starter plan or above: Render Dashboard -> Your Service -> Disks -> Add Disk: Mount Path /var/data)
+      - key: NERAMP_REQUIRE_DURABLE_STORAGE
+        value: "true"
+    # IMPORTANT: This service must have a real persistent disk mounted at /var/data.
+    # Render persistent disks require a paid service plan. Attach the disk in the Render
+    # dashboard before deploying this blueprint; readiness intentionally fails closed
+    # when NERAMP_REQUIRE_DURABLE_STORAGE=true and no persistent volume is detected.
     # disk:
     #   name: neramp-data
     #   mountPath: /var/data
