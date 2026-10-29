@@ -90,13 +90,17 @@ function recordAttempt(key: string, success: boolean, maxAttempts = 5, lockoutDu
 // Administrative writes and verification decisions must be backed by a server-issued token.
 // Client-supplied x-actor-* headers are never trusted as identity or authorization.
 app.use((req, res, next) => {
-  const protectedAdminPath = req.path.startsWith('/api/v1/admin/');
+  const publicAdminStatusRead = req.method === 'GET' && [
+    '/api/v1/admin/ingestion/status',
+    '/api/v1/admin/ingestion/scheduler',
+  ].includes(req.path);
+  const protectedAdminPath = req.path.startsWith('/api/v1/admin/') && !publicAdminStatusRead;
   const protectedVerificationWrite = req.path.startsWith('/api/v1/verification/') && req.method !== 'GET';
   const isProtected = protectedAdminPath || protectedVerificationWrite;
   if (!isProtected) return next();
 
   const authorization = String(req.headers.authorization || '');
-  const match = authorization.match(/^Bearer\\s+(.+)$/i);
+  const match = authorization.match(/^Bearer\s+(.+)$/i);
   const token = match?.[1];
   const session = token ? MANAGEMENT_TOKENS.get(token) : undefined;
   if (!session || session.expiresAt <= Date.now()) {
@@ -594,7 +598,7 @@ let DISCREPANCIES: Discrepancy[] = [];
 let INCIDENTS: IncidentReport[] = [];
 
 // Production Ingestion Jobs & Data Source State
-let currentDataSourceMode: 'DEVELOPMENT' | 'HISTORICAL' | 'MANUAL_IMPORT' | 'OFFICIAL_SOURCE' = 'OFFICIAL_SOURCE';
+let currentDataSourceMode: 'DEVELOPMENT' | 'HISTORICAL' | 'MANUAL_IMPORT' | 'OFFICIAL_SOURCE' = 'DEVELOPMENT';
 
 let INGESTION_JOBS: any[] = [];
 
@@ -3213,7 +3217,7 @@ app.get('/api/v1/auth/me', (req: Request, res: Response) => {
 
 app.post('/api/v1/auth/logout', (req: Request, res: Response) => {
   const { sessionId, userEmail } = req.body;
-  const bearer = String(req.headers.authorization || '').match(/^Bearer\\s+(.+)$/i)?.[1];
+  const bearer = String(req.headers.authorization || '').match(/^Bearer\s+(.+)$/i)?.[1];
   if (bearer) MANAGEMENT_TOKENS.delete(bearer);
   if (sessionId) {
     for (const [token, session] of MANAGEMENT_TOKENS.entries()) {
@@ -6442,7 +6446,7 @@ app.post('/api/v1/admin/data/purge-demo', (req: Request, res: Response) => {
   SOURCE_DOCUMENT_CHANGES = [];
   OCR_CACHE = {};
 
-  currentDataSourceMode = 'OFFICIAL_SOURCE';
+  currentDataSourceMode = 'DEVELOPMENT';
 
   saveDatabaseToDisk(true);
 
