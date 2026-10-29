@@ -4987,10 +4987,27 @@ function applyOcrExtractionToSheetAndPu(
       ? `Overvoting Alert: Total Valid Votes (${validVotes}) exceeds Accredited Voters (${accreditedVoters}).`
       : `Arithmetic Variance: Sum of party votes (${sumOfPartyVotes}) differs from Total Valid Votes (${validVotes}) by ${difference}.`,
   };
-  sheet.verifiedBy = arithmeticPassed ? officerName : 'Pending Human Review';
-  sheet.verifiedAt = new Date().toISOString();
-  sheet.verifierNotes = `Transcribed from official Form EC8A (${extracted.serialNumber ? 'S/N ' + extracted.serialNumber : sheet.id}). Presiding Officer: ${extracted.presidingOfficerName || 'Recorded'}.`;
-  sheet.requiresHumanReview = !arithmeticPassed || confidencePct < 85;
+  // OCR and arithmetic checks are preliminary machine processing, not human verification.
+  sheet.verifiedBy = undefined;
+  sheet.verifiedAt = undefined;
+  sheet.provenance = {
+    ...(sheet.provenance || {
+      recordOrigin: 'UNKNOWN',
+      sourceDocumentUrl: sheet.sourceUrl,
+      retrievedAt: sheet.retrievalTimestamp,
+      documentSha256: sheet.fileHash,
+      verificationStatus: 'PENDING',
+    }),
+    processingStage: 'OCR_EXTRACTION',
+    verificationStatus: 'PENDING',
+  };
+  sheet.verifierNotes = `Preliminary OCR extraction from result-sheet image (${extracted.serialNumber ? 'S/N ' + extracted.serialNumber : sheet.id}). Arithmetic passed: ${arithmeticPassed}. Human verification is still required.`;
+  sheet.requiresHumanReview = true;
+  sheet.reviewReasons = [
+    'OCR output is preliminary and requires human comparison with the source document.',
+    ...(!arithmeticPassed ? [`Arithmetic check failed with difference ${difference}.`] : []),
+    ...(confidencePct < 85 ? [`OCR confidence ${confidencePct}% is below the review threshold.`] : []),
+  ];
 
   if (pu) {
     if (votersOnRegister > 0) pu.registeredVoters = votersOnRegister;
