@@ -27,11 +27,12 @@ services:
       - key: NERAMP_BOOTSTRAP_ADMIN_PASSWORD
         sync: false
       - key: NERAMP_REQUIRE_DURABLE_STORAGE
-        value: "true"
-    # IMPORTANT: This service must have a real persistent disk mounted at /var/data.
-    # Render persistent disks require a paid service plan. Attach the disk in the Render
-    # dashboard before deploying this blueprint; readiness intentionally fails closed
-    # when NERAMP_REQUIRE_DURABLE_STORAGE=true and no persistent volume is detected.
+        value: "false"
+    # FREE-PLAN MODE: no persistent disk is provisioned. The app can remain available,
+    # but local JSON state, uploaded evidence, sessions, and local backups may be lost
+    # when Render restarts or redeploys the instance. Readiness reports this warning
+    # without blocking the free instance. Do not use this deployment as the sole store
+    # of authoritative election records. Paid-plan disk example (optional):
     # disk:
     #   name: neramp-data
     #   mountPath: /var/data
