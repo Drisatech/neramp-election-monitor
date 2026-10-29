@@ -79,14 +79,16 @@ class TestAdapters(unittest.IsolatedAsyncioTestCase):
 
         # Run 1: initial ingestion
         job1 = await service.execute_ingestion(limit=5, actor="admin:test")
-        self.assertEqual(job1["status"], "COMPLETED")
+        self.assertEqual(job1["status"], "SIMULATED")
+        self.assertTrue(job1["is_demonstration"])
+        self.assertEqual(job1["provenance_status"], "DEMONSTRATION_ONLY")
         self.assertEqual(job1["records_retrieved"], 5)
         self.assertEqual(job1["records_processed"], 5)
         self.assertEqual(job1["records_skipped_duplicate"], 0)
 
         # Run 2: idempotent repeat ingestion (identical checksums)
         job2 = await service.execute_ingestion(limit=5, actor="admin:test")
-        self.assertEqual(job2["status"], "COMPLETED")
+        self.assertEqual(job2["status"], "SIMULATED")
         self.assertEqual(job2["records_retrieved"], 5)
         self.assertEqual(job2["records_processed"], 0)
         self.assertEqual(job2["records_skipped_duplicate"], 5)
