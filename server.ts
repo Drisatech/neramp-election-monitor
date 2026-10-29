@@ -2890,6 +2890,40 @@ app.get('/api/v1/elections/:electionId/published-incidents', (req: Request, res:
 // AUTHENTICATED & OBSERVER ENDPOINTS
 // ==========================================
 
+// Server-side bearer-token registry. Tokens expire after 8 hours; process restart invalidates them.
+const ACTIVE_AUTH_TOKENS = new Map<string, { userId: string; sessionId: string; expiresAt: number }>();
+const AUTH_TOKEN_TTL_MS = 8 * 60 * 60 * 1000;
+
+function requireAdminAuth(req: Request, res: Response, next: () => void) {
+  const match = (req.headers.authorization || '').match(/^Bearer\s+(.+)$/i);
+  const token = match?.[1];
+  const tokenRecord = token ? ACTIVE_AUTH_TOKENS.get(token) : undefined;
+  if (!tokenRecord || tokenRecord.expiresAt <= Date.now()) {
+    if (token) ACTIVE_AUTH_TOKENS.delete(token);
+    res.status(401).json({ error: 'Authentication required. Sign in again with a valid management session.' });
+    return;
+  }
+  const user = USERS.find((candidate) => candidate.id === tokenRecord.userId);
+  const session = USER_SESSIONS.find((candidate) => candidate.id === tokenRecord.sessionId);
+  if (!user || !session || session.status !== 'ACTIVE' || !user.isActive ||
+      user.approvalStatus === 'PENDING_APPROVAL' || user.approvalStatus === 'REJECTED') {
+    ACTIVE_AUTH_TOKENS.delete(token!);
+    res.status(401).json({ error: 'Management account or session is no longer active.' });
+    return;
+  }
+  const pathname = new URL(req.originalUrl, 'http://localhost').pathname;
+  const privilegedWrite = /\/api\/v1\/admin\/(?:data\/(?:restore|purge-demo|backup)|users(?:\/|$)|config(?:\/|$)|operations(?:\/|$)|storage\/init-folders|observers\/[^/]+\/verify-credentials|incidents\/[^/]+\/publish)/i.test(pathname);
+  const isWrite = !['GET', 'HEAD', 'OPTIONS'].includes(req.method.toUpperCase());
+  if (isWrite && privilegedWrite && !['SUPER_ADMIN', 'PROJECT_ADMIN'].includes(user.role)) {
+    res.status(403).json({ error: 'This administrative operation requires SUPER_ADMIN or PROJECT_ADMIN privileges.' });
+    return;
+  }
+  session.lastActiveAt = new Date().toISOString();
+  res.locals.authUser = user;
+  res.locals.authSession = session;
+  next();
+}
+
 // Permanent Management Authentication with Password Verification & Brute-Force Rate Limiting
 app.post('/api/v1/auth/login', (req: Request, res: Response) => {
   const { email, password } = req.body;
@@ -2922,24 +2956,22 @@ app.post('/api/v1/auth/login', (req: Request, res: Response) => {
     return;
   }
 
-  // 3. Password Verification
-  if (user.passwordHash && user.salt) {
-    if (!password) {
-      res.status(400).json({ error: 'Management password is required.' });
-      return;
-    }
-    const isValid = verifyPassword(password, user.passwordHash, user.salt);
-    if (!isValid) {
-      recordAttempt(lockoutKey, false);
-      res.status(401).json({ error: 'Incorrect management password.' });
-      return;
-    }
-  } else if (password) {
-    // First time password setup on existing pre-configured account
-    const hashed = hashPassword(password);
-    user.passwordHash = hashed.hash;
-    user.salt = hashed.salt;
-    user.updatedAt = new Date().toISOString();
+  // 3. Password verification. Password setup must use an approved provisioning flow;
+  // login must never allow anyone who knows an email address to set its password.
+  if (!password) {
+    res.status(400).json({ error: 'Management password is required.' });
+    return;
+  }
+  if (!user.passwordHash || !user.salt) {
+    recordAttempt(lockoutKey, false);
+    res.status(403).json({ error: 'This account has no provisioned password. Contact an administrator to complete secure account setup.' });
+    return;
+  }
+  const isValid = verifyPassword(password, user.passwordHash, user.salt);
+  if (!isValid) {
+    recordAttempt(lockoutKey, false);
+    res.status(401).json({ error: 'Incorrect management password.' });
+    return;
   }
 
   // 4. Staff Authorization Check: Super Admin or Project Admin must approve new staff registrations
@@ -2993,7 +3025,8 @@ app.post('/api/v1/auth/login', (req: Request, res: Response) => {
   USER_SESSIONS.unshift(sessionRecord);
   if (USER_SESSIONS.length > 250) USER_SESSIONS.pop();
 
-  const token = 'jwt-sec2027-' + crypto.randomBytes(24).toString('hex');
+  const token = crypto.randomBytes(32).toString('hex');
+  ACTIVE_AUTH_TOKENS.set(token, { userId: user.id, sessionId, expiresAt: Date.now() + AUTH_TOKEN_TTL_MS });
 
   AUDIT_LOGS.unshift({
     id: 'audit-' + Date.now(),
@@ -3148,7 +3181,9 @@ app.get('/api/v1/auth/me', (req: Request, res: Response) => {
 });
 
 app.post('/api/v1/auth/logout', (req: Request, res: Response) => {
-  const { sessionId, userEmail } = req.body;
+  const { sessionId, userEmail } = req.body || {};
+  const bearer = (req.headers.authorization || '').match(/^Bearer\s+(.+)$/i)?.[1];
+  if (bearer) ACTIVE_AUTH_TOKENS.delete(bearer);
   if (sessionId) {
     const session = USER_SESSIONS.find((s) => s.id === sessionId);
     if (session) {
@@ -3173,19 +3208,10 @@ app.post('/api/v1/auth/logout', (req: Request, res: Response) => {
 });
 
 // Super Admin Management Monitoring Logs: Who logged in, when, how long, and activities carried out
-app.get('/api/v1/admin/management-monitoring', (req: Request, res: Response) => {
-  const actorRole = (req.headers['x-actor-role'] as string) || '';
-  const actorEmail = (req.headers['x-actor-email'] as string) || '';
-
-  // Only SUPER_ADMIN has access
-  const isSuperAdmin =
-    actorRole === 'SUPER_ADMIN' ||
-    USERS.some(
-      (u) =>
-        (u.email.toLowerCase() === actorEmail.toLowerCase() ||
-          actorEmail.toLowerCase() === 'drisatech@gmail.com') &&
-        u.role === 'SUPER_ADMIN'
-    );
+app.get('/api/v1/admin/management-monitoring', (_req: Request, res: Response) => {
+  // Identity comes only from the server-validated bearer token, never from request headers.
+  const authenticatedUser = res.locals.authUser as UserItem | undefined;
+  const isSuperAdmin = authenticatedUser?.role === 'SUPER_ADMIN';
 
   if (!isSuperAdmin) {
     res.status(403).json({
@@ -3685,6 +3711,9 @@ app.get('/api/v1/verification/:resultSheetId/history', (req: Request, res: Respo
 // ==========================================
 // ADMINISTRATIVE & INGESTION STATUS
 // ==========================================
+
+// All /api/v1/admin endpoints require a server-issued management token.
+app.use('/api/v1/admin', requireAdminAuth);
 
 let schedulerConfig = {
   enabled: true,
