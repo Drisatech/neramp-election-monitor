@@ -27,7 +27,7 @@ Do not set DATA_SOURCE_MODE=OFFICIAL_SOURCE or publish data as official solely b
 
 - SUCCESS: a configured live retrieval returned one or more records. This is not the same as verified election results.
 - SUCCESS_NO_RECORDS: the request completed but returned no records.
-- SIMULATED: fixture/demo processing; never official results.
+- SIMULATED: the Node endpoint records that simulation mode was selected; it does not perform live retrieval and reports zero retrieved records. The FastAPI fixture adapter can return demo records. Neither is official results.
 - FAILED: the live request or ingestion operation failed; no fallback data is represented as live.
 - PARTIAL_SUCCESS and VALIDATION_REJECTED are reserved for future batch-level reporting when the ingestion contract exposes per-record failures and validation counts. The current Node source function does not yet expose sufficient per-record failure metrics to implement those statuses accurately.
 
