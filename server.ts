@@ -5378,6 +5378,15 @@ async function fetchInecLiveElectionResults(electionIdKey: string, maxWards: num
                 retrievalTimestamp: new Date().toISOString(),
                 ocrConfidence: 0,
                 sourceStatus: 'ORIGINAL',
+                provenance: {
+                  recordOrigin: 'UNKNOWN',
+                  processingStage: 'SOURCE_DOCUMENT',
+                  sourcePortalUrl: 'https://inecelectionresults.ng/elections/types',
+                  sourceDocumentUrl: docUrl,
+                  retrievedAt: new Date().toISOString(),
+                  documentSha256: shaHash || undefined,
+                  verificationStatus: 'PENDING',
+                },
                 version: 1,
                 transcription: {
                   validVotes: 0,
@@ -5398,9 +5407,7 @@ async function fetchInecLiveElectionResults(electionIdKey: string, maxWards: num
                   formula: 'Awaiting AI OCR extraction',
                   details: 'Form EC8A scan retrieved live from INEC Results Portal (IReV).',
                 },
-                verifiedBy: 'Pending AI OCR Transcription',
-                verifiedAt: new Date().toISOString(),
-                verifierNotes: `Official Form EC8A document from INEC IReV: ${docUrl}`,
+                verifierNotes: `Source document retrieved through the configured endpoint; source ownership and authenticity remain unverified: ${docUrl}`,
                 versionHistory: [
                   {
                     versionNumber: 1,
@@ -6115,6 +6122,14 @@ app.post('/api/v1/ocr/upload-and-transcribe', async (req: Request, res: Response
       retrievalTimestamp: new Date().toISOString(),
       ocrConfidence: 98.0,
       sourceStatus: 'ORIGINAL',
+      provenance: {
+        recordOrigin: 'MANUAL_IMPORT',
+        processingStage: 'OCR_EXTRACTION',
+        sourceDocumentUrl: gcsUploadedUrl || undefined,
+        retrievedAt: new Date().toISOString(),
+        documentSha256: shaHash,
+        verificationStatus: 'PENDING',
+      },
       version: 1,
       transcription: { validVotes: 0, rejectedVotes: 0, totalVotesCast: 0, partyVotes: {} },
       ocrExtraction: { validVotes: 0, rejectedVotes: 0, totalVotesCast: 0, partyVotes: {}, rawText: '' },
@@ -6173,7 +6188,7 @@ app.post('/api/v1/admin/ingestion/run', async (req: Request, res: Response) => {
   const finishedAt = new Date().toISOString();
   const newJob = {
     id: 'job-' + (INGESTION_JOBS.length + 1001), adapter, electionId, status: outcome, outcome,
-    simulated: isSimulation, sourceKind: isSimulation ? 'DEMONSTRATION' : 'LIVE_SOURCE', startedAt, finishedAt,
+    simulated: isSimulation, sourceKind: isSimulation ? 'DEMONSTRATION' : 'CONFIGURED_SOURCE_UNVERIFIED', startedAt, finishedAt,
     recordsRetrieved: processedCount, recordsProcessed: newPusCount + revisedCount, recordsRejected: 0,
     recordsSkippedDuplicate: skippedDuplicates, recordsRevised: revisedCount, discrepanciesDetected: 0,
     error: failureReason,
