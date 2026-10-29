@@ -56,7 +56,7 @@ class TestAdapters(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(rec.source_status, "DEMONSTRATION")
         self.assertEqual(rec.version, 1)
         self.assertEqual(len(rec.file_hash), 64)
-        self.assertIn("digitaloceanspaces.com", rec.source_url)
+        self.assertIn("example.invalid/demo/", rec.source_url)
         self.assertGreater(rec.registered_voters, 0)
         self.assertGreater(rec.accredited_voters, 0)
 
