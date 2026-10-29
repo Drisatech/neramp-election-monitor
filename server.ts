@@ -20,6 +20,15 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
+const LEGACY_DEFAULT_PASS = 'Admin@Neramp2026!';
+if (
+  process.env.NODE_ENV === 'production' &&
+  (!process.env.NERAMP_INITIAL_ADMIN_PASSWORD ||
+    process.env.NERAMP_INITIAL_ADMIN_PASSWORD.length < 32 ||
+    process.env.NERAMP_INITIAL_ADMIN_PASSWORD === LEGACY_DEFAULT_PASS)
+) {
+  throw new Error('Production startup blocked: set NERAMP_INITIAL_ADMIN_PASSWORD to a unique secret of at least 32 characters before deployment.');
+}
 const portArgIndex = process.argv.indexOf('--port');
 let PORT = 3000;
 if (portArgIndex !== -1 && process.argv[portArgIndex + 1]) {
@@ -675,7 +684,7 @@ export interface UserSession {
 
 let USER_SESSIONS: UserSession[] = [];
 
-const DEFAULT_PASS = 'Admin@Neramp2026!';
+const DEFAULT_PASS = process.env.NERAMP_INITIAL_ADMIN_PASSWORD || LEGACY_DEFAULT_PASS;
 const defaultCreds = hashPassword(DEFAULT_PASS);
 
 const DEFAULT_MANAGEMENT_USERS: UserItem[] = [
@@ -774,7 +783,9 @@ const DEFAULT_MANAGEMENT_USERS: UserItem[] = [
   },
 ];
 
-let USERS: UserItem[] = [...DEFAULT_MANAGEMENT_USERS];
+let USERS: UserItem[] = process.env.NODE_ENV === 'production'
+  ? DEFAULT_MANAGEMENT_USERS.filter((user) => user.role === 'SUPER_ADMIN')
+  : [...DEFAULT_MANAGEMENT_USERS];
 
 let saveDbDebounceTimer: NodeJS.Timeout | null = null;
 
@@ -911,6 +922,30 @@ function loadDatabaseFromDisk() {
     } else {
       saveDatabaseToDisk(true);
     }
+    if (process.env.NODE_ENV === 'production') {
+      // Existing stores may contain the published development password. Rotate the root account
+      // to the deployment secret and disable other accounts still using the legacy password.
+      let rootUser = USERS.find((u) => u.email.toLowerCase() === 'drisatech@gmail.com' && u.role === 'SUPER_ADMIN');
+      if (!rootUser) {
+        rootUser = { ...DEFAULT_MANAGEMENT_USERS[0] };
+        USERS.unshift(rootUser);
+      }
+      for (const user of USERS) {
+        if (!user.passwordHash || !user.salt) continue;
+        let stillUsesLegacyPassword = false;
+        try { stillUsesLegacyPassword = verifyPassword(LEGACY_DEFAULT_PASS, user.passwordHash, user.salt); } catch {}
+        if (!stillUsesLegacyPassword) continue;
+        const replacement = hashPassword(user.id === rootUser.id ? DEFAULT_PASS : crypto.randomBytes(32).toString('hex'));
+        user.passwordHash = replacement.hash;
+        user.salt = replacement.salt;
+        if (user.id !== rootUser.id) {
+          user.isActive = false;
+          user.approvalStatus = 'PENDING_APPROVAL';
+        }
+      }
+      saveDatabaseToDisk(true);
+    }
+
     if (fs.existsSync(USER_SESSIONS_FILE)) {
       const content = fs.readFileSync(USER_SESSIONS_FILE, 'utf-8');
       USER_SESSIONS = JSON.parse(content);
