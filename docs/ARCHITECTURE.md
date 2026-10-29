@@ -46,7 +46,7 @@ Older stored records may lack these fields. Missing provenance must be treated a
 
 The Node application now issues in-memory management tokens at login and requires a valid, unexpired server-issued Bearer token for administrative routes and verification writes. The server derives actor identity and role from the token-backed user record instead of trusting client-supplied x-actor-role / x-actor-email headers.
 
-Tokens expire after eight hours and are revoked on logout. They are in-memory, so a process restart invalidates existing sessions. This is a hardening step, not a substitute for a mature persistent identity provider or distributed session store. The existing seeded management accounts still require a secure production credential/bootstrap process; this branch does not claim that credential rotation is complete.
+Tokens expire after eight hours and are revoked on logout. They are in-memory, so a process restart invalidates existing sessions. Production startup requires NERAMP_INITIAL_ADMIN_PASSWORD to be a unique secret of at least 32 characters. Fresh production stores seed only the root account; on existing stores, accounts still using the known development password are rotated (root) or disabled pending approval (other users). This is a hardening step, not a substitute for a mature persistent identity provider or distributed session store.
 
 ## Persistence and deployment
 
