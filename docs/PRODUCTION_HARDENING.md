@@ -45,10 +45,10 @@ The Node JSON store now uses same-directory temporary files plus atomic rename f
 - The Render blueprint sets `NERAMP_REQUIRE_DURABLE_STORAGE=true`. Attach a real persistent disk mounted at `/var/data` before deploying this configuration. The current Render free plan does not provide persistent disks; do not upgrade the service plan without reviewing the cost in Render first. The readiness endpoint should fail when a persistent volume is not detected.
 - Local snapshot rotation is not an off-site backup. Before production use, export encrypted backups to a separate access-controlled storage account and perform a documented restore drill.
 
-The current Node service still stores operational state in JSON files and does not use the PostgreSQL models in backend/. Atomic writes and local snapshot rotation are implemented, but durable persistence across deployments depends on a real persistent disk being attached and detected. The Render blueprint now requires durable storage at readiness time; attach the disk before deployment.
+The current Node service still stores operational state in JSON files and does not use the PostgreSQL models in backend/. Atomic writes and local snapshot rotation reduce partial-write risk but do not protect against loss of an ephemeral free instance. The free Render blueprint deliberately keeps readiness non-blocking while reporting that durable persistence is unconfirmed. For reliable recovery without upgrading Render, export encrypted backups to a separate storage provider or trusted local system and test restoration. This external backup process is not automated by the current app.
 
 Before production use:
-1. Attach the required persistent disk or migrate the canonical Node service to a managed database and object storage.
+1. While on Render Free, keep a separate encrypted backup outside the Render instance; later, consider a persistent disk or managed database/object storage after reviewing costs.
 2. Keep election records, user accounts, sessions, result-sheet versions, incident evidence, and audit logs in durable stores.
 3. Create encrypted, access-controlled backups and perform a restore drill.
 4. Do not store incident evidence solely under a path derived from __dirname; route it through the configured persistent/object store.
