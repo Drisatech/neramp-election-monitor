@@ -150,6 +150,16 @@ class InecApprovedSourceAdapter(ElectionSourceAdapter):
                 "portal_reference": f"{self.base_url}/elections/types",
                 "timestamp": datetime.now(timezone.utc).isoformat(),
             }
+        if not self.api_base_configured:
+            return {
+                "status": "PENDING_CONFIGURATION",
+                "is_active": False,
+                "api_credentials_configured": bool(self.api_key),
+                "api_access_verified": False,
+                "message": "No documented upstream API URL is configured; no API connection was attempted.",
+                "portal_reference": f"{self.base_url}/elections/types",
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            }
         if httpx is None:
             return {
                 "status": "CLIENT_UNAVAILABLE",
