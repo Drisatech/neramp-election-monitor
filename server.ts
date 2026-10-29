@@ -845,14 +845,11 @@ function loadDatabaseFromDisk() {
 
     // Fallback automatic recovery if primary store is empty (e.g. after fresh Render deployment)
     if (!loadedPus || POLLING_UNITS.length === 0) {
+      // Only recover from snapshots within DATA_DIR. Do not read public web-root or
+      // source-tree snapshots, which may be stale and are not a durable trusted store.
       const fallbackSnapshotPaths = [
         SNAPSHOT_FILE,
-        REPO_SNAPSHOT_FILE,
-        PUBLIC_SNAPSHOT_FILE,
-        path.join(__dirname, 'data', 'neramp_database_snapshot.json'),
-        path.join(__dirname, 'public', 'neramp_database_snapshot.json'),
-        path.join(__dirname, 'public', 'data', 'neramp_database_snapshot.json'),
-        path.join(__dirname, 'data', 'neramp_polling_units.json'),
+        path.join(DATA_DIR, 'neramp_polling_units.json'),
       ];
 
       for (const candidate of fallbackSnapshotPaths) {
