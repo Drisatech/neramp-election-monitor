@@ -26,3 +26,17 @@ jobs:
         run: npm run lint
       - name: Build frontend
         run: npm run build
+
+  legacy-python-adapter-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install backend dependencies
+        run: pip install -r backend/requirements.txt
+      - name: Test legacy adapter contracts
+        run: python -m unittest backend.tests.test_adapters
