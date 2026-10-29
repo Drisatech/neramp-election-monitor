@@ -8,6 +8,8 @@ import * as XLSX from 'xlsx';
 import sharp from 'sharp';
 import { GoogleGenAI, Type } from '@google/genai';
 import { Storage } from '@google-cloud/storage';
+import { classifyIngestionOutcome, IngestionValidationError, validateUpstreamBaseUrl } from './src/services/ingestionContract.ts';
+import { validateUploadBuffer } from './src/services/uploadValidation.ts';
 import {
   type InecStateStatistic,
   OFFICIAL_INEC_STATES,
@@ -19,6 +21,15 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
+const LEGACY_DEFAULT_PASS = 'Admin@Neramp2026!';
+if (
+  process.env.NODE_ENV === 'production' &&
+  (!process.env.NERAMP_INITIAL_ADMIN_PASSWORD ||
+    process.env.NERAMP_INITIAL_ADMIN_PASSWORD.length < 32 ||
+    process.env.NERAMP_INITIAL_ADMIN_PASSWORD === LEGACY_DEFAULT_PASS)
+) {
+  throw new Error('Production startup blocked: set NERAMP_INITIAL_ADMIN_PASSWORD to a unique secret of at least 32 characters before deployment.');
+}
 const portArgIndex = process.argv.indexOf('--port');
 let PORT = 3000;
 if (portArgIndex !== -1 && process.argv[portArgIndex + 1]) {
@@ -32,8 +43,6 @@ if (portArgIndex !== -1 && process.argv[portArgIndex + 1]) {
 
 // Google Cloud Storage & Cloud SQL Configuration
 const GCS_BUCKET_NAME = process.env.GCS_BUCKET_NAME || 'neramp-election-evidence-0652072827';
-const CLOUD_SQL_INSTANCE = process.env.CLOUD_SQL_INSTANCE || 'neramp-db';
-
 let gcsStorage: Storage | null = null;
 try {
   gcsStorage = new Storage();
@@ -56,6 +65,7 @@ app.use((_req, res, next) => {
 
 // In-Memory Rate Limiter for Login & High-Sensitivity Endpoints
 const RATE_LIMIT_STORE = new Map<string, { count: number; lockedUntil?: number }>();
+const MANAGEMENT_TOKENS = new Map<string, { userId: string; role: string; email: string; sessionId: string; expiresAt: number }>();
 
 function checkRateLimit(key: string, maxAttempts = 5): { allowed: boolean; remainingSeconds?: number } {
   const now = Date.now();
@@ -85,6 +95,43 @@ function recordAttempt(key: string, success: boolean, maxAttempts = 5, lockoutDu
   }
   RATE_LIMIT_STORE.set(key, entry);
 }
+
+// Administrative writes and verification decisions must be backed by a server-issued token.
+// Client-supplied x-actor-* headers are never trusted as identity or authorization.
+app.use((req, res, next) => {
+  const publicAdminStatusRead = req.method === 'GET' && [
+    '/api/v1/admin/ingestion/status',
+    '/api/v1/admin/ingestion/scheduler',
+  ].includes(req.path);
+  const protectedAdminPath = req.path.startsWith('/api/v1/admin/') && !publicAdminStatusRead;
+  const protectedVerificationWrite = req.path.startsWith('/api/v1/verification/') && req.method !== 'GET';
+  const protectedUpload = req.method !== 'GET' && [
+    '/api/v1/evidence/upload',
+    '/api/v1/ocr/upload-and-transcribe',
+  ].includes(req.path);
+  const isProtected = protectedAdminPath || protectedVerificationWrite || protectedUpload;
+  if (!isProtected) return next();
+
+  const authorization = String(req.headers.authorization || '');
+  const match = authorization.match(/^Bearer\s+(.+)$/i);
+  const token = match?.[1];
+  const session = token ? MANAGEMENT_TOKENS.get(token) : undefined;
+  if (!session || session.expiresAt <= Date.now()) {
+    if (token) MANAGEMENT_TOKENS.delete(token);
+    res.status(401).json({ error: 'A valid management session is required for this administrative action.' });
+    return;
+  }
+  const user = USERS.find((candidate) => candidate.id === session.userId);
+  if (!user || !user.isActive || user.approvalStatus === 'PENDING_APPROVAL' || user.approvalStatus === 'REJECTED') {
+    MANAGEMENT_TOKENS.delete(token!);
+    res.status(403).json({ error: 'This management account is not authorized for administrative actions.' });
+    return;
+  }
+  req.headers['x-actor-role'] = user.role;
+  req.headers['x-actor-email'] = user.email;
+  req.headers['x-actor-name'] = user.fullName;
+  next();
+});
 
 // Request logging middleware
 app.use((req, res, next) => {
@@ -183,6 +230,7 @@ export interface PollingUnit {
   sourceUploadTimestamp?: string;
   lastRetrievedTimestamp?: string;
   resultSheetId?: string;
+  sourceProvenance?: 'DEMONSTRATION' | 'USER_SUBMITTED' | 'CONFIGURED_UPSTREAM_NOT_VERIFIED' | 'OFFICIAL_SOURCE_VERIFIED';
   latitude?: number;
   longitude?: number;
 }
@@ -198,7 +246,12 @@ export interface ResultSheet {
   uploadTimestamp: string;
   retrievalTimestamp: string;
   ocrConfidence: number; // 0 to 100
-  sourceStatus: 'ORIGINAL' | 'REVISED_VERSION';
+  sourceStatus: 'ORIGINAL' | 'REVISED_VERSION' | 'SOURCE_UNVERIFIED' | 'DEMONSTRATION' | 'USER_SUBMITTED';
+  sourceProvenance?: 'DEMONSTRATION' | 'USER_SUBMITTED' | 'CONFIGURED_UPSTREAM_NOT_VERIFIED' | 'OFFICIAL_SOURCE_VERIFIED';
+  sourceReferenceHash?: string;
+  documentHashStatus?: 'NOT_DOWNLOADED' | 'HASHED_FROM_BYTES';
+  transcriptionProvenance?: 'NOT_PROCESSED' | 'OCR_EXTRACTED' | 'HUMAN_CORRECTED';
+  humanVerified?: boolean;
   version: number;
   transcription: {
     validVotes: number;
@@ -560,7 +613,7 @@ let DISCREPANCIES: Discrepancy[] = [];
 let INCIDENTS: IncidentReport[] = [];
 
 // Production Ingestion Jobs & Data Source State
-let currentDataSourceMode: 'DEVELOPMENT' | 'HISTORICAL' | 'MANUAL_IMPORT' | 'OFFICIAL_SOURCE' = 'OFFICIAL_SOURCE';
+let currentDataSourceMode: 'DEVELOPMENT' | 'HISTORICAL' | 'MANUAL_IMPORT' | 'OFFICIAL_SOURCE' = 'DEVELOPMENT';
 
 let INGESTION_JOBS: any[] = [];
 
@@ -634,7 +687,7 @@ export interface UserSession {
 
 let USER_SESSIONS: UserSession[] = [];
 
-const DEFAULT_PASS = 'Admin@Neramp2026!';
+const DEFAULT_PASS = process.env.NERAMP_INITIAL_ADMIN_PASSWORD || LEGACY_DEFAULT_PASS;
 const defaultCreds = hashPassword(DEFAULT_PASS);
 
 const DEFAULT_MANAGEMENT_USERS: UserItem[] = [
@@ -733,7 +786,9 @@ const DEFAULT_MANAGEMENT_USERS: UserItem[] = [
   },
 ];
 
-let USERS: UserItem[] = [...DEFAULT_MANAGEMENT_USERS];
+let USERS: UserItem[] = process.env.NODE_ENV === 'production'
+  ? DEFAULT_MANAGEMENT_USERS.filter((user) => user.role === 'SUPER_ADMIN')
+  : [...DEFAULT_MANAGEMENT_USERS];
 
 let saveDbDebounceTimer: NodeJS.Timeout | null = null;
 
@@ -870,6 +925,30 @@ function loadDatabaseFromDisk() {
     } else {
       saveDatabaseToDisk(true);
     }
+    if (process.env.NODE_ENV === 'production') {
+      // Existing stores may contain the published development password. Rotate the root account
+      // to the deployment secret and disable other accounts still using the legacy password.
+      let rootUser = USERS.find((u) => u.email.toLowerCase() === 'drisatech@gmail.com' && u.role === 'SUPER_ADMIN');
+      if (!rootUser) {
+        rootUser = { ...DEFAULT_MANAGEMENT_USERS[0] };
+        USERS.unshift(rootUser);
+      }
+      for (const user of USERS) {
+        if (!user.passwordHash || !user.salt) continue;
+        let stillUsesLegacyPassword = false;
+        try { stillUsesLegacyPassword = verifyPassword(LEGACY_DEFAULT_PASS, user.passwordHash, user.salt); } catch {}
+        if (!stillUsesLegacyPassword) continue;
+        const replacement = hashPassword(user.id === rootUser.id ? DEFAULT_PASS : crypto.randomBytes(32).toString('hex'));
+        user.passwordHash = replacement.hash;
+        user.salt = replacement.salt;
+        if (user.id !== rootUser.id) {
+          user.isActive = false;
+          user.approvalStatus = 'PENDING_APPROVAL';
+        }
+      }
+      saveDatabaseToDisk(true);
+    }
+
     if (fs.existsSync(USER_SESSIONS_FILE)) {
       const content = fs.readFileSync(USER_SESSIONS_FILE, 'utf-8');
       USER_SESSIONS = JSON.parse(content);
@@ -1136,29 +1215,72 @@ function calculateElectionSummary(
 
 // Health Check
 app.get('/api/v1/health', (_req: Request, res: Response) => {
+  const persistentStorageConfigured = process.env.PERSISTENT_STORAGE_CONFIGURED === 'true';
+  let dataDirectoryWritable = false;
+  try {
+    fs.accessSync(DATA_DIR, fs.constants.W_OK);
+    dataDirectoryWritable = true;
+  } catch {
+    dataDirectoryWritable = false;
+  }
+
   res.json({
     status: 'healthy',
     timestamp: new Date().toISOString(),
     mode: currentDataSourceMode,
-    version: '1.0.0',
+    version: '1.1.0',
     services: {
       api: 'operational',
-      database: 'connected (PostgreSQL / In-Memory Demo Adapter)',
-      ingestionPipeline: 'ready',
-      ocrAdapter: 'ready (Tesseract / replaceable mock)',
+      database: 'not_configured_in_node_json_store',
+      persistence: dataDirectoryWritable ? 'writable_filesystem' : 'unavailable',
+      ingestionPipeline: 'idle_until_configured_upstream_is_verified',
+      ocrAdapter: 'configured_by_provider_credentials',
     },
-    attribution: 'Data presented with source references and verification status. This platform is not an official INEC website.',
+    persistence: {
+      dataDirectoryConfigured: Boolean(process.env.DATA_DIR),
+      dataDirectoryWritable,
+      durableStorageConfigured: persistentStorageConfigured,
+      warning: persistentStorageConfigured
+        ? null
+        : 'Durable storage is not confirmed. Local files may be lost across restarts or deployments.',
+    },
+    sourceIntegration: {
+      officialApiBaseConfigured: Boolean(process.env.INEC_RESULTS_API_BASE_URL),
+      credentialsConfigured: Boolean(process.env.INEC_API_KEY),
+      status: process.env.INEC_RESULTS_API_BASE_URL
+        ? 'CONFIGURED_NOT_INDEPENDENTLY_VERIFIED'
+        : 'PENDING_CONFIGURATION',
+    },
+    attribution: 'NERAMP is an independent platform and is not an official INEC website. A configured upstream source is not represented as official unless independently verified.',
   });
 });
 
-// Kubernetes / Cloud Run Readiness Probe
+// Kubernetes / Cloud Run Readiness Probe. This is intentionally not a synthetic green check.
 app.get('/api/v1/health/ready', (_req: Request, res: Response) => {
-  res.json({
-    status: 'READY',
+  let dataDirectoryWritable = false;
+  try {
+    fs.accessSync(DATA_DIR, fs.constants.W_OK);
+    dataDirectoryWritable = true;
+  } catch {
+    dataDirectoryWritable = false;
+  }
+  const durableStorageConfigured = process.env.PERSISTENT_STORAGE_CONFIGURED === 'true';
+  const productionPersistenceReady = process.env.NODE_ENV !== 'production' || durableStorageConfigured;
+  const ready = dataDirectoryWritable && productionPersistenceReady;
+
+  res.status(ready ? 200 : 503).json({
+    status: ready ? 'READY' : 'DEGRADED',
     timestamp: new Date().toISOString(),
-    databaseConnected: true,
-    cacheAvailable: true,
-    activeBackgroundLocks: false,
+    apiReady: true,
+    databaseConnected: false,
+    persistence: dataDirectoryWritable ? 'writable_filesystem' : 'unavailable',
+    durableStorageConfigured,
+    activeBackgroundLocks: isLoopExtractionRunningNow,
+    reason: !dataDirectoryWritable
+      ? 'Configured data directory is not writable.'
+      : !productionPersistenceReady
+        ? 'Production durable storage has not been explicitly confirmed.'
+        : undefined,
   });
 });
 
@@ -1179,21 +1301,25 @@ app.post('/api/v1/evidence/upload', async (req: Request, res: Response) => {
     return;
   }
 
-  const cleanName = path.basename(String(filename)).replace(/[^a-zA-Z0-9._-]/g, '_');
-  const ext = (path.extname(cleanName) || '.jpg').toLowerCase();
-
+  const rawFilename = String(filename);
+  const cleanName = path.basename(rawFilename).replace(/[^a-zA-Z0-9._-]/g, '_');
   const cleanBase64 = String(fileContentBase64).replace(/^data:[^;]+;base64,/, '');
-  const buffer = Buffer.from(cleanBase64, 'base64');
-  if (buffer.length > 25 * 1024 * 1024) {
-    res.status(400).json({ error: 'File size exceeds 25MB maximum limit' });
+  if (!/^[A-Za-z0-9+/]*={0,2}$/.test(cleanBase64) || cleanBase64.length % 4 === 1) {
+    res.status(400).json({ error: 'File content is not valid base64.' });
     return;
   }
-
-  const sha256Hash = crypto.createHash('sha256').update(buffer).digest('hex');
+  const buffer = Buffer.from(cleanBase64, 'base64');
+  const validation = validateUploadBuffer(rawFilename, buffer, contentType, 25 * 1024 * 1024);
+  if (!validation.valid) {
+    res.status(400).json({ error: validation.error });
+    return;
+  }
+  const ext = path.extname(cleanName).toLowerCase();
+  const sha256Hash = validation.sha256;
   const randomSuffix = crypto.randomBytes(12).toString('hex');
   const timestamp = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14);
   const storageKey = `evidence/${timestamp}_${randomSuffix}${ext}`;
-  const resolvedMime = contentType || (ext === '.pdf' ? 'application/pdf' : ext === '.png' ? 'image/png' : 'image/jpeg');
+  const resolvedMime = validation.mimeType;
 
   // 1. Store in memory map
   const item: StoredEvidenceItem = {
@@ -2974,6 +3100,13 @@ app.post('/api/v1/auth/login', (req: Request, res: Response) => {
   if (USER_SESSIONS.length > 250) USER_SESSIONS.pop();
 
   const token = 'jwt-sec2027-' + crypto.randomBytes(24).toString('hex');
+  MANAGEMENT_TOKENS.set(token, {
+    userId: user.id,
+    role: user.role,
+    email: user.email,
+    sessionId,
+    expiresAt: Date.now() + 8 * 60 * 60 * 1000,
+  });
 
   AUDIT_LOGS.unshift({
     id: 'audit-' + Date.now(),
@@ -3129,6 +3262,13 @@ app.get('/api/v1/auth/me', (req: Request, res: Response) => {
 
 app.post('/api/v1/auth/logout', (req: Request, res: Response) => {
   const { sessionId, userEmail } = req.body;
+  const bearer = String(req.headers.authorization || '').match(/^Bearer\s+(.+)$/i)?.[1];
+  if (bearer) MANAGEMENT_TOKENS.delete(bearer);
+  if (sessionId) {
+    for (const [token, session] of MANAGEMENT_TOKENS.entries()) {
+      if (session.sessionId === sessionId) MANAGEMENT_TOKENS.delete(token);
+    }
+  }
   if (sessionId) {
     const session = USER_SESSIONS.find((s) => s.id === sessionId);
     if (session) {
@@ -3502,6 +3642,11 @@ app.post('/api/v1/verification/:resultSheetId/review', (req: Request, res: Respo
 
   sheet.verifiedBy = officerName;
   sheet.verifiedAt = new Date().toISOString();
+  sheet.humanVerified = decision === 'APPROVED';
+  if (decision === 'APPROVED' && sheet.sourceProvenance === 'CONFIGURED_UPSTREAM_NOT_VERIFIED') {
+    // Human review validates the transcription, not the authenticity of the upstream source.
+    sheet.sourceProvenance = 'CONFIGURED_UPSTREAM_NOT_VERIFIED';
+  }
   sheet.verifierNotes = notes || 'Reviewed via verification queue.';
   if (sheet.arithmeticCheck?.details) {
     sheet.arithmeticCheck.details = sheet.arithmeticCheck.details.replace(
@@ -3578,6 +3723,8 @@ app.post('/api/v1/verification/:resultSheetId/correct-transcription', (req: Requ
   };
 
   sheet.version += 1;
+  sheet.transcriptionProvenance = 'HUMAN_CORRECTED';
+  sheet.humanVerified = false; // A correction is not a final verification sign-off.
   sheet.verifierNotes = `Correction applied by ${officerName}: ${correctionReason}`;
   sheet.verifiedBy = officerName;
   sheet.verifiedAt = new Date().toISOString();
@@ -3604,8 +3751,9 @@ app.post('/api/v1/verification/:resultSheetId/correct-transcription', (req: Requ
 
   const targetPu = POLLING_UNITS.find((p) => p.code === sheet.pollingUnitCode);
   if (targetPu) {
-    targetPu.verificationStatus = calcSum === cast ? 'VERIFIED' : 'DISCREPANCY_FLAGGED';
+    targetPu.verificationStatus = 'PENDING_VERIFICATION';
     targetPu.transcriptionStatus = 'COMPLETED';
+    targetPu.sourceProvenance = sheet.sourceProvenance || targetPu.sourceProvenance;
   }
 
   sheet.auditLogs = sheet.auditLogs || [];
@@ -3681,41 +3829,68 @@ app.get('/api/v1/admin/ingestion/status', (_req: Request, res: Response) => {
       currentMode: currentDataSourceMode,
       officialPortalUrl: 'https://inecelectionresults.ng',
       targetElection: 'Governorship election - 2026-08-15 - OSUN',
-      connectionStatus: currentDataSourceMode === 'OFFICIAL_SOURCE' ? 'CONNECTED_SYNTHETIC_EVALUATION' : 'DEVELOPMENT_SIMULATION_ACTIVE',
-      lastSuccessfulRetrieval: INGESTION_JOBS[0]?.finishedAt || '2026-08-15T18:35:00Z',
-      lastAttemptedRetrieval: INGESTION_JOBS[0]?.startedAt || new Date().toISOString(),
+      connectionStatus: process.env.INEC_RESULTS_API_BASE_URL ? 'CONFIGURED_NOT_INDEPENDENTLY_VERIFIED' : 'PENDING_CONFIGURATION',
+      lastSuccessfulRetrieval: INGESTION_JOBS.find((j) => ['SUCCEEDED', 'PARTIAL_SUCCESS', 'SUCCEEDED_EMPTY'].includes(j.status) && j.sourceBaseUrl)?.finishedAt || null,
+      lastAttemptedRetrieval: INGESTION_JOBS[0]?.startedAt || null,
       totalRecordsRetrieved: INGESTION_JOBS.reduce((acc, j) => acc + j.recordsRetrieved, 0),
       totalRecordsProcessed: INGESTION_JOBS.reduce((acc, j) => acc + j.recordsProcessed, 0),
-      totalRecordsRejected: 0,
-      activeAdapter: currentDataSourceMode === 'OFFICIAL_SOURCE' ? 'InecApprovedSourceAdapter' : 'DevelopmentFixtureAdapter',
-      rateLimit: '60 requests/minute',
+      totalRecordsRejected: INGESTION_JOBS.reduce((acc, j) => acc + (j.recordsRejected || 0), 0),
+      totalFailedWardFetches: INGESTION_JOBS.reduce((acc, j) => acc + (j.failedWardFetches || 0), 0),
+      activeAdapter: schedulerConfig.adapter,
+      rateLimit: 'Configured upstream rate limits must be confirmed before production use',
       scheduler: schedulerConfig,
-      notes: currentDataSourceMode === 'OFFICIAL_SOURCE'
-        ? 'Official portal integration configured for Osun Governorship (2026-08-15). Tested against approved schema.'
-        : 'Development demonstration mode: Generating isolated, verifiable simulation records.',
+      notes: process.env.INEC_RESULTS_API_BASE_URL
+        ? 'An upstream API base URL is configured, but official INEC access and record provenance are not independently verified.'
+        : 'Live ingestion is disabled until a documented, authorized upstream API base URL is configured. Use the explicit DevelopmentFixtureAdapter for simulation.',
     },
   });
 });
 
 // Source Connection Health Check
-app.post('/api/v1/admin/ingestion/test-connection', (req: Request, res: Response) => {
-  const { adapter = 'InecApprovedSourceAdapter' } = req.body;
-  const isOfficial = adapter === 'InecApprovedSourceAdapter';
+app.post('/api/v1/admin/ingestion/test-connection', async (req: Request, res: Response) => {
+  const { adapter = 'InecApprovedSourceAdapter' } = req.body || {};
+  const startedAt = Date.now();
+  const portalUrl = 'https://inecelectionresults.ng/elections/types';
+  const apiConfigured = Boolean(process.env.INEC_RESULTS_API_BASE_URL);
+  const credentialsConfigured = Boolean(process.env.INEC_API_KEY);
+  let portalReachable = false;
+  let httpStatus: number | null = null;
+  let errorMessage: string | undefined;
+
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8000);
+    try {
+      const response = await fetch(portalUrl, {
+        method: 'GET',
+        redirect: 'follow',
+        signal: controller.signal,
+        headers: { 'User-Agent': 'NERAMP-PortalReachabilityCheck/1.1', Accept: 'text/html,application/xhtml+xml' },
+      });
+      httpStatus = response.status;
+      portalReachable = response.ok;
+      await response.body?.cancel();
+    } finally {
+      clearTimeout(timeout);
+    }
+  } catch (err: any) {
+    errorMessage = err?.name === 'AbortError' ? 'Portal reachability check timed out.' : 'Portal reachability check failed.';
+  }
 
   const healthCheckResult = {
     adapter,
-    isOfficial,
-    status: 'CONNECTED',
-    portalUrl: 'https://inecelectionresults.ng',
-    targetElection: 'Governorship election - 2026-08-15 - OSUN',
-    latencyMs: Math.floor(Math.random() * 45) + 35,
-    rateLimitQuota: '60 req/min (0 used in current window)',
-    authMode: process.env.INEC_API_KEY ? 'BEARER_TOKEN' : 'SYNTHETIC_SCHEMA_EVALUATION',
-    credentialsConfigured: Boolean(process.env.INEC_API_KEY),
+    isOfficial: false,
+    status: portalReachable ? 'PORTAL_REACHABLE' : 'PORTAL_UNREACHABLE',
+    portalUrl,
+    httpStatus,
+    latencyMs: Date.now() - startedAt,
+    apiIntegrationStatus: apiConfigured ? 'CONFIGURED_NOT_INDEPENDENTLY_VERIFIED' : 'PENDING_CONFIGURATION',
+    credentialsConfigured,
+    authenticatedApiConnectionVerified: false,
     timestamp: new Date().toISOString(),
-    message: process.env.INEC_API_KEY
-      ? 'Live production connection authenticated with INEC IReV results portal.'
-      : 'Source connection validated with official INEC documented schema and synthetic test adapter.',
+    message: portalReachable
+      ? 'The public INEC portal responded to an HTTP request. This does not verify API access, credentials, permission to retrieve result data, or the provenance of any records.'
+      : (errorMessage || 'The public INEC portal did not return a successful HTTP response.'),
   };
 
   AUDIT_LOGS.unshift({
@@ -3724,12 +3899,13 @@ app.post('/api/v1/admin/ingestion/test-connection', (req: Request, res: Response
     actor: 'admin:connection_checker',
     action: 'TEST_SOURCE_CONNECTION',
     target: adapter,
-    details: `Health check executed for ${adapter}. Status: ${healthCheckResult.status}. Latency: ${healthCheckResult.latencyMs}ms.`,
+    details: `Portal reachability check: ${healthCheckResult.status}; HTTP ${httpStatus ?? 'unavailable'}; API configured: ${apiConfigured}.`,
   });
+  saveDatabaseToDisk(true);
 
-  res.json({
+  res.status(portalReachable ? 200 : 502).json({
     data: healthCheckResult,
-    message: 'Data source connection health verified.',
+    message: healthCheckResult.message,
   });
 });
 
@@ -3809,14 +3985,19 @@ app.post('/api/v1/admin/ingestion/loop/trigger-now', async (_req: Request, res: 
   });
 });
 
-function httpsGetJson(url: string, timeoutMs: number = 10000): Promise<any> {
+function httpsGetJson(
+  url: string,
+  timeoutMs: number = 10000,
+  extraHeaders: Record<string, string> = {}
+): Promise<any> {
   return new Promise((resolve, reject) => {
     const req = https.get(
       url,
       {
         headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 NERAMP-InecApprovedSourceAdapter/2.0',
+          'User-Agent': 'NERAMP-ConfiguredSourceAdapter/1.1',
           'Accept': 'application/json, text/plain, */*',
+          ...extraHeaders,
         },
         timeout: timeoutMs,
       },
@@ -5201,16 +5382,28 @@ async function fetchInecLiveElectionResults(electionIdKey: string, maxWards: num
   photosCount: number;
   transcribedCount: number;
   sourceNote: string;
+  failedWardFetches: number;
+  sourceMode: 'CONFIGURED_UPSTREAM_UNVERIFIED';
+  sourceBaseUrl: string;
+  retrievedAt: string;
 }> {
   const isEkiti = electionIdKey === 'elec-2026-gov-ekiti' || electionIdKey.toLowerCase().includes('ekiti');
   const targetInecId = isEkiti ? '6a35bb87b4e45d80b33a6e38' : '6a7f788adcbc755a763f082a';
   const targetStateCode = isEkiti ? 'EKITI' : 'OSUN';
   const targetElectionId = isEkiti ? 'elec-2026-gov-ekiti' : 'elec-2026-gov-osun';
   const targetTitle = isEkiti ? 'Ekiti State' : 'Osun State';
-  const base = 'https://dolphin-app-sleqh.ondigitalocean.app/api/v1';
+  const parsedBase = validateUpstreamBaseUrl(process.env.INEC_RESULTS_API_BASE_URL);
+  const base = parsedBase.toString().replace(/\/+$/, '');
+  const sourceHeaders: Record<string, string> = process.env.INEC_API_KEY
+    ? { Authorization: `Bearer ${process.env.INEC_API_KEY}` }
+    : {};
+  const retrievedAt = new Date().toISOString();
 
-  const lgaRes = await httpsGetJson(`${base}/elections/${targetInecId}/lga`, 12000);
-  const lgaData = lgaRes?.data || [];
+  const lgaRes = await httpsGetJson(`${base}/elections/${targetInecId}/lga`, 12000, sourceHeaders);
+  if (!Array.isArray(lgaRes?.data) || lgaRes.data.length === 0) {
+    throw new IngestionValidationError('Upstream response did not contain a non-empty data array of election LGAs; no records were ingested.');
+  }
+  const lgaData = lgaRes.data;
   let wardsQueried = 0;
   let pusFound = 0;
   let photosFound = 0;
@@ -5218,6 +5411,7 @@ async function fetchInecLiveElectionResults(electionIdKey: string, maxWards: num
   let skippedDuplicatesCount = 0;
   let revisedCount = 0;
   let transcribedCount = 0;
+  let failedWardFetches = 0;
   const newlyDiscoveredSheetIdsForSyncOcr: string[] = [];
 
   for (const lgaItem of lgaData) {
@@ -5243,8 +5437,11 @@ async function fetchInecLiveElectionResults(electionIdKey: string, maxWards: num
       );
 
       try {
-        const puRes = await httpsGetJson(`${base}/elections/${targetInecId}/pus?ward=${wardId}`, 8000);
-        const pus = puRes?.data || [];
+        const puRes = await httpsGetJson(`${base}/elections/${targetInecId}/pus?ward=${encodeURIComponent(String(wardId))}`, 8000, sourceHeaders);
+        if (!Array.isArray(puRes?.data)) {
+          throw new IngestionValidationError('Unexpected upstream response: expected data array for polling units.');
+        }
+        const pus = puRes.data;
         pusFound += pus.length;
 
         for (const p of pus) {
@@ -5258,7 +5455,8 @@ async function fetchInecLiveElectionResults(electionIdKey: string, maxWards: num
           if (hasPhoto) photosFound++;
 
           const resultSheetId = `rs-${normalizedCode}`;
-          const shaHash = hasPhoto ? crypto.createHash('sha256').update(docUrl).digest('hex') : '';
+          // This digest identifies the URL string only; it is NOT a checksum of the source document bytes.
+          const sourceReferenceHash = hasPhoto ? crypto.createHash('sha256').update(docUrl).digest('hex') : '';
 
           const existingIdx = POLLING_UNITS.findIndex(
             (x) => x.code === normalizedCode && x.electionId === targetElectionId
@@ -5268,7 +5466,7 @@ async function fetchInecLiveElectionResults(electionIdKey: string, maxWards: num
           // Deduplication and intelligent versioning check:
           if (existingIdx >= 0 && existingSheet) {
             const isUrlChanged = docUrl && existingSheet.imageUrl && docUrl !== existingSheet.imageUrl;
-            const isHashChanged = shaHash && existingSheet.fileHash && shaHash !== existingSheet.fileHash;
+            const isHashChanged = sourceReferenceHash && existingSheet.sourceReferenceHash && sourceReferenceHash !== existingSheet.sourceReferenceHash;
             const isDocTimeChanged =
               doc.updated_at && existingSheet.uploadTimestamp && doc.updated_at !== existingSheet.uploadTimestamp;
 
@@ -5281,12 +5479,17 @@ async function fetchInecLiveElectionResults(electionIdKey: string, maxWards: num
               );
               existingSheet.version += 1;
               existingSheet.sourceStatus = 'REVISED_VERSION';
+              existingSheet.sourceProvenance = 'CONFIGURED_UPSTREAM_NOT_VERIFIED';
+              existingSheet.humanVerified = false;
+              existingSheet.transcriptionProvenance = 'NOT_PROCESSED';
               const prevUploadTime = existingSheet.uploadTimestamp;
-              const prevHash = existingSheet.fileHash;
+              const prevHash = existingSheet.sourceReferenceHash || '';
 
               existingSheet.sourceUrl = docUrl || existingSheet.sourceUrl;
               existingSheet.imageUrl = docUrl || existingSheet.imageUrl;
-              existingSheet.fileHash = shaHash || existingSheet.fileHash;
+              existingSheet.sourceReferenceHash = sourceReferenceHash || existingSheet.sourceReferenceHash;
+              existingSheet.fileHash = '';
+              existingSheet.documentHashStatus = 'NOT_DOWNLOADED';
               existingSheet.uploadTimestamp = doc.updated_at || new Date().toISOString();
               existingSheet.retrievalTimestamp = new Date().toISOString();
               existingSheet.requiresHumanReview = true;
@@ -5300,10 +5503,7 @@ async function fetchInecLiveElectionResults(electionIdKey: string, maxWards: num
                 actor: 'INEC Live Ingestion Pipeline',
                 actionType: 'DOCUMENT_REVISION_INGESTED',
                 timestamp: new Date().toISOString(),
-                reason: `Altered result sheet uploaded on INEC portal. Previous hash: ${prevHash?.slice(
-                  0,
-                  10
-                )}..., New hash: ${shaHash?.slice(0, 10)}... (INEC timestamp: ${existingSheet.uploadTimestamp}).`,
+                reason: `Upstream document reference changed. Previous URL-reference fingerprint: ${prevHash?.slice(0, 10) || 'unavailable'}, new fingerprint: ${sourceReferenceHash?.slice(0, 10) || 'unavailable'}. Document bytes have not been downloaded or hashed.`,
                 previousPartyVotes: { ...(existingSheet.transcription?.partyVotes || {}) },
                 newPartyVotes: {},
               });
@@ -5337,9 +5537,10 @@ async function fetchInecLiveElectionResults(electionIdKey: string, maxWards: num
               electionId: targetElectionId,
               uploadStatus: hasPhoto ? 'UPLOADED' : 'NOT_YET_UPLOADED',
               transcriptionStatus: hasPhoto ? (cachedOcr ? 'COMPLETED' : 'IN_PROGRESS') : 'NOT_APPLICABLE',
-              verificationStatus: hasPhoto ? (cachedOcr ? 'VERIFIED' : 'PENDING_VERIFICATION') : 'NOT_APPLICABLE',
+              verificationStatus: hasPhoto ? 'PENDING_VERIFICATION' : 'NOT_APPLICABLE',
               sourceUploadTimestamp: doc.updated_at || new Date().toISOString(),
               lastRetrievedTimestamp: new Date().toISOString(),
+              sourceProvenance: 'CONFIGURED_UPSTREAM_NOT_VERIFIED',
               resultSheetId: hasPhoto ? resultSheetId : undefined,
               latitude: isEkiti ? 7.6 + Math.random() * 0.3 : 7.5 + Math.random() * 0.4,
               longitude: isEkiti ? 5.2 + Math.random() * 0.3 : 4.4 + Math.random() * 0.4,
@@ -5355,12 +5556,17 @@ async function fetchInecLiveElectionResults(electionIdKey: string, maxWards: num
                 electionId: targetElectionId,
                 formType: 'EC8A',
                 sourceUrl: docUrl,
-                fileHash: shaHash,
+                fileHash: '',
+                sourceReferenceHash,
+                documentHashStatus: 'NOT_DOWNLOADED',
                 imageUrl: docUrl,
                 uploadTimestamp: doc.updated_at || new Date().toISOString(),
                 retrievalTimestamp: new Date().toISOString(),
                 ocrConfidence: 0,
-                sourceStatus: 'ORIGINAL',
+                sourceStatus: 'SOURCE_UNVERIFIED',
+                sourceProvenance: 'CONFIGURED_UPSTREAM_NOT_VERIFIED',
+                transcriptionProvenance: cachedOcr ? 'OCR_EXTRACTED' : 'NOT_PROCESSED',
+                humanVerified: false,
                 version: 1,
                 transcription: {
                   validVotes: 0,
@@ -5376,14 +5582,13 @@ async function fetchInecLiveElectionResults(electionIdKey: string, maxWards: num
                   rawText: `INEC FORM EC8A — ${puName} (${rawCode}). Ready for AI OCR transcription.`,
                 },
                 arithmeticCheck: {
-                  passed: true,
+                  passed: false,
                   difference: 0,
-                  formula: 'Awaiting AI OCR extraction',
-                  details: 'Form EC8A scan retrieved live from INEC Results Portal (IReV).',
+                  formula: 'Awaiting OCR extraction and arithmetic validation',
+                  details: 'No arithmetic validation has been completed. Source is a configured upstream that has not been independently verified.',
                 },
-                verifiedBy: 'Pending AI OCR Transcription',
-                verifiedAt: new Date().toISOString(),
-                verifierNotes: `Official Form EC8A document from INEC IReV: ${docUrl}`,
+                verifiedBy: 'Pending human verification',
+                verifierNotes: `Unverified upstream document reference: ${docUrl}`,
                 versionHistory: [
                   {
                     versionNumber: 1,
@@ -5407,6 +5612,7 @@ async function fetchInecLiveElectionResults(electionIdKey: string, maxWards: num
           }
         }
       } catch (err) {
+        failedWardFetches++;
         console.warn(`Failed to fetch PUs for ward ${wardId}:`, err);
       }
     }
@@ -5448,7 +5654,11 @@ async function fetchInecLiveElectionResults(electionIdKey: string, maxWards: num
     wardsCount: wardsQueried,
     photosCount: photosFound,
     transcribedCount,
-    sourceNote: `Official INEC Results Portal (IReV) live syndication. Fetched ${pusFound} Polling Units across ${wardsQueried} Wards in ${targetTitle} (${addedCount} newly uploaded, ${skippedDuplicatesCount} duplicates skipped, ${revisedCount} altered/revised version(s), ${photosFound} official Form EC8A photos).`,
+    failedWardFetches,
+    sourceMode: 'CONFIGURED_UPSTREAM_UNVERIFIED',
+    sourceBaseUrl: parsedBase.origin,
+    retrievedAt,
+    sourceNote: `Configured upstream API (source not independently verified as an official INEC endpoint). Retrieved ${pusFound} polling-unit records across ${wardsQueried} wards in ${targetTitle}; ${failedWardFetches} ward fetch(es) failed, ${addedCount} new records, ${skippedDuplicatesCount} duplicates skipped, ${revisedCount} revised records, ${photosFound} document references.`,
   };
 }
 
@@ -5500,6 +5710,7 @@ async function executeLoopCycle(triggerSource: string = 'SCHEDULED_TIMER') {
         loopExtractionConfig.totalRuns + 1
       } for ${loopExtractionConfig.electionId} (trigger: ${triggerSource})...`
     );
+    const startedAt = new Date().toISOString();
     const result = await fetchInecLiveElectionResults(
       loopExtractionConfig.electionId,
       loopExtractionConfig.maxWardsPerRun
@@ -5518,14 +5729,22 @@ async function executeLoopCycle(triggerSource: string = 'SCHEDULED_TIMER') {
       id: 'loop-job-' + Date.now(),
       adapter: 'InecApprovedSourceAdapter',
       electionId: loopExtractionConfig.electionId,
-      status: 'COMPLETED',
-      startedAt: loopExtractionConfig.lastRunAt,
+      status: classifyIngestionOutcome({
+        failedWardFetches: result.failedWardFetches,
+        recordsRetrieved: result.totalPusProcessed,
+      }),
+      startedAt,
       finishedAt: new Date().toISOString(),
       recordsRetrieved: result.totalPusProcessed,
       recordsProcessed: result.newPusCount + result.revisedCount,
       recordsRejected: 0,
       recordsSkippedDuplicate: result.skippedDuplicatesCount,
       recordsRevised: result.revisedCount,
+      failedWardFetches: result.failedWardFetches,
+      sourceMode: result.sourceMode,
+      sourceBaseUrl: result.sourceBaseUrl,
+      provenanceStatus: 'SOURCE_NOT_INDEPENDENTLY_VERIFIED',
+      isDemonstration: false,
       sourceAttribution: result.sourceNote,
     };
     INGESTION_JOBS.unshift(job);
@@ -5542,7 +5761,34 @@ async function executeLoopCycle(triggerSource: string = 'SCHEDULED_TIMER') {
 
     saveDatabaseToDisk(true);
   } catch (err: any) {
-    console.error('[LIVE LOOP EXTRACTION] Error during extraction cycle:', err.message);
+    const failedAt = new Date().toISOString();
+    const failedJob = {
+      id: 'loop-job-' + Date.now(),
+      adapter: 'InecApprovedSourceAdapter',
+      electionId: loopExtractionConfig.electionId,
+      status: err instanceof IngestionValidationError ? 'VALIDATION_REJECTED' : 'FAILED',
+      startedAt: failedAt,
+      finishedAt: failedAt,
+      recordsRetrieved: 0,
+      recordsProcessed: 0,
+      recordsRejected: 0,
+      provenanceStatus: err instanceof IngestionValidationError ? 'VALIDATION_REJECTED' : 'NO_SOURCE_DATA_RETRIEVED',
+      isDemonstration: false,
+      error: err?.message || 'Unknown upstream retrieval error',
+      sourceAttribution: 'Ingestion failed before source records were retrieved.',
+    };
+    INGESTION_JOBS.unshift(failedJob);
+    if (INGESTION_JOBS.length > 50) INGESTION_JOBS.pop();
+    AUDIT_LOGS.unshift({
+      id: 'audit-' + Date.now(),
+      timestamp: failedAt,
+      actor: 'system:loop_extraction',
+      action: 'LIVE_COLLIATION_LOOP_CYCLE_FAILED',
+      target: loopExtractionConfig.electionId,
+      details: `Ingestion cycle failed before source retrieval: ${failedJob.error}`,
+    });
+    saveDatabaseToDisk(true);
+    console.error('[LIVE LOOP EXTRACTION] Error during extraction cycle:', failedJob.error);
   } finally {
     isLoopExtractionRunningNow = false;
   }
@@ -5988,12 +6234,22 @@ app.post('/api/v1/ocr/upload-and-transcribe', async (req: Request, res: Response
 
   try {
     const cleanBase64 = String(imageBase64).replace(/^data:[^;]+;base64,/, '');
+    if (!/^[A-Za-z0-9+/]*={0,2}$/.test(cleanBase64) || cleanBase64.length % 4 === 1) {
+      res.status(400).json({ error: 'Image content is not valid base64.' });
+      return;
+    }
     const imgBuffer = Buffer.from(cleanBase64, 'base64');
-    const shaHash = crypto.createHash('sha256').update(cleanBase64).digest('hex');
+    const uploadValidation = validateUploadBuffer(String(fileName), imgBuffer, String(mimeType), 15 * 1024 * 1024);
+    if (!uploadValidation.valid || uploadValidation.mimeType === 'application/pdf') {
+      res.status(400).json({ error: uploadValidation.valid ? 'EC8A OCR accepts image files only.' : uploadValidation.error });
+      return;
+    }
+    const validatedMimeType = uploadValidation.mimeType;
+    const shaHash = uploadValidation.sha256;
 
     let extracted: any = await transcribeFormEc8aMultiProvider({
       base64Data: cleanBase64,
-      mimeType,
+      mimeType: validatedMimeType,
       forceRefresh: true,
     });
 
@@ -6025,7 +6281,7 @@ app.post('/api/v1/ocr/upload-and-transcribe', async (req: Request, res: Response
       resultSheetId,
       pollingUnitCode: normalizedCode,
       fileName,
-      mimeType,
+      mimeType: validatedMimeType,
       buffer: imgBuffer,
       uploadedAt: new Date().toISOString(),
     };
@@ -6079,13 +6335,13 @@ app.post('/api/v1/ocr/upload-and-transcribe', async (req: Request, res: Response
       gcsUploadedUrl = await uploadToGcsBucket(
         `ec8a-result-sheets/${normalizedCode}.jpg`,
         imgBuffer,
-        mimeType
+        validatedMimeType
       );
     } catch (gcsErr) {
       console.warn('GCS bucket upload notice:', gcsErr);
     }
 
-    const inlineDataUri = `data:${mimeType};base64,${cleanBase64}`;
+    const inlineDataUri = `data:${validatedMimeType};base64,${cleanBase64}`;
     RESULT_SHEETS[resultSheetId] = {
       id: resultSheetId,
       pollingUnitCode: normalizedCode,
@@ -6093,15 +6349,19 @@ app.post('/api/v1/ocr/upload-and-transcribe', async (req: Request, res: Response
       formType: 'EC8A',
       sourceUrl: gcsUploadedUrl || `Uploaded Form EC8A (${fileName})`,
       fileHash: shaHash,
+      documentHashStatus: 'HASHED_FROM_BYTES',
+      sourceProvenance: 'USER_SUBMITTED',
+      transcriptionProvenance: 'OCR_EXTRACTED',
+      humanVerified: false,
       imageUrl: directImageUrl,
       uploadTimestamp: new Date().toISOString(),
       retrievalTimestamp: new Date().toISOString(),
       ocrConfidence: 98.0,
-      sourceStatus: 'ORIGINAL',
+      sourceStatus: 'USER_SUBMITTED',
       version: 1,
       transcription: { validVotes: 0, rejectedVotes: 0, totalVotesCast: 0, partyVotes: {} },
       ocrExtraction: { validVotes: 0, rejectedVotes: 0, totalVotesCast: 0, partyVotes: {}, rawText: '' },
-      arithmeticCheck: { passed: true, difference: 0, formula: '', details: '' },
+      arithmeticCheck: { passed: false, difference: 0, formula: 'Awaiting validation', details: 'OCR output is preliminary; arithmetic and human verification are pending.' },
     };
     (RESULT_SHEETS[resultSheetId] as any).imageDataUrl = inlineDataUri;
 
@@ -6109,6 +6369,11 @@ app.post('/api/v1/ocr/upload-and-transcribe', async (req: Request, res: Response
     const updatedSheet = applyOcrExtractionToSheetAndPu(resultSheetId, extracted, officerName);
     if (updatedSheet) {
       updatedSheet.imageUrl = directImageUrl;
+      updatedSheet.sourceProvenance = 'USER_SUBMITTED';
+      updatedSheet.transcriptionProvenance = 'OCR_EXTRACTED';
+      updatedSheet.humanVerified = false;
+      updatedSheet.documentHashStatus = 'HASHED_FROM_BYTES';
+      updatedSheet.fileHash = shaHash;
       (updatedSheet as any).imageDataUrl = inlineDataUri;
     }
     puRecord.verificationStatus = 'PENDING_VERIFICATION';
@@ -6131,51 +6396,70 @@ app.post('/api/v1/ocr/upload-and-transcribe', async (req: Request, res: Response
 
 // Trigger Ingestion Run (Manual Ingestion Command for Authorized Administrators)
 app.post('/api/v1/admin/ingestion/run', async (req: Request, res: Response) => {
-  const { adapter = 'InecApprovedSourceAdapter', electionId = 'elec-2026-gov-osun', maxWards = 20 } = req.body;
-
-  const isLiveElection =
-    electionId === 'elec-2026-gov-osun' ||
-    electionId === 'elec-2026-gov-ekiti' ||
-    adapter === 'InecApprovedSourceAdapter';
+  const { adapter = 'InecApprovedSourceAdapter', electionId = 'elec-2026-gov-osun', maxWards = 20 } = req.body || {};
+  const startedAt = new Date().toISOString();
+  const isFixtureAdapter = adapter === 'DevelopmentFixtureAdapter';
 
   let liveResult: any = null;
-  if (isLiveElection) {
+  let failureReason: string | undefined;
+  let validationRejected = false;
+  if (!isFixtureAdapter) {
     try {
-      console.log(`[INGESTION] Commencing live retrieval from official INEC Results Portal for ${electionId}...`);
-      liveResult = await fetchInecLiveElectionResults(electionId, Number(maxWards) || 20);
-      console.log(`[INGESTION] Live retrieval completed: ${liveResult.totalPusProcessed} PUs, ${liveResult.photosCount} photos.`);
+      console.log(`[INGESTION] Starting configured upstream retrieval for ${electionId}...`);
+      liveResult = await fetchInecLiveElectionResults(electionId, Math.max(1, Math.min(100, Number(maxWards) || 20)));
+      console.log(`[INGESTION] Upstream retrieval returned ${liveResult.totalPusProcessed} records.`);
     } catch (err: any) {
-      console.error('[INGESTION] Live INEC ingestion error, fallback to baseline:', err.message);
+      failureReason = err?.message || 'Unknown upstream retrieval error';
+      validationRejected = err instanceof IngestionValidationError;
+      console.error('[INGESTION] Upstream retrieval failed:', failureReason);
     }
   }
 
-  const processedCount = liveResult ? liveResult.totalPusProcessed : (POLLING_UNITS.filter((p) => p.electionId === electionId).length || 0);
-  const photosCount = liveResult ? liveResult.photosCount : processedCount;
+  const processedCount = liveResult?.totalPusProcessed || 0;
   const skippedDuplicates = liveResult?.skippedDuplicatesCount || 0;
   const revisedCount = liveResult?.revisedCount || 0;
   const newPusCount = liveResult?.newPusCount || 0;
+  const failedWardFetches = liveResult?.failedWardFetches || 0;
+  const status = classifyIngestionOutcome({
+    isSimulation: isFixtureAdapter,
+    validationRejected,
+    retrievalFailed: Boolean(failureReason) && !validationRejected,
+    failedWardFetches,
+    recordsRetrieved: processedCount,
+  });
 
   const newJob = {
     id: 'job-' + (INGESTION_JOBS.length + 1001),
     adapter,
     electionId,
-    status: 'COMPLETED',
-    startedAt: new Date().toISOString(),
+    status,
+    startedAt,
     finishedAt: new Date().toISOString(),
     recordsRetrieved: processedCount,
     recordsProcessed: newPusCount + revisedCount,
     recordsRejected: 0,
     recordsSkippedDuplicate: skippedDuplicates,
     recordsRevised: revisedCount,
+    failedWardFetches,
     discrepanciesDetected: 0,
+    sourceMode: liveResult?.sourceMode || (isFixtureAdapter ? 'DEVELOPMENT_FIXTURE' : 'CONFIGURED_UPSTREAM_UNVERIFIED'),
+    sourceBaseUrl: liveResult?.sourceBaseUrl,
+    provenanceStatus: liveResult ? 'SOURCE_NOT_INDEPENDENTLY_VERIFIED' : (isFixtureAdapter ? 'DEMONSTRATION_ONLY' : validationRejected ? 'VALIDATION_REJECTED' : 'NO_SOURCE_DATA_RETRIEVED'),
+    isDemonstration: isFixtureAdapter,
+    error: failureReason,
     sourceAttribution: liveResult
       ? liveResult.sourceNote
-      : `Official INEC Results Portal (IReV) - ${electionId}`,
+      : isFixtureAdapter
+        ? 'Demonstration adapter selected. No live source was queried and no records are represented as official.'
+        : 'No source attribution: upstream retrieval failed; existing local records were not counted as retrieved.',
   };
 
   INGESTION_JOBS.unshift(newJob);
-  schedulerConfig.lastRunAt = newJob.finishedAt;
-  schedulerConfig.nextRunAt = new Date(Date.now() + schedulerConfig.intervalMinutes * 60 * 1000).toISOString();
+  if (INGESTION_JOBS.length > 50) INGESTION_JOBS.pop();
+  if (!failureReason && !isFixtureAdapter) {
+    schedulerConfig.lastRunAt = newJob.finishedAt;
+    schedulerConfig.nextRunAt = new Date(Date.now() + schedulerConfig.intervalMinutes * 60 * 1000).toISOString();
+  }
 
   AUDIT_LOGS.unshift({
     id: 'audit-' + Date.now(),
@@ -6183,21 +6467,23 @@ app.post('/api/v1/admin/ingestion/run', async (req: Request, res: Response) => {
     actor: (req.headers['x-actor-email'] as string) || 'admin:manual_trigger',
     action: 'TRIGGER_INGESTION_JOB',
     target: newJob.id,
-    details: liveResult
-      ? `Manual batch ingestion executed for ${electionId}. ${newPusCount} new Polling Units uploaded, ${skippedDuplicates} duplicate records skipped, ${revisedCount} altered results updated with version history.`
-      : `Manual ingestion executed via ${adapter} for ${electionId}.`,
+    details: `Ingestion outcome=${status}; election=${electionId}; retrieved=${processedCount}; processed=${newJob.recordsProcessed}; provenance=${newJob.provenanceStatus}.`,
   });
 
   saveDatabaseToDisk(true);
-
-  res.json({
-    message: `Ingestion completed: ${newPusCount} newly uploaded, ${skippedDuplicates} duplicates skipped, ${revisedCount} revised version(s).`,
+  res.status(validationRejected ? 422 : failureReason ? 502 : 200).json({
+    message: failureReason
+      ? 'Ingestion failed. No existing local records were represented as newly retrieved source data.'
+      : isFixtureAdapter
+        ? 'Simulation selected; no live source was queried.'
+        : `Ingestion outcome: ${status}.`,
     data: newJob,
     stats: {
       newPusCount,
       skippedDuplicates,
       revisedCount,
       totalPusProcessed: processedCount,
+      failedWardFetches,
     },
   });
 });
@@ -6215,7 +6501,7 @@ app.post('/api/v1/admin/data/purge-demo', (req: Request, res: Response) => {
   SOURCE_DOCUMENT_CHANGES = [];
   OCR_CACHE = {};
 
-  currentDataSourceMode = 'OFFICIAL_SOURCE';
+  currentDataSourceMode = 'DEVELOPMENT';
 
   saveDatabaseToDisk(true);
 
@@ -6443,7 +6729,7 @@ app.get('/api/v1/reports/export-csv', (req: Request, res: Response) => {
 
   const headerMeta = [
     '# NIGERIA ELECTION WATCH - DEMONSTRATION DATA EXPORT',
-    '# Source Attribution: Official INEC Results Portal (IReV) - https://inecelectionresults.ng',
+    '# Source Attribution: Record-level provenance is required; records may be demo, user-submitted, OCR, corrected, or unverified upstream data.',
     '# Disclaimer: Independent election results analysis and monitoring platform. Not an official INEC website.',
     `# Export Timestamp: ${new Date().toISOString()}`,
     `# Selected Election: ${electionId}`,
@@ -6559,23 +6845,25 @@ app.get('/api/v1/admin/command-center/metrics', (_req: Request, res: Response) =
         activeAdapter: schedulerConfig.adapter,
       },
       inecConnectivity: {
-        status: currentDataSourceMode === 'OFFICIAL_SOURCE' ? 'CONNECTED_SYNTHETIC_EVALUATION' : 'DEVELOPMENT_SIMULATION_ACTIVE',
-        portalUrl: 'https://inecelectionresults.ng',
-        latencyMs: 42,
-        rateLimitQuota: '60 req/min (0 used in window)',
-        authConfigured: Boolean(process.env.INEC_API_KEY),
+        status: process.env.INEC_RESULTS_API_BASE_URL ? 'CONFIGURED_NOT_INDEPENDENTLY_VERIFIED' : 'PENDING_CONFIGURATION',
+        portalUrl: 'https://inecelectionresults.ng/elections/types',
+        apiBaseUrlConfigured: Boolean(process.env.INEC_RESULTS_API_BASE_URL),
+        credentialsConfigured: Boolean(process.env.INEC_API_KEY),
+        authenticatedApiConnectionVerified: false,
+        latencyMs: null,
+        rateLimitQuota: 'Unknown until the authorized API contract is confirmed',
       },
       systemHealth: {
         apiStatus: 'HEALTHY',
-        databaseStatus: 'CONNECTED',
-        databaseInstance: CLOUD_SQL_INSTANCE,
-        connectionPool: { active: 4, idle: 16, max: 20 },
-        cacheStatus: 'OPTIMAL',
-        memoryUsageMb: 84.5,
-        storageCapacityGb: {
-          used: Number(((Object.keys(RESULT_SHEETS).length * 2.85 + Object.keys(OCR_CACHE).length * 0.005) / 1024).toFixed(3)),
-          available: Number((100.0 - (Object.keys(RESULT_SHEETS).length * 2.85) / 1024).toFixed(3)),
-          total: 100.0,
+        databaseStatus: 'NOT_CONFIGURED_FOR_NODE_API',
+        databaseInstance: null,
+        connectionPool: null,
+        cacheStatus: 'NOT_CONFIGURED',
+        memoryUsageMb: Number((process.memoryUsage().rss / (1024 * 1024)).toFixed(1)),
+        storageCapacityGb: null,
+        persistence: {
+          dataDirectory: DATA_DIR,
+          durableStorageConfigured: process.env.PERSISTENT_STORAGE_CONFIGURED === 'true',
         },
       },
     },
@@ -6678,8 +6966,6 @@ app.get('/api/v1/admin/storage/summary', async (_req: Request, res: Response) =>
     : Number((ec8aSizeMb + ocrSizeMb + evidenceSizeMb).toFixed(3));
 
   const totalFilesTracked = (gcsInfo.connected ? gcsInfo.filesCount : 0) + resultSheetsList.length + evidenceCount;
-  const usedPercentage = Number(((realStorageUsedMb / (100 * 1024)) * 100).toFixed(4));
-
   res.json({
     data: {
       storageBucket: {
@@ -6687,23 +6973,23 @@ app.get('/api/v1/admin/storage/summary', async (_req: Request, res: Response) =>
         cloudProvider: 'Google Cloud Platform (GCP)',
         cloudStorageBucketUri: `gs://${GCS_BUCKET_NAME}`,
         cloudConsoleUrl: `https://console.cloud.google.com/storage/browser/${GCS_BUCKET_NAME}`,
-        cloudSqlInstance: CLOUD_SQL_INSTANCE,
-        cloudSqlConsoleUrl: `https://console.cloud.google.com/sql/instances/${CLOUD_SQL_INSTANCE}`,
-        containerMountPath: '/app/data',
+        cloudSqlInstance: null,
+        cloudSqlConsoleUrl: null,
+        containerMountPath: DATA_DIR,
         publicCachePath: '/app/public',
-        region: 'europe-west1 / us-central1',
+        region: null,
         gcsConnected: gcsInfo.connected,
         gcsFilesCount: gcsInfo.filesCount,
         gcsTotalBytes: gcsInfo.totalBytes,
         gcsStatus: gcsInfo.connected ? (gcsInfo.filesCount > 0 ? 'ACTIVE_FILES' : 'CONNECTED_EMPTY') : 'FALLBACK_LOCAL',
         accessInstructions:
-          `Google Cloud Storage: Browse files at https://console.cloud.google.com/storage/browser/${GCS_BUCKET_NAME} or use 'gcloud storage ls gs://${GCS_BUCKET_NAME}'. Google Cloud SQL: Query instance '${CLOUD_SQL_INSTANCE}' via Cloud SQL Studio.`,
+          `Google Cloud Storage: Browse files at https://console.cloud.google.com/storage/browser/${GCS_BUCKET_NAME} or use 'gcloud storage ls gs://${GCS_BUCKET_NAME}'. Node result/user stores use ${DATA_DIR}; durable persistence depends on the hosting disk configuration.`,
       },
       metrics: {
         totalFilesTracked,
         totalStorageUsedMb: realStorageUsedMb,
-        allocatedStorageGb: 100.0,
-        usedPercentage,
+        allocatedStorageGb: null,
+        usedPercentage: null,
         breakdown: [
           {
             type: 'Google Cloud Storage (GCS) Objects',
@@ -6715,7 +7001,7 @@ app.get('/api/v1/admin/storage/summary', async (_req: Request, res: Response) =>
             type: 'Form EC8A Result Sheet Scans',
             count: resultSheetsList.length,
             sizeMb: ec8aSizeMb,
-            location: 'Official INEC Storage & In-Memory Registry',
+            location: 'Configured upstream document references; document bytes may not yet be downloaded',
           },
           {
             type: 'Gemini AI OCR Extraction JSON Cache',
@@ -7985,7 +8271,7 @@ async function startServer() {
     console.log(`=======================================================`);
 
     console.log('[STARTUP] Platform initialized in CLEAN mode (0 pre-populated demo records).');
-    console.log(`[STORAGE] GCS Bucket: gs://${GCS_BUCKET_NAME} | Cloud SQL Instance: ${CLOUD_SQL_INSTANCE}`);
+    console.log(`[STORAGE] GCS Bucket: gs://${GCS_BUCKET_NAME} | Node data directory: ${DATA_DIR}`);
   });
 
   serverInstance.on('error', (err: any) => {

@@ -10,10 +10,16 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+      - key: NERAMP_INITIAL_ADMIN_PASSWORD
+        sync: false
       - key: PORT
         value: 10000
       - key: DATA_DIR
         value: /var/data
+      - key: INEC_RESULTS_API_BASE_URL
+        sync: false
+      - key: INEC_API_KEY
+        sync: false
       - key: GEMINI_API_KEY
         sync: false
       - key: OPENAI_API_KEY

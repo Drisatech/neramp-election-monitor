@@ -80,18 +80,11 @@ class ElectionSourceAdapter(ABC):
 
 class InecApprovedSourceAdapter(ElectionSourceAdapter):
     """
-    Authorised integration point for the official INEC election results portal:
-    https://inecelectionresults.ng
+    Legacy/experimental adapter retained for migration and test compatibility.
 
-    Configured specifically for:
-    'Governorship election - 2026-08-15 - OSUN'
-
-    Key Capabilities:
-    - Enforces strict server-side credentials and rate limiting (max 60 req/min).
-    - Preserves zero-padded official polling unit identifiers (e.g. 29-24-01-001).
-    - Preserves source document links, SHA-256 hashes, and upload timestamps.
-    - Idempotent ingestion pipeline preventing duplicate re-records.
-    - Supports synthetic responses for isolated CI testing without live credentials.
+    This adapter does not establish an authenticated or authorized INEC integration.
+    A documented upstream API contract and explicit URL/credentials are required before
+    retrieval is attempted. Synthetic records are demonstration fixtures only.
     """
 
     ELECTION_ID_OSUN_2026 = "elec-2026-gov-osun"
@@ -108,11 +101,9 @@ class InecApprovedSourceAdapter(ElectionSourceAdapter):
         backoff_factor: float = 2.0,
         synthetic_mode: Optional[bool] = None,
     ):
-        self.base_url = (
-            base_url
-            or os.getenv("INEC_API_BASE_URL")
-            or "https://inecelectionresults.ng"
-        ).rstrip("/")
+        configured_base_url = base_url or os.getenv("INEC_API_BASE_URL")
+        self.api_base_configured = bool(configured_base_url)
+        self.base_url = (configured_base_url or "https://inecelectionresults.ng").rstrip("/")
         self.api_key = api_key or os.getenv("INEC_API_KEY")
         self.client_cert_path = client_cert_path or os.getenv("INEC_CLIENT_CERT_PATH")
         self.rate_limit_per_minute = rate_limit_per_minute
@@ -127,10 +118,11 @@ class InecApprovedSourceAdapter(ElectionSourceAdapter):
         self._last_request_time = 0.0
 
     def get_adapter_name(self) -> str:
-        return "InecApprovedSourceAdapter (Official Portal Integration)"
+        return "InecApprovedSourceAdapter (Unverified legacy adapter)"
 
     def is_live_official_source(self) -> bool:
-        return True
+        # Credentials and a URL alone do not establish that the upstream is an authorized INEC API.
+        return False
 
     async def _throttle(self):
         """Enforces authorized rate limiting (minimum spacing between requests)."""
@@ -141,43 +133,67 @@ class InecApprovedSourceAdapter(ElectionSourceAdapter):
         self._last_request_time = time.time()
 
     async def test_connection(self) -> Dict[str, Any]:
-        """
-        Tests connectivity against official INEC portal.
-        Returns connection health and authentication status.
-        """
-        # If API key is not configured and not in synthetic mode, report pending configuration
-        if not self.api_key and not self.synthetic_mode:
+        """Check public portal reachability; this does not validate API credentials or authorize data access."""
+        if self.synthetic_mode:
             return {
-                "status": "PENDING_CONFIGURATION",
+                "status": "SIMULATED",
                 "is_active": False,
-                "message": (
-                    "Official INEC Portal adapter requires formal technical access credentials (INEC_API_KEY) "
-                    "for live network syndication per project authorization."
-                ),
-                "portal_reference": "https://inecelectionresults.ng",
+                "mode": "SYNTHETIC_TEST_ONLY",
+                "message": "Synthetic adapter mode is enabled; no live portal connection was tested.",
+                "portal_reference": f"{self.base_url}/elections/types",
                 "target_election": self.ELECTION_TITLE_OSUN_2026,
                 "timestamp": datetime.now(timezone.utc).isoformat(),
             }
-
-        return {
-            "status": "CONNECTED",
-            "is_active": True,
-            "message": "Authorized connection established with official INEC results portal.",
-            "portal_reference": f"{self.base_url}/elections/types",
-            "target_election": self.ELECTION_TITLE_OSUN_2026,
-            "rate_limit": f"{self.rate_limit_per_minute} req/min",
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-        }
-
-        return {
-            "status": "CONNECTED",
-            "is_active": True,
-            "message": "Authorized connection established with official INEC results portal.",
-            "portal_reference": f"{self.base_url}/elections/types",
-            "target_election": self.ELECTION_TITLE_OSUN_2026,
-            "rate_limit": f"{self.rate_limit_per_minute} req/min",
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-        }
+        if not self.api_base_configured:
+            return {
+                "status": "PENDING_CONFIGURATION",
+                "is_active": False,
+                "api_credentials_configured": bool(self.api_key),
+                "api_access_verified": False,
+                "message": "No documented upstream API URL is configured; no API connection was attempted.",
+                "portal_reference": f"{self.base_url}/elections/types",
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            }
+        if httpx is None:
+            return {
+                "status": "CLIENT_UNAVAILABLE",
+                "is_active": False,
+                "message": "httpx is unavailable; no network check was performed.",
+                "portal_reference": f"{self.base_url}/elections/types",
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            }
+        try:
+            async with httpx.AsyncClient(timeout=self.request_timeout, follow_redirects=True) as client:
+                response = await client.get(f"{self.base_url}/elections/types", headers={
+                    "User-Agent": "NERAMP-PortalReachabilityCheck/1.1",
+                    "Accept": "text/html,application/xhtml+xml",
+                })
+            reachable = response.is_success
+            return {
+                "status": "PORTAL_REACHABLE" if reachable else "PORTAL_UNREACHABLE",
+                "is_active": reachable,
+                "http_status": response.status_code,
+                "api_credentials_configured": bool(self.api_key),
+                "api_access_verified": False,
+                "message": (
+                    "Public portal returned a successful HTTP response. API access, credentials, authorization, and data provenance remain unverified."
+                    if reachable else "Public portal returned a non-success HTTP response."
+                ),
+                "portal_reference": f"{self.base_url}/elections/types",
+                "target_election": self.ELECTION_TITLE_OSUN_2026,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            }
+        except Exception as exc:
+            return {
+                "status": "PORTAL_UNREACHABLE",
+                "is_active": False,
+                "api_credentials_configured": bool(self.api_key),
+                "api_access_verified": False,
+                "message": f"Public portal reachability check failed: {type(exc).__name__}.",
+                "portal_reference": f"{self.base_url}/elections/types",
+                "target_election": self.ELECTION_TITLE_OSUN_2026,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            }
 
     def _generate_synthetic_osun_records(
         self,
@@ -186,10 +202,10 @@ class InecApprovedSourceAdapter(ElectionSourceAdapter):
         offset: int,
     ) -> List[SourceRecord]:
         """
-        Generates canonical Osun State Governorship records conforming exactly
-        to the documented INEC IReV response schema for testing and development.
+        Generates fictional demonstration records for testing only. These records
+        are not retrieved from INEC and must never be presented as official results.
         """
-        # Osun State official polling units with preserved zero-padded codes
+        # Fictional fixture records with zero-padded example identifiers.
         osun_raw_fixtures = [
             {
                 "pu_code": "29-24-01-001",
@@ -201,7 +217,7 @@ class InecApprovedSourceAdapter(ElectionSourceAdapter):
                 "ward_code": "ATAOJA_A",
                 "registered": 680,
                 "accredited": 412,
-                "doc_url": "https://irev-results.lon1.digitaloceanspaces.com/elections/62d55684fa9e2a4f4949a012/29/24/01/001/ec8a.jpg",
+                "doc_url": "https://example.invalid/demo/EC8A/29-24-01-001.jpg",
                 "upload_time": "2026-08-15T16:45:22.000Z",
                 "content_bytes": b"INEC_FORM_EC8A_OSUN_29-24-01-001_OSOGBO_ATAOJA_PALACE_OFFICIAL",
             },
@@ -215,7 +231,7 @@ class InecApprovedSourceAdapter(ElectionSourceAdapter):
                 "ward_code": "ATAOJA_A",
                 "registered": 750,
                 "accredited": 465,
-                "doc_url": "https://irev-results.lon1.digitaloceanspaces.com/elections/62d55684fa9e2a4f4949a012/29/24/01/002/ec8a.jpg",
+                "doc_url": "https://example.invalid/demo/EC8A/29-24-01-002.jpg",
                 "upload_time": "2026-08-15T17:10:14.000Z",
                 "content_bytes": b"INEC_FORM_EC8A_OSUN_29-24-01-002_COMMUNITY_GRAMMAR_OJA_OBA",
             },
@@ -229,7 +245,7 @@ class InecApprovedSourceAdapter(ElectionSourceAdapter):
                 "ward_code": "EDE_S_01",
                 "registered": 820,
                 "accredited": 540,
-                "doc_url": "https://irev-results.lon1.digitaloceanspaces.com/elections/62d55684fa9e2a4f4949a012/29/11/01/003/ec8a.jpg",
+                "doc_url": "https://example.invalid/demo/EC8A/29-11-01-003.jpg",
                 "upload_time": "2026-08-15T17:35:00.000Z",
                 "content_bytes": b"INEC_FORM_EC8A_OSUN_29-11-01-003_TIMI_PALACE_EDE_SOUTH",
             },
@@ -243,7 +259,7 @@ class InecApprovedSourceAdapter(ElectionSourceAdapter):
                 "ward_code": "ILESA_E_01",
                 "registered": 690,
                 "accredited": 398,
-                "doc_url": "https://irev-results.lon1.digitaloceanspaces.com/elections/62d55684fa9e2a4f4949a012/29/17/02/004/ec8a.jpg",
+                "doc_url": "https://example.invalid/demo/EC8A/29-17-02-004.jpg",
                 "upload_time": "2026-08-15T18:02:40.000Z",
                 "content_bytes": b"INEC_FORM_EC8A_OSUN_29-17-02-004_ST_JOHNS_ILORO_ILESA",
             },
@@ -257,7 +273,7 @@ class InecApprovedSourceAdapter(ElectionSourceAdapter):
                 "ward_code": "IFE_C_01",
                 "registered": 780,
                 "accredited": 480,
-                "doc_url": "https://irev-results.lon1.digitaloceanspaces.com/elections/62d55684fa9e2a4f4949a012/29/15/01/005/ec8a.jpg",
+                "doc_url": "https://example.invalid/demo/EC8A/29-15-01-005.jpg",
                 "upload_time": "2026-08-15T18:25:10.000Z",
                 "content_bytes": b"INEC_FORM_EC8A_OSUN_29-15-01-005_ENUWA_IFE_CENTRAL",
             },
@@ -277,8 +293,8 @@ class InecApprovedSourceAdapter(ElectionSourceAdapter):
                 registered_voters=fix["registered"],
                 accredited_voters=fix["accredited"],
                 raw_payload=fix,
-                is_demonstration=False,  # This is the official documented source schema
-                source_status="ORIGINAL",
+                is_demonstration=True,
+                source_status="DEMONSTRATION",
                 version=1,
             )
             records.append(record)
@@ -296,8 +312,8 @@ class InecApprovedSourceAdapter(ElectionSourceAdapter):
         Fetches polling unit records and Form EC8A references from the official portal.
         Handles pagination, authentication headers, rate limits, and idempotent ingestion.
         """
-        # If API key is provided and live network is enabled, perform HTTP retrieval
-        if self.api_key and httpx is not None:
+        # Require an explicitly configured upstream API URL and credentials. The public portal URL alone is not an API contract.
+        if self.api_key and self.api_base_configured and httpx is not None:
             await self._throttle()
             headers = {
                 "Authorization": f"Bearer {self.api_key}",
@@ -352,8 +368,11 @@ class InecApprovedSourceAdapter(ElectionSourceAdapter):
         if self.synthetic_mode:
             return self._generate_synthetic_osun_records(election_id, limit, offset)
 
-        # Official live source requires server-side INEC API credentials
-        raise RuntimeError("INEC official access credentials (INEC_API_KEY) are required to query live official election records.")
+        # Do not silently call the public website as if it were a documented API.
+        raise RuntimeError(
+            "Live retrieval is disabled until INEC_API_BASE_URL points to a documented, authorized API endpoint "
+            "and INEC_API_KEY is configured. The public portal URL alone is not a verified API contract."
+        )
 
 
 class DevelopmentFixtureAdapter(ElectionSourceAdapter):
