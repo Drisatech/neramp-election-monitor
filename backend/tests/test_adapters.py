@@ -24,10 +24,10 @@ class TestAdapters(unittest.IsolatedAsyncioTestCase):
     async def test_inec_approved_adapter_requires_credentials(self):
         # Without API credentials, must be marked inactive and pending configuration
         adapter = InecApprovedSourceAdapter(api_key=None)
-        self.assertTrue(adapter.is_live_official_source())
+        self.assertFalse(adapter.is_live_official_source())
 
         conn = await adapter.test_connection()
-        self.assertEqual(conn["status"], "PENDING_CONFIGURATION")
+        self.assertIn(conn["status"], {"PORTAL_REACHABLE", "PORTAL_UNREACHABLE", "CLIENT_UNAVAILABLE"})
         self.assertFalse(conn["is_active"])
 
         with self.assertRaises(RuntimeError):
@@ -36,11 +36,11 @@ class TestAdapters(unittest.IsolatedAsyncioTestCase):
 
     async def test_inec_approved_adapter_synthetic_responses(self):
         adapter = InecApprovedSourceAdapter(api_key=None, synthetic_mode=True)
-        self.assertTrue(adapter.is_live_official_source())
+        self.assertFalse(adapter.is_live_official_source())
 
         conn = await adapter.test_connection()
-        self.assertEqual(conn["status"], "CONNECTED")
-        self.assertTrue(conn["is_active"])
+        self.assertEqual(conn["status"], "SIMULATED")
+        self.assertFalse(conn["is_active"])
         self.assertIn("Governorship election - 2026-08-15 - OSUN", conn["target_election"])
 
         # Fetch synthetic canonical records
@@ -52,8 +52,8 @@ class TestAdapters(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(rec.polling_unit_code, "29-24-01-001")
         self.assertEqual(rec.form_type, "EC8A")
         self.assertEqual(rec.election_id, "elec-2026-gov-osun")
-        self.assertFalse(rec.is_demonstration)
-        self.assertEqual(rec.source_status, "ORIGINAL")
+        self.assertTrue(rec.is_demonstration)
+        self.assertEqual(rec.source_status, "DEMONSTRATION")
         self.assertEqual(rec.version, 1)
         self.assertEqual(len(rec.file_hash), 64)
         self.assertIn("digitaloceanspaces.com", rec.source_url)
@@ -103,7 +103,8 @@ class TestAdapters(unittest.IsolatedAsyncioTestCase):
             source_timestamp=datetime.now(timezone.utc),
             registered_voters=680,
             accredited_voters=412,
-            is_demonstration=False,
+            is_demonstration=True,
+            source_status="DEMONSTRATION",
         )
 
         class CustomRevisedAdapter(InecApprovedSourceAdapter):
