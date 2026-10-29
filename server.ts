@@ -42,8 +42,6 @@ if (portArgIndex !== -1 && process.argv[portArgIndex + 1]) {
 
 // Google Cloud Storage & Cloud SQL Configuration
 const GCS_BUCKET_NAME = process.env.GCS_BUCKET_NAME || 'neramp-election-evidence-0652072827';
-const CLOUD_SQL_INSTANCE = process.env.CLOUD_SQL_INSTANCE || 'neramp-db';
-
 let gcsStorage: Storage | null = null;
 try {
   gcsStorage = new Storage();
@@ -6946,8 +6944,6 @@ app.get('/api/v1/admin/storage/summary', async (_req: Request, res: Response) =>
     : Number((ec8aSizeMb + ocrSizeMb + evidenceSizeMb).toFixed(3));
 
   const totalFilesTracked = (gcsInfo.connected ? gcsInfo.filesCount : 0) + resultSheetsList.length + evidenceCount;
-  const usedPercentage = Number(((realStorageUsedMb / (100 * 1024)) * 100).toFixed(4));
-
   res.json({
     data: {
       storageBucket: {
@@ -6955,23 +6951,23 @@ app.get('/api/v1/admin/storage/summary', async (_req: Request, res: Response) =>
         cloudProvider: 'Google Cloud Platform (GCP)',
         cloudStorageBucketUri: `gs://${GCS_BUCKET_NAME}`,
         cloudConsoleUrl: `https://console.cloud.google.com/storage/browser/${GCS_BUCKET_NAME}`,
-        cloudSqlInstance: CLOUD_SQL_INSTANCE,
-        cloudSqlConsoleUrl: `https://console.cloud.google.com/sql/instances/${CLOUD_SQL_INSTANCE}`,
-        containerMountPath: '/app/data',
+        cloudSqlInstance: null,
+        cloudSqlConsoleUrl: null,
+        containerMountPath: DATA_DIR,
         publicCachePath: '/app/public',
-        region: 'europe-west1 / us-central1',
+        region: null,
         gcsConnected: gcsInfo.connected,
         gcsFilesCount: gcsInfo.filesCount,
         gcsTotalBytes: gcsInfo.totalBytes,
         gcsStatus: gcsInfo.connected ? (gcsInfo.filesCount > 0 ? 'ACTIVE_FILES' : 'CONNECTED_EMPTY') : 'FALLBACK_LOCAL',
         accessInstructions:
-          `Google Cloud Storage: Browse files at https://console.cloud.google.com/storage/browser/${GCS_BUCKET_NAME} or use 'gcloud storage ls gs://${GCS_BUCKET_NAME}'. Google Cloud SQL: Query instance '${CLOUD_SQL_INSTANCE}' via Cloud SQL Studio.`,
+          `Google Cloud Storage: Browse files at https://console.cloud.google.com/storage/browser/${GCS_BUCKET_NAME} or use 'gcloud storage ls gs://${GCS_BUCKET_NAME}'. Node result/user stores use ${DATA_DIR}; durable persistence depends on the hosting disk configuration.`,
       },
       metrics: {
         totalFilesTracked,
         totalStorageUsedMb: realStorageUsedMb,
-        allocatedStorageGb: 100.0,
-        usedPercentage,
+        allocatedStorageGb: null,
+        usedPercentage: null,
         breakdown: [
           {
             type: 'Google Cloud Storage (GCS) Objects',
@@ -6983,7 +6979,7 @@ app.get('/api/v1/admin/storage/summary', async (_req: Request, res: Response) =>
             type: 'Form EC8A Result Sheet Scans',
             count: resultSheetsList.length,
             sizeMb: ec8aSizeMb,
-            location: 'Official INEC Storage & In-Memory Registry',
+            location: 'Configured upstream document references; document bytes may not yet be downloaded',
           },
           {
             type: 'Gemini AI OCR Extraction JSON Cache',
