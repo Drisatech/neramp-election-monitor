@@ -142,42 +142,64 @@ class InecApprovedSourceAdapter(ElectionSourceAdapter):
 
     async def test_connection(self) -> Dict[str, Any]:
         """
-        Tests connectivity against official INEC portal.
-        Returns connection health and authentication status.
+        Perform a real HTTP probe when running live mode. A reachable portal is
+        not proof that an API, credentials, or result-document retrieval works.
         """
-        # If API key is not configured and not in synthetic mode, report pending configuration
-        if not self.api_key and not self.synthetic_mode:
+        timestamp = datetime.now(timezone.utc).isoformat()
+        portal_reference = f"{self.base_url}/elections/types"
+
+        if self.synthetic_mode:
             return {
-                "status": "PENDING_CONFIGURATION",
+                "status": "SIMULATED",
                 "is_active": False,
-                "message": (
-                    "Official INEC Portal adapter requires formal technical access credentials (INEC_API_KEY) "
-                    "for live network syndication per project authorization."
-                ),
-                "portal_reference": "https://inecelectionresults.ng",
-                "target_election": self.ELECTION_TITLE_OSUN_2026,
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "simulated": True,
+                "message": "Synthetic mode is enabled; no network request was made.",
+                "portal_reference": portal_reference,
+                "timestamp": timestamp,
             }
 
-        return {
-            "status": "CONNECTED",
-            "is_active": True,
-            "message": "Authorized connection established with official INEC results portal.",
-            "portal_reference": f"{self.base_url}/elections/types",
-            "target_election": self.ELECTION_TITLE_OSUN_2026,
-            "rate_limit": f"{self.rate_limit_per_minute} req/min",
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-        }
+        if httpx is None:
+            return {
+                "status": "UNAVAILABLE",
+                "is_active": False,
+                "simulated": False,
+                "message": "httpx is not installed; a live HTTP probe cannot be performed.",
+                "portal_reference": portal_reference,
+                "timestamp": timestamp,
+            }
 
-        return {
-            "status": "CONNECTED",
-            "is_active": True,
-            "message": "Authorized connection established with official INEC results portal.",
-            "portal_reference": f"{self.base_url}/elections/types",
-            "target_election": self.ELECTION_TITLE_OSUN_2026,
-            "rate_limit": f"{self.rate_limit_per_minute} req/min",
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-        }
+        started = time.monotonic()
+        try:
+            async with httpx.AsyncClient(timeout=self.request_timeout, follow_redirects=True) as client:
+                response = await client.get(
+                    portal_reference,
+                    headers={"User-Agent": "NERAMP-source-health-check/1.0"},
+                )
+            reachable = 200 <= response.status_code < 400
+            return {
+                "status": "PORTAL_REACHABLE_API_UNVERIFIED" if reachable else "PORTAL_HTTP_ERROR",
+                "is_active": False,
+                "simulated": False,
+                "http_status": response.status_code,
+                "latency_ms": round((time.monotonic() - started) * 1000, 2),
+                "message": (
+                    "Portal responded to HTTP. API semantics, authentication, result retrieval, and document provenance remain unverified."
+                    if reachable else f"Portal returned HTTP {response.status_code}."
+                ),
+                "portal_reference": portal_reference,
+                "credentials_configured": bool(self.api_key),
+                "auth_mode": "NOT_TESTED",
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            }
+        except Exception as exc:
+            return {
+                "status": "UNREACHABLE",
+                "is_active": False,
+                "simulated": False,
+                "message": f"Live HTTP probe failed: {type(exc).__name__}: {exc}",
+                "portal_reference": portal_reference,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            }
 
     def _generate_synthetic_osun_records(
         self,
