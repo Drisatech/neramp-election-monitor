@@ -42,7 +42,7 @@ The Node JSON store now uses same-directory temporary files plus atomic rename f
 - Snapshot payloads exclude management account records. Up to five timestamped prior snapshots are rotated under `DATA_DIR/backups/` with restrictive file permissions.
 - Evidence uploads use `DATA_DIR/evidence`, not a code-directory path.
 - Management session tokens are stored as SHA-256 hashes in `neramp_auth_tokens.json`, never as raw bearer tokens. Valid, unexpired sessions can survive process restarts when the configured data directory is truly persistent. Expired, revoked, or inactive-account sessions are discarded.
-- The Render blueprint sets `NERAMP_REQUIRE_DURABLE_STORAGE=true`. Attach a real persistent disk mounted at `/var/data` before deploying this configuration. The current Render free plan does not provide persistent disks; do not upgrade the service plan without reviewing the cost in Render first. The readiness endpoint should fail when a persistent volume is not detected.
+- The checked-in Render Free blueprint sets `NERAMP_REQUIRE_DURABLE_STORAGE=false` so the demo can remain available without a paid disk. Readiness must explicitly warn that durability is unconfirmed. Render Free local files are ephemeral; this service must not be the sole store for authoritative election records. Do not provision a paid disk without reviewing the cost first.
 - Local snapshot rotation is not an off-site backup. Before production use, export encrypted backups to a separate access-controlled storage account and perform a documented restore drill.
 
 The current Node service still stores operational state in JSON files and does not use the PostgreSQL models in backend/. Atomic writes and local snapshot rotation reduce partial-write risk but do not protect against loss of an ephemeral free instance. The free Render blueprint deliberately keeps readiness non-blocking while reporting that durable persistence is unconfirmed. For reliable recovery without upgrading Render, export encrypted backups to a separate storage provider or trusted local system and test restoration. This external backup process is not automated by the current app.
@@ -56,7 +56,7 @@ Before production use:
 
 ## Security and scale — remaining release blockers
 
-This branch is not a production security certification. The main administrative route groups now require server-issued bearer tokens, and sensitive operations have initial role gates. Endpoint-by-endpoint authorization review is still required; some non-administrative upload/observer routes remain intentionally public or require a separate observer identity design. Do not expose the service for production election operations until staging authorization tests and the remaining upload/persistence checks pass.
+This branch is not a production security certification. Administrative routes and the evidence/observer submission paths now require server-issued bearer tokens and role checks. Evidence uploads are limited to JPEG, PNG, and PDF by file signature, capped at 25 MB, and throttled per IP in the single process. Unpublished incident reports remain private and start in SUBMITTED state; the server controls observer attribution and publication state. Evidence is publicly served only for an incident explicitly marked both published and APPROVED_FOR_PUBLICATION. In-process throttling is not distributed protection, and the frontend/API contract must be tested against the deployed staging build before release.
 
 Additional release blockers:
 - [x] Centralize server-issued bearer-token authentication for the /api/v1/admin route group, alert mutations, registered-voter imports, result verification, and OCR management/transcription endpoints. Caller-supplied x-actor-role and x-actor-email headers no longer authenticate admin requests.
@@ -81,3 +81,12 @@ The integration tests intentionally skip when NERAMP_TEST_BASE_URL is not config
 ## Verification status
 
 The repository changes were made through GitHub on a separate branch. No production endpoint was called from this change process, no INEC API credentials were available for verification, and no build, lint, unit, integration, security, or load tests were run in this environment. Review the diff and run the checks before merging.
+
+
+## Latest endpoint hardening
+
+- Evidence uploads and observer incident submissions now require authenticated, authorized accounts.
+- File content is validated as JPEG/PNG/PDF from magic bytes, not the caller-supplied MIME type; uploads are capped at 25 MB and limited per IP in-process.
+- New incident reports are private and submitted for review; the client cannot choose the observer identity or mark the report verified/published.
+- Generic evidence file endpoints require authentication and restrict access to the uploader or privileged reviewers. Public incident evidence is available only after explicit publication approval.
+- CI can run against staging using repository Actions secrets: `NERAMP_TEST_BASE_URL`, `NERAMP_TEST_ADMIN_EMAIL`, `NERAMP_TEST_ADMIN_PASSWORD`, and optional limited-role test account secrets. Use dedicated test accounts only; do not configure production administrator credentials.
