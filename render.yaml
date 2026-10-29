@@ -6,7 +6,7 @@ services:
     autoDeploy: true
     buildCommand: npm install && npm run build
     startCommand: npm start
-    healthCheckPath: /api/v1/health
+    healthCheckPath: /api/v1/health/ready
     envVars:
       - key: NODE_ENV
         value: production
@@ -21,6 +21,8 @@ services:
       - key: GROQ_API_KEY
         sync: false
       - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: INEC_RESULTS_API_BASE_URL
         sync: false
     # To permanently prevent data from resetting on deployment, attach a Render Persistent Disk:
     # (Requires Render Starter plan or above: Render Dashboard -> Your Service -> Disks -> Add Disk: Mount Path /var/data)
