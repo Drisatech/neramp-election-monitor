@@ -207,22 +207,14 @@ export const ObserverPortalPage: React.FC = () => {
 
       let evidenceMeta = uploadedEvidence;
       if (selectedFile && !evidenceMeta) {
-        try {
-          const base64Data = await readFileAsBase64(selectedFile);
-          const uploadRes = await uploadEvidenceFile(selectedFile.name, base64Data, selectedFile.type);
-          evidenceMeta = {
-            storageKey: uploadRes.storageKey,
-            fileHash: uploadRes.fileHash,
-            filename: selectedFile.name,
-            gcsPublicUrl: uploadRes.gcsPublicUrl,
-          };
-        } catch {
-          evidenceMeta = {
-            storageKey: `evidence/${Date.now()}_${selectedFile.name}`,
-            fileHash: 'verified-attachment',
-            filename: selectedFile.name,
-          };
-        }
+        const base64Data = await readFileAsBase64(selectedFile);
+        const uploadRes = await uploadEvidenceFile(selectedFile.name, base64Data, selectedFile.type);
+        evidenceMeta = {
+          storageKey: uploadRes.storageKey,
+          fileHash: uploadRes.fileHash,
+          filename: selectedFile.name,
+          gcsPublicUrl: uploadRes.gcsPublicUrl,
+        };
       }
 
       const stateObj = states.find((s) => s.code === selectedStateCode);
@@ -242,6 +234,7 @@ export const ObserverPortalPage: React.FC = () => {
         description: fullDescription,
         severity,
         evidenceCount: selectedFile || evidenceMeta ? 1 : 0,
+        evidenceKey: evidenceMeta?.storageKey,
         evidenceFilename: evidenceMeta?.filename,
         evidenceHash: evidenceMeta?.fileHash,
         evidenceUrl: evidenceMeta?.gcsPublicUrl,
