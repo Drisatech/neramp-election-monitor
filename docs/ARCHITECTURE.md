@@ -61,6 +61,10 @@ On Render:
 
 The Render blueprint remains on the existing free plan and does not silently enable a paid disk. Consequently, production durability is **not yet established** until the operator performs the steps above.
 
+## Upload validation
+
+The Node upload endpoints now check base64 syntax, filename/path characters, extension, declared MIME, binary file signature and size before storage/OCR. Uploaded file SHA-256 is computed from decoded bytes. This is not malware scanning and does not replace quarantine, antivirus/content scanning, image decoding limits, or storage access-control review.
+
 ## Validation still required
 
 Before public election-day operation:
