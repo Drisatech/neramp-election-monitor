@@ -225,7 +225,7 @@ export interface PollingUnit {
   sourceUploadTimestamp?: string;
   lastRetrievedTimestamp?: string;
   resultSheetId?: string;
-  sourceProvenance?: 'DEMONSTRATION' | 'CONFIGURED_UPSTREAM_NOT_VERIFIED' | 'OFFICIAL_SOURCE_VERIFIED';
+  sourceProvenance?: 'DEMONSTRATION' | 'USER_SUBMITTED' | 'CONFIGURED_UPSTREAM_NOT_VERIFIED' | 'OFFICIAL_SOURCE_VERIFIED';
   latitude?: number;
   longitude?: number;
 }
