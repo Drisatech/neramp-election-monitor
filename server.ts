@@ -3276,28 +3276,42 @@ app.get('/api/v1/auth/me', (req: Request, res: Response) => {
 });
 
 app.post('/api/v1/auth/logout', (req: Request, res: Response) => {
-  const { sessionId, userEmail } = req.body || {};
+  // Never trust session IDs or user identities supplied in the request body for logout.
   const bearer = (req.headers.authorization || '').match(/^Bearer\s+(.+)$/i)?.[1];
-  if (bearer) { ACTIVE_AUTH_TOKENS.delete(hashAuthToken(bearer)); persistAuthTokens(); }
-  if (sessionId) {
-    const session = USER_SESSIONS.find((s) => s.id === sessionId);
-    if (session) {
-      session.logoutAt = new Date().toISOString();
-      session.status = 'LOGGED_OUT';
-      const loginTime = new Date(session.loginAt).getTime();
-      session.durationSeconds = Math.max(0, Math.round((Date.now() - loginTime) / 1000));
-    }
+  if (!bearer) {
+    res.status(401).json({ error: 'A valid management bearer token is required to sign out.' });
+    return;
   }
-  if (userEmail) {
+  const tokenHash = hashAuthToken(bearer);
+  const tokenRecord = ACTIVE_AUTH_TOKENS.get(tokenHash);
+  if (!tokenRecord || tokenRecord.expiresAt <= Date.now()) {
+    ACTIVE_AUTH_TOKENS.delete(tokenHash);
+    persistAuthTokens();
+    res.status(401).json({ error: 'Management session is invalid or expired.' });
+    return;
+  }
+  const session = USER_SESSIONS.find((item) => item.id === tokenRecord.sessionId && item.userId === tokenRecord.userId);
+  const user = USERS.find((item) => item.id === tokenRecord.userId);
+  ACTIVE_AUTH_TOKENS.delete(tokenHash);
+  if (session) {
+    session.logoutAt = new Date().toISOString();
+    session.status = 'LOGGED_OUT';
+    const loginTime = new Date(session.loginAt).getTime();
+    session.durationSeconds = Math.max(0, Math.round((Date.now() - loginTime) / 1000));
+  }
+  if (user) {
     AUDIT_LOGS.unshift({
       id: 'audit-' + Date.now(),
       timestamp: new Date().toISOString(),
-      actor: userEmail,
+      actor: user.email,
+      actorName: user.fullName,
+      actorRole: user.role,
       action: 'USER_LOGOUT',
-      target: userEmail,
-      details: `Management user ${userEmail} signed out.`,
+      target: user.id,
+      details: `Management user ${user.fullName} (${user.email}) signed out.`,
     });
   }
+  persistAuthTokens();
   saveDatabaseToDisk(true);
   res.json({ message: 'Logged out successfully. Session closed.' });
 });
