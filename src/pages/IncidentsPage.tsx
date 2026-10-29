@@ -227,7 +227,7 @@ export const IncidentsPage: React.FC = () => {
       setShowReportModal(false);
       setFormNotice({
         type: 'success',
-        text: 'Incident report and attached evidence submitted and published to the monitoring feed.',
+        text: 'Incident report submitted for review. It will appear publicly only after approval.',
       });
     } catch (err: any) {
       setFormNotice({ type: 'error', text: err.message || 'Failed to submit incident report.' });
