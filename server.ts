@@ -234,7 +234,9 @@ export interface ResultSheet {
   retrievalTimestamp: string;
   ocrConfidence: number; // 0 to 100
   sourceStatus: 'ORIGINAL' | 'REVISED_VERSION' | 'SOURCE_UNVERIFIED' | 'DEMONSTRATION';
-  sourceProvenance?: 'DEMONSTRATION' | 'CONFIGURED_UPSTREAM_NOT_VERIFIED' | 'OFFICIAL_SOURCE_VERIFIED';
+  sourceProvenance?: 'DEMONSTRATION' | 'USER_SUBMITTED' | 'CONFIGURED_UPSTREAM_NOT_VERIFIED' | 'OFFICIAL_SOURCE_VERIFIED';
+  sourceReferenceHash?: string;
+  documentHashStatus?: 'NOT_DOWNLOADED' | 'HASHED_FROM_BYTES';
   transcriptionProvenance?: 'NOT_PROCESSED' | 'OCR_EXTRACTED' | 'HUMAN_CORRECTED';
   humanVerified?: boolean;
   version: number;
@@ -5422,7 +5424,8 @@ async function fetchInecLiveElectionResults(electionIdKey: string, maxWards: num
           if (hasPhoto) photosFound++;
 
           const resultSheetId = `rs-${normalizedCode}`;
-          const shaHash = hasPhoto ? crypto.createHash('sha256').update(docUrl).digest('hex') : '';
+          // This digest identifies the URL string only; it is NOT a checksum of the source document bytes.
+          const sourceReferenceHash = hasPhoto ? crypto.createHash('sha256').update(docUrl).digest('hex') : '';
 
           const existingIdx = POLLING_UNITS.findIndex(
             (x) => x.code === normalizedCode && x.electionId === targetElectionId
@@ -5432,7 +5435,7 @@ async function fetchInecLiveElectionResults(electionIdKey: string, maxWards: num
           // Deduplication and intelligent versioning check:
           if (existingIdx >= 0 && existingSheet) {
             const isUrlChanged = docUrl && existingSheet.imageUrl && docUrl !== existingSheet.imageUrl;
-            const isHashChanged = shaHash && existingSheet.fileHash && shaHash !== existingSheet.fileHash;
+            const isHashChanged = sourceReferenceHash && existingSheet.sourceReferenceHash && sourceReferenceHash !== existingSheet.sourceReferenceHash;
             const isDocTimeChanged =
               doc.updated_at && existingSheet.uploadTimestamp && doc.updated_at !== existingSheet.uploadTimestamp;
 
@@ -5449,11 +5452,13 @@ async function fetchInecLiveElectionResults(electionIdKey: string, maxWards: num
               existingSheet.humanVerified = false;
               existingSheet.transcriptionProvenance = 'NOT_PROCESSED';
               const prevUploadTime = existingSheet.uploadTimestamp;
-              const prevHash = existingSheet.fileHash;
+              const prevHash = existingSheet.sourceReferenceHash || '';
 
               existingSheet.sourceUrl = docUrl || existingSheet.sourceUrl;
               existingSheet.imageUrl = docUrl || existingSheet.imageUrl;
-              existingSheet.fileHash = shaHash || existingSheet.fileHash;
+              existingSheet.sourceReferenceHash = sourceReferenceHash || existingSheet.sourceReferenceHash;
+              existingSheet.fileHash = '';
+              existingSheet.documentHashStatus = 'NOT_DOWNLOADED';
               existingSheet.uploadTimestamp = doc.updated_at || new Date().toISOString();
               existingSheet.retrievalTimestamp = new Date().toISOString();
               existingSheet.requiresHumanReview = true;
@@ -5467,10 +5472,7 @@ async function fetchInecLiveElectionResults(electionIdKey: string, maxWards: num
                 actor: 'INEC Live Ingestion Pipeline',
                 actionType: 'DOCUMENT_REVISION_INGESTED',
                 timestamp: new Date().toISOString(),
-                reason: `Altered result sheet uploaded on INEC portal. Previous hash: ${prevHash?.slice(
-                  0,
-                  10
-                )}..., New hash: ${shaHash?.slice(0, 10)}... (INEC timestamp: ${existingSheet.uploadTimestamp}).`,
+                reason: `Upstream document reference changed. Previous URL-reference fingerprint: ${prevHash?.slice(0, 10) || 'unavailable'}, new fingerprint: ${sourceReferenceHash?.slice(0, 10) || 'unavailable'}. Document bytes have not been downloaded or hashed.`,
                 previousPartyVotes: { ...(existingSheet.transcription?.partyVotes || {}) },
                 newPartyVotes: {},
               });
@@ -5523,7 +5525,9 @@ async function fetchInecLiveElectionResults(electionIdKey: string, maxWards: num
                 electionId: targetElectionId,
                 formType: 'EC8A',
                 sourceUrl: docUrl,
-                fileHash: shaHash,
+                fileHash: '',
+                sourceReferenceHash,
+                documentHashStatus: 'NOT_DOWNLOADED',
                 imageUrl: docUrl,
                 uploadTimestamp: doc.updated_at || new Date().toISOString(),
                 retrievalTimestamp: new Date().toISOString(),
@@ -6303,6 +6307,7 @@ app.post('/api/v1/ocr/upload-and-transcribe', async (req: Request, res: Response
       formType: 'EC8A',
       sourceUrl: gcsUploadedUrl || `Uploaded Form EC8A (${fileName})`,
       fileHash: shaHash,
+      documentHashStatus: 'HASHED_FROM_BYTES',
       imageUrl: directImageUrl,
       uploadTimestamp: new Date().toISOString(),
       retrievalTimestamp: new Date().toISOString(),
