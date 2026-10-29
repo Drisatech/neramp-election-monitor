@@ -95,11 +95,14 @@ class IngestionPipelineService:
             finished_at = datetime.now(timezone.utc)
             self.last_run_timestamp = finished_at
 
+            simulated = bool(getattr(self.adapter, "synthetic_mode", False)) or (
+                bool(records) and all(record.is_demonstration for record in records)
+            )
             job_summary = {
                 "id": job_id,
                 "adapter": self.adapter.get_adapter_name(),
                 "election_id": election_id,
-                "status": "COMPLETED",
+                "status": "SIMULATED" if simulated else ("SUCCEEDED" if records_retrieved else "SUCCEEDED_EMPTY"),
                 "started_at": started_at.isoformat(),
                 "finished_at": finished_at.isoformat(),
                 "records_retrieved": records_retrieved,
@@ -107,8 +110,14 @@ class IngestionPipelineService:
                 "records_skipped_duplicate": records_skipped_duplicate,
                 "records_revised": records_revised,
                 "discrepancies_detected": discrepancies_flagged,
+                "is_demonstration": simulated,
+                "provenance_status": "DEMONSTRATION_ONLY" if simulated else "SOURCE_NOT_INDEPENDENTLY_VERIFIED",
                 "actor": actor,
-                "source_attribution": "Official INEC Results Portal (IReV)" if self.adapter.is_live_official_source() else "Development Fixture",
+                "source_attribution": (
+                    "Demonstration fixture data only; no official result data retrieved."
+                    if simulated
+                    else "Configured upstream retrieval; official source provenance has not been independently verified."
+                ),
             }
             self.job_history.insert(0, job_summary)
             return job_summary
