@@ -8,7 +8,7 @@ import * as XLSX from 'xlsx';
 import sharp from 'sharp';
 import { GoogleGenAI, Type } from '@google/genai';
 import { Storage } from '@google-cloud/storage';
-import { classifyIngestionOutcome, validateUpstreamBaseUrl } from './src/services/ingestionContract.ts';
+import { classifyIngestionOutcome, IngestionValidationError, validateUpstreamBaseUrl } from './src/services/ingestionContract.ts';
 import {
   type InecStateStatistic,
   OFFICIAL_INEC_STATES,
@@ -5392,7 +5392,7 @@ async function fetchInecLiveElectionResults(electionIdKey: string, maxWards: num
 
   const lgaRes = await httpsGetJson(`${base}/elections/${targetInecId}/lga`, 12000, sourceHeaders);
   if (!Array.isArray(lgaRes?.data) || lgaRes.data.length === 0) {
-    throw new Error('Upstream response did not contain a non-empty data array of election LGAs; no records were ingested.');
+    throw new IngestionValidationError('Upstream response did not contain a non-empty data array of election LGAs; no records were ingested.');
   }
   const lgaData = lgaRes.data;
   let wardsQueried = 0;
@@ -5430,7 +5430,7 @@ async function fetchInecLiveElectionResults(electionIdKey: string, maxWards: num
       try {
         const puRes = await httpsGetJson(`${base}/elections/${targetInecId}/pus?ward=${encodeURIComponent(String(wardId))}`, 8000, sourceHeaders);
         if (!Array.isArray(puRes?.data)) {
-          throw new Error('Unexpected upstream response: expected data array for polling units.');
+          throw new IngestionValidationError('Unexpected upstream response: expected data array for polling units.');
         }
         const pus = puRes.data;
         pusFound += pus.length;
@@ -5757,13 +5757,13 @@ async function executeLoopCycle(triggerSource: string = 'SCHEDULED_TIMER') {
       id: 'loop-job-' + Date.now(),
       adapter: 'InecApprovedSourceAdapter',
       electionId: loopExtractionConfig.electionId,
-      status: 'FAILED',
+      status: err instanceof IngestionValidationError ? 'VALIDATION_REJECTED' : 'FAILED',
       startedAt: failedAt,
       finishedAt: failedAt,
       recordsRetrieved: 0,
       recordsProcessed: 0,
       recordsRejected: 0,
-      provenanceStatus: 'NO_SOURCE_DATA_RETRIEVED',
+      provenanceStatus: err instanceof IngestionValidationError ? 'VALIDATION_REJECTED' : 'NO_SOURCE_DATA_RETRIEVED',
       isDemonstration: false,
       error: err?.message || 'Unknown upstream retrieval error',
       sourceAttribution: 'Ingestion failed before source records were retrieved.',
@@ -6383,6 +6383,7 @@ app.post('/api/v1/admin/ingestion/run', async (req: Request, res: Response) => {
 
   let liveResult: any = null;
   let failureReason: string | undefined;
+  let validationRejected = false;
   if (!isFixtureAdapter) {
     try {
       console.log(`[INGESTION] Starting configured upstream retrieval for ${electionId}...`);
@@ -6390,6 +6391,7 @@ app.post('/api/v1/admin/ingestion/run', async (req: Request, res: Response) => {
       console.log(`[INGESTION] Upstream retrieval returned ${liveResult.totalPusProcessed} records.`);
     } catch (err: any) {
       failureReason = err?.message || 'Unknown upstream retrieval error';
+      validationRejected = err instanceof IngestionValidationError;
       console.error('[INGESTION] Upstream retrieval failed:', failureReason);
     }
   }
@@ -6401,7 +6403,8 @@ app.post('/api/v1/admin/ingestion/run', async (req: Request, res: Response) => {
   const failedWardFetches = liveResult?.failedWardFetches || 0;
   const status = classifyIngestionOutcome({
     isSimulation: isFixtureAdapter,
-    retrievalFailed: Boolean(failureReason),
+    validationRejected,
+    retrievalFailed: Boolean(failureReason) && !validationRejected,
     failedWardFetches,
     recordsRetrieved: processedCount,
   });
@@ -6422,7 +6425,7 @@ app.post('/api/v1/admin/ingestion/run', async (req: Request, res: Response) => {
     discrepanciesDetected: 0,
     sourceMode: liveResult?.sourceMode || (isFixtureAdapter ? 'DEVELOPMENT_FIXTURE' : 'CONFIGURED_UPSTREAM_UNVERIFIED'),
     sourceBaseUrl: liveResult?.sourceBaseUrl,
-    provenanceStatus: liveResult ? 'SOURCE_NOT_INDEPENDENTLY_VERIFIED' : (isFixtureAdapter ? 'DEMONSTRATION_ONLY' : 'NO_SOURCE_DATA_RETRIEVED'),
+    provenanceStatus: liveResult ? 'SOURCE_NOT_INDEPENDENTLY_VERIFIED' : (isFixtureAdapter ? 'DEMONSTRATION_ONLY' : validationRejected ? 'VALIDATION_REJECTED' : 'NO_SOURCE_DATA_RETRIEVED'),
     isDemonstration: isFixtureAdapter,
     error: failureReason,
     sourceAttribution: liveResult
@@ -6449,7 +6452,7 @@ app.post('/api/v1/admin/ingestion/run', async (req: Request, res: Response) => {
   });
 
   saveDatabaseToDisk(true);
-  res.status(failureReason ? 502 : 200).json({
+  res.status(validationRejected ? 422 : failureReason ? 502 : 200).json({
     message: failureReason
       ? 'Ingestion failed. No existing local records were represented as newly retrieved source data.'
       : isFixtureAdapter
