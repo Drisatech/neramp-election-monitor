@@ -27,7 +27,7 @@ class TestAdapters(unittest.IsolatedAsyncioTestCase):
         self.assertFalse(adapter.is_live_official_source())
 
         conn = await adapter.test_connection()
-        self.assertIn(conn["status"], {"PORTAL_REACHABLE", "PORTAL_UNREACHABLE", "CLIENT_UNAVAILABLE"})
+        self.assertEqual(conn["status"], "PENDING_CONFIGURATION")
         self.assertFalse(conn["is_active"])
 
         with self.assertRaises(RuntimeError):
