@@ -5224,7 +5224,7 @@ async function fetchInecLiveElectionResults(electionIdKey: string, maxWards: num
   if (!configuredBase) {
     throw new Error('INEC_RESULTS_API_BASE_URL is not configured. Live retrieval is disabled until the source endpoint and access method are verified.');
   }
-  const base = configuredBase.replace(/\\/$/, '');
+  const base = configuredBase.replace(/\/$/, '');
 
   const lgaRes = await httpsGetJson(`${base}/elections/${targetInecId}/lga`, 12000);
   const lgaData = lgaRes?.data || [];
