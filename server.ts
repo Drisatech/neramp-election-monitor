@@ -233,7 +233,7 @@ export interface ResultSheet {
   uploadTimestamp: string;
   retrievalTimestamp: string;
   ocrConfidence: number; // 0 to 100
-  sourceStatus: 'ORIGINAL' | 'REVISED_VERSION' | 'SOURCE_UNVERIFIED' | 'DEMONSTRATION';
+  sourceStatus: 'ORIGINAL' | 'REVISED_VERSION' | 'SOURCE_UNVERIFIED' | 'DEMONSTRATION' | 'USER_SUBMITTED';
   sourceProvenance?: 'DEMONSTRATION' | 'USER_SUBMITTED' | 'CONFIGURED_UPSTREAM_NOT_VERIFIED' | 'OFFICIAL_SOURCE_VERIFIED';
   sourceReferenceHash?: string;
   documentHashStatus?: 'NOT_DOWNLOADED' | 'HASHED_FROM_BYTES';
@@ -6203,7 +6203,7 @@ app.post('/api/v1/ocr/upload-and-transcribe', async (req: Request, res: Response
   try {
     const cleanBase64 = String(imageBase64).replace(/^data:[^;]+;base64,/, '');
     const imgBuffer = Buffer.from(cleanBase64, 'base64');
-    const shaHash = crypto.createHash('sha256').update(cleanBase64).digest('hex');
+    const shaHash = crypto.createHash('sha256').update(imgBuffer).digest('hex');
 
     let extracted: any = await transcribeFormEc8aMultiProvider({
       base64Data: cleanBase64,
@@ -6308,15 +6308,18 @@ app.post('/api/v1/ocr/upload-and-transcribe', async (req: Request, res: Response
       sourceUrl: gcsUploadedUrl || `Uploaded Form EC8A (${fileName})`,
       fileHash: shaHash,
       documentHashStatus: 'HASHED_FROM_BYTES',
+      sourceProvenance: 'USER_SUBMITTED',
+      transcriptionProvenance: 'OCR_EXTRACTED',
+      humanVerified: false,
       imageUrl: directImageUrl,
       uploadTimestamp: new Date().toISOString(),
       retrievalTimestamp: new Date().toISOString(),
       ocrConfidence: 98.0,
-      sourceStatus: 'ORIGINAL',
+      sourceStatus: 'USER_SUBMITTED',
       version: 1,
       transcription: { validVotes: 0, rejectedVotes: 0, totalVotesCast: 0, partyVotes: {} },
       ocrExtraction: { validVotes: 0, rejectedVotes: 0, totalVotesCast: 0, partyVotes: {}, rawText: '' },
-      arithmeticCheck: { passed: true, difference: 0, formula: '', details: '' },
+      arithmeticCheck: { passed: false, difference: 0, formula: 'Awaiting validation', details: 'OCR output is preliminary; arithmetic and human verification are pending.' },
     };
     (RESULT_SHEETS[resultSheetId] as any).imageDataUrl = inlineDataUri;
 
@@ -6324,6 +6327,11 @@ app.post('/api/v1/ocr/upload-and-transcribe', async (req: Request, res: Response
     const updatedSheet = applyOcrExtractionToSheetAndPu(resultSheetId, extracted, officerName);
     if (updatedSheet) {
       updatedSheet.imageUrl = directImageUrl;
+      updatedSheet.sourceProvenance = 'USER_SUBMITTED';
+      updatedSheet.transcriptionProvenance = 'OCR_EXTRACTED';
+      updatedSheet.humanVerified = false;
+      updatedSheet.documentHashStatus = 'HASHED_FROM_BYTES';
+      updatedSheet.fileHash = shaHash;
       (updatedSheet as any).imageDataUrl = inlineDataUri;
     }
     puRecord.verificationStatus = 'PENDING_VERIFICATION';
