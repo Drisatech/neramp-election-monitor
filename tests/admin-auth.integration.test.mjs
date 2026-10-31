@@ -98,8 +98,12 @@ suite('NERAMP administrative API authorization', () => {
     assert.equal(response.status, 400);
   });
 
-  test('rejects the retired shared default administrator password', async () => {
-    const email = process.env.NERAMP_TEST_ADMIN_EMAIL || 'drisatech@gmail.com';
+  test('rejects the retired shared default administrator password', async (t) => {
+    const email = process.env.NERAMP_TEST_ADMIN_EMAIL;
+    if (!email) {
+      t.skip('Set NERAMP_TEST_ADMIN_EMAIL to a dedicated staging test administrator');
+      return;
+    }
     const response = await request('/api/v1/auth/login', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
