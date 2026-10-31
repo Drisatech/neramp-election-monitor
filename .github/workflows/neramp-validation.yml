@@ -1,0 +1,49 @@
+name: NERAMP validation
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main, hardening/canonical-ingestion-provenance]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: neramp-validation-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Type-check project
+        run: npm run lint
+
+      - name: Run security integration test suite
+        run: npm run test:security
+        env:
+          NERAMP_TEST_BASE_URL: https://neramp-2-0.onrender.com
+          NERAMP_TEST_ADMIN_EMAIL: ${{ secrets.NERAMP_TEST_ADMIN_EMAIL }}
+          NERAMP_TEST_ADMIN_PASSWORD: ${{ secrets.NERAMP_TEST_ADMIN_PASSWORD }}
+          NERAMP_TEST_LIMITED_EMAIL: ${{ secrets.NERAMP_TEST_LIMITED_EMAIL }}
+          NERAMP_TEST_LIMITED_PASSWORD: ${{ secrets.NERAMP_TEST_LIMITED_PASSWORD }}
+        # Dedicated test-account values belong in repository Actions secrets.
+        # Never use real administrator credentials.

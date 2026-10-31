@@ -158,31 +158,51 @@ export const AdminCommandCentrePage: React.FC = () => {
   const [deletingElection, setDeletingElection] = useState<any | null>(null);
   const [isDeletingElection, setIsDeletingElection] = useState(false);
 
-  // Load all initial data
+  // Load each Command Centre resource independently. A failure in an optional
+  // dashboard panel must not prevent metrics or pending user registrations loading.
   const loadAllData = async () => {
-    try {
-      setIsLoading(true);
-      const [metricsRes, usersRes, verifRes, jobsRes, partiesRes, candRes] = await Promise.all([
-        fetchCommandCenterMetrics(),
-        fetchAdminUsers(),
-        fetchVerifierSupervision(),
-        fetchIngestionJobs(),
-        fetchConfigParties(),
-        fetchConfigCandidates(),
-      ]);
+    setIsLoading(true);
+    const results = await Promise.allSettled([
+      fetchCommandCenterMetrics(),
+      fetchAdminUsers(),
+      fetchVerifierSupervision(),
+      fetchIngestionJobs(),
+      fetchConfigParties(),
+      fetchConfigCandidates(),
+    ]);
 
-      setMetrics(metricsRes.data);
-      setUsers(usersRes.data);
-      setVerifiers(verifRes.data);
-      setIngestionJobs(jobsRes.data);
-      setParties(partiesRes.data);
-      setCandidates(candRes.data);
-    } catch (err: any) {
-      console.error('Failed to load command center data:', err);
-      setFeedbackMessage({ type: 'error', text: err.message || 'Error connecting to admin services' });
-    } finally {
-      setIsLoading(false);
+    const errors: string[] = [];
+    const [metricsRes, usersRes, verifRes, jobsRes, partiesRes, candRes] = results;
+
+    if (metricsRes.status === 'fulfilled') setMetrics(metricsRes.value.data);
+    else errors.push('System overview metrics');
+
+    if (usersRes.status === 'fulfilled') setUsers(usersRes.value.data);
+    else errors.push('User and role governance');
+
+    if (verifRes.status === 'fulfilled') setVerifiers(verifRes.value.data);
+    else errors.push('Verifier supervision');
+
+    if (jobsRes.status === 'fulfilled') setIngestionJobs(jobsRes.value.data);
+    else errors.push('Ingestion jobs');
+
+    if (partiesRes.status === 'fulfilled') setParties(partiesRes.value.data);
+    else errors.push('Party configuration');
+
+    if (candRes.status === 'fulfilled') setCandidates(candRes.value.data);
+    else errors.push('Candidate configuration');
+
+    if (errors.length) {
+      console.error('Some Command Centre resources failed to load:', errors);
+      setFeedbackMessage({
+        type: 'error',
+        text: `Some Command Centre data could not be loaded: ${errors.join(', ')}. Use Refresh State to retry.`,
+      });
+    } else {
+      setFeedbackMessage(null);
     }
+
+    setIsLoading(false);
   };
 
   useEffect(() => {
@@ -730,6 +750,11 @@ export const AdminCommandCentrePage: React.FC = () => {
       {/* ======================================================== */}
       {/* TAB 1: SYSTEM OVERVIEW (CENTRAL ADMINISTRATION DASHBOARD) */}
       {/* ======================================================== */}
+      {activeTab === 'overview' && !metrics && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-900">
+          System overview metrics are unavailable. Confirm that your management session is active, then select Refresh State to try again.
+        </div>
+      )}
       {activeTab === 'overview' && metrics && (
         <div className="space-y-6">
           {/* Key Metric Highlights */}

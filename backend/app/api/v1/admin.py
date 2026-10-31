@@ -208,8 +208,15 @@ async def trigger_manual_ingestion(
         election_id=election_id,
         actor="admin:manual_trigger",
     )
+    outcome = job_result.get("outcome", job_result.get("status", "UNKNOWN"))
     return {
-        "message": "Ingestion job completed successfully.",
+        "message": (
+            "Simulation completed; records are not official."
+            if outcome == "SIMULATED"
+            else "Ingestion failed; no successful live retrieval is claimed."
+            if outcome == "FAILED"
+            else f"Ingestion outcome: {outcome}."
+        ),
         "data": job_result,
     }
 

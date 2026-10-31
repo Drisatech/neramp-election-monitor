@@ -42,8 +42,8 @@ try {
   console.warn('[GCS] Google Cloud Storage SDK note:', err.message);
 }
 
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ limit: '50mb', extended: true }));
+app.use(express.json({ limit: '36mb' }));
+app.use(express.urlencoded({ limit: '36mb', extended: true }));
 
 // Production HTTP Security Headers (iframe-compatible for AI Studio preview)
 app.use((_req, res, next) => {
@@ -199,6 +199,18 @@ export interface ResultSheet {
   retrievalTimestamp: string;
   ocrConfidence: number; // 0 to 100
   sourceStatus: 'ORIGINAL' | 'REVISED_VERSION';
+  /** Provenance is explicit and verification is never inferred from a URL alone. */
+  provenance?: {
+    recordOrigin: 'OFFICIAL_SOURCE' | 'DEMONSTRATION' | 'MANUAL_IMPORT' | 'UNKNOWN';
+    processingStage: 'SOURCE_DOCUMENT' | 'OCR_EXTRACTION' | 'HUMAN_CORRECTED' | 'VERIFIED' | 'UNVERIFIED';
+    sourcePortalUrl?: string;
+    sourceDocumentUrl?: string;
+    retrievedAt?: string;
+    documentSha256?: string;
+    verificationStatus: 'PENDING' | 'VERIFIED' | 'REJECTED';
+    verifiedBy?: string;
+    verifiedAt?: string;
+  };
   version: number;
   transcription: {
     validVotes: number;
@@ -490,6 +502,7 @@ export interface StoredEvidenceItem {
   sizeBytes: number;
   buffer: Buffer;
   uploadedAt: string;
+  uploadedByUserId?: string;
   gcsPublicUrl?: string;
 }
 
@@ -537,6 +550,7 @@ const POLLING_UNITS_FILE = path.join(DATA_DIR, 'neramp_polling_units.json');
 const RESULT_SHEETS_FILE = path.join(DATA_DIR, 'neramp_result_sheets.json');
 const USERS_FILE = path.join(DATA_DIR, 'neramp_users.json');
 const USER_SESSIONS_FILE = path.join(DATA_DIR, 'neramp_user_sessions.json');
+const AUTH_TOKENS_FILE = path.join(DATA_DIR, 'neramp_auth_tokens.json');
 const AUDIT_LOGS_FILE = path.join(DATA_DIR, 'neramp_audit_logs.json');
 const DISCREPANCIES_FILE = path.join(DATA_DIR, 'neramp_discrepancies.json');
 const INCIDENTS_FILE = path.join(DATA_DIR, 'neramp_incidents.json');
@@ -634,8 +648,18 @@ export interface UserSession {
 
 let USER_SESSIONS: UserSession[] = [];
 
-const DEFAULT_PASS = 'Admin@Neramp2026!';
-const defaultCreds = hashPassword(DEFAULT_PASS);
+// Never ship a known default credential. Configure a unique, 16+ character
+// NERAMP_BOOTSTRAP_ADMIN_PASSWORD in the deployment secret store for initial admin access.
+const LEGACY_DEFAULT_PASS = 'Admin@Neramp2026!';
+const bootstrapAdminPassword = process.env.NERAMP_BOOTSTRAP_ADMIN_PASSWORD?.trim();
+const bootstrapAdminCreds =
+  bootstrapAdminPassword && bootstrapAdminPassword !== LEGACY_DEFAULT_PASS && bootstrapAdminPassword.length >= 16
+    ? hashPassword(bootstrapAdminPassword)
+    : null;
+if (bootstrapAdminPassword && !bootstrapAdminCreds) {
+  console.warn('[AUTH] NERAMP_BOOTSTRAP_ADMIN_PASSWORD must be unique, at least 16 characters, and not the legacy default. Bootstrap login remains disabled.');
+}
+const defaultCreds = bootstrapAdminCreds || { hash: '', salt: '' };
 
 const DEFAULT_MANAGEMENT_USERS: UserItem[] = [
   {
@@ -737,65 +761,68 @@ let USERS: UserItem[] = [...DEFAULT_MANAGEMENT_USERS];
 
 let saveDbDebounceTimer: NodeJS.Timeout | null = null;
 
-function saveDatabaseToDisk(immediate: boolean = false) {
-  const doSave = () => {
-    try {
-      if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
-      fs.writeFileSync(POLLING_UNITS_FILE, JSON.stringify(POLLING_UNITS, null, 2), 'utf-8');
-      fs.writeFileSync(RESULT_SHEETS_FILE, JSON.stringify(RESULT_SHEETS, null, 2), 'utf-8');
-      fs.writeFileSync(USERS_FILE, JSON.stringify(USERS, null, 2), 'utf-8');
-      fs.writeFileSync(USER_SESSIONS_FILE, JSON.stringify(USER_SESSIONS, null, 2), 'utf-8');
-      fs.writeFileSync(AUDIT_LOGS_FILE, JSON.stringify(AUDIT_LOGS, null, 2), 'utf-8');
-      fs.writeFileSync(DISCREPANCIES_FILE, JSON.stringify(DISCREPANCIES, null, 2), 'utf-8');
-      fs.writeFileSync(INCIDENTS_FILE, JSON.stringify(INCIDENTS, null, 2), 'utf-8');
-      fs.writeFileSync(ELECTIONS_FILE, JSON.stringify(ELECTIONS, null, 2), 'utf-8');
-
-      // Auto-create consolidated snapshot if there are polling units or uploaded result sheets
-      if (POLLING_UNITS.length > 0 || Object.keys(RESULT_SHEETS).length > 0) {
-        const snapshotPayload = {
-          version: 2,
-          savedAt: new Date().toISOString(),
-          recordCount: POLLING_UNITS.length,
-          resultSheetsCount: Object.keys(RESULT_SHEETS).length,
-          elections: ELECTIONS,
-          pollingUnits: POLLING_UNITS,
-          resultSheets: RESULT_SHEETS,
-          users: USERS,
-          discrepancies: DISCREPANCIES,
-          incidents: INCIDENTS,
-          auditLogs: AUDIT_LOGS.slice(0, 100),
-        };
-        const snapJson = JSON.stringify(snapshotPayload, null, 2);
-        fs.writeFileSync(SNAPSHOT_FILE, snapJson, 'utf-8');
-
-        try {
-          const publicDir = path.join(__dirname, 'public');
-          if (!fs.existsSync(publicDir)) fs.mkdirSync(publicDir, { recursive: true });
-          fs.writeFileSync(PUBLIC_SNAPSHOT_FILE, snapJson, 'utf-8');
-        } catch {}
-
-        try {
-          const repoDataDir = path.join(__dirname, 'data');
-          if (!fs.existsSync(repoDataDir)) fs.mkdirSync(repoDataDir, { recursive: true });
-          if (repoDataDir !== DATA_DIR) {
-            fs.writeFileSync(REPO_SNAPSHOT_FILE, snapJson, 'utf-8');
-          }
-        } catch {}
-      }
-    } catch (err: any) {
-      console.error('[DATABASE PERSISTENCE] Error saving to disk:', err.message);
-    }
-  };
-
-  if (immediate) {
-    if (saveDbDebounceTimer) clearTimeout(saveDbDebounceTimer);
-    doSave();
-  } else {
-    if (saveDbDebounceTimer) clearTimeout(saveDbDebounceTimer);
-    saveDbDebounceTimer = setTimeout(doSave, 800);
+// Write each JSON file via a same-directory temporary file and atomic rename.
+// This prevents readers from observing truncated JSON after a process interruption.
+function atomicWriteFile(filePath: string, contents: string) {
+  const dir = path.dirname(filePath);
+  fs.mkdirSync(dir, { recursive: true });
+  const tempPath = path.join(dir, `.${path.basename(filePath)}.${process.pid}.${crypto.randomBytes(6).toString('hex')}.tmp`);
+  let fd: number | undefined;
+  try {
+    fd = fs.openSync(tempPath, 'wx', 0o600);
+    fs.writeFileSync(fd, contents, 'utf-8');
+    fs.fsyncSync(fd);
+    fs.closeSync(fd);
+    fd = undefined;
+    fs.renameSync(tempPath, filePath);
+    try { const dirFd = fs.openSync(dir, 'r'); try { fs.fsyncSync(dirFd); } finally { fs.closeSync(dirFd); } } catch {}
+  } catch (error) {
+    if (fd !== undefined) { try { fs.closeSync(fd); } catch {} }
+    try { fs.unlinkSync(tempPath); } catch {}
+    throw error;
   }
 }
 
+function rotateSnapshotBackup() {
+  if (!fs.existsSync(SNAPSHOT_FILE)) return;
+  const backupDir = path.join(DATA_DIR, 'backups');
+  fs.mkdirSync(backupDir, { recursive: true, mode: 0o700 });
+  const backupPath = path.join(backupDir, `neramp_snapshot_${new Date().toISOString().replace(/[:.]/g, '-')}.json`);
+  fs.copyFileSync(SNAPSHOT_FILE, backupPath, fs.constants.COPYFILE_EXCL);
+  try { fs.chmodSync(backupPath, 0o600); } catch {}
+  const backups = fs.readdirSync(backupDir).filter((name) => /^neramp_snapshot_.*\.json$/.test(name)).sort().reverse();
+  for (const stale of backups.slice(5)) { try { fs.unlinkSync(path.join(backupDir, stale)); } catch {} }
+}
+
+function saveDatabaseToDisk(immediate: boolean = false) {
+  const doSave = () => {
+    try {
+      if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true, mode: 0o700 });
+      atomicWriteFile(POLLING_UNITS_FILE, JSON.stringify(POLLING_UNITS, null, 2));
+      atomicWriteFile(RESULT_SHEETS_FILE, JSON.stringify(RESULT_SHEETS, null, 2));
+      atomicWriteFile(USERS_FILE, JSON.stringify(USERS, null, 2));
+      atomicWriteFile(USER_SESSIONS_FILE, JSON.stringify(USER_SESSIONS, null, 2));
+      atomicWriteFile(AUDIT_LOGS_FILE, JSON.stringify(AUDIT_LOGS, null, 2));
+      atomicWriteFile(DISCREPANCIES_FILE, JSON.stringify(DISCREPANCIES, null, 2));
+      atomicWriteFile(INCIDENTS_FILE, JSON.stringify(INCIDENTS, null, 2));
+      atomicWriteFile(ELECTIONS_FILE, JSON.stringify(ELECTIONS, null, 2));
+      // Keep recovery snapshots only in the configured data directory; never expose
+      // election records or account metadata via the public web root or source tree.
+      if (POLLING_UNITS.length > 0 || Object.keys(RESULT_SHEETS).length > 0) {
+        const snapshotPayload = {
+          version: 3, savedAt: new Date().toISOString(),
+          recordCount: POLLING_UNITS.length, resultSheetsCount: Object.keys(RESULT_SHEETS).length,
+          elections: ELECTIONS, pollingUnits: POLLING_UNITS, resultSheets: RESULT_SHEETS,
+          discrepancies: DISCREPANCIES, incidents: INCIDENTS, auditLogs: AUDIT_LOGS.slice(0, 100),
+        };
+        rotateSnapshotBackup();
+        atomicWriteFile(SNAPSHOT_FILE, JSON.stringify(snapshotPayload, null, 2));
+      }
+    } catch (err: any) { console.error('[DATABASE PERSISTENCE] Error saving to disk:', err.message); }
+  };
+  if (immediate) { if (saveDbDebounceTimer) clearTimeout(saveDbDebounceTimer); doSave(); }
+  else { if (saveDbDebounceTimer) clearTimeout(saveDbDebounceTimer); saveDbDebounceTimer = setTimeout(doSave, 800); }
+}
 function loadDatabaseFromDisk() {
   try {
     let loadedPus = false;
@@ -819,14 +846,11 @@ function loadDatabaseFromDisk() {
 
     // Fallback automatic recovery if primary store is empty (e.g. after fresh Render deployment)
     if (!loadedPus || POLLING_UNITS.length === 0) {
+      // Only recover from snapshots within DATA_DIR. Do not read public web-root or
+      // source-tree snapshots, which may be stale and are not a durable trusted store.
       const fallbackSnapshotPaths = [
         SNAPSHOT_FILE,
-        REPO_SNAPSHOT_FILE,
-        PUBLIC_SNAPSHOT_FILE,
-        path.join(__dirname, 'data', 'neramp_database_snapshot.json'),
-        path.join(__dirname, 'public', 'neramp_database_snapshot.json'),
-        path.join(__dirname, 'public', 'data', 'neramp_database_snapshot.json'),
-        path.join(__dirname, 'data', 'neramp_polling_units.json'),
+        path.join(DATA_DIR, 'neramp_polling_units.json'),
       ];
 
       for (const candidate of fallbackSnapshotPaths) {
@@ -899,8 +923,39 @@ function loadDatabaseFromDisk() {
   }
 }
 
-// Initial load from disk
+// Load durable records before serving requests. Token hashes are loaded below after
+// the authentication registry is initialized; raw bearer tokens are never persisted.
 loadDatabaseFromDisk();
+
+// Remove the publicly known legacy password from persisted accounts. If a unique
+// bootstrap secret is configured, it may provision only the Super Admin account.
+let authCredentialMigrationChanged = false;
+for (const user of USERS) {
+  const hasLegacyPassword = Boolean(user.passwordHash && user.salt &&
+    verifyPassword(LEGACY_DEFAULT_PASS, user.passwordHash, user.salt));
+  if (hasLegacyPassword) {
+    if (user.role === 'SUPER_ADMIN' && bootstrapAdminCreds) {
+      user.passwordHash = bootstrapAdminCreds.hash;
+      user.salt = bootstrapAdminCreds.salt;
+    } else {
+      user.passwordHash = '';
+      user.salt = '';
+    }
+    user.updatedAt = new Date().toISOString();
+    authCredentialMigrationChanged = true;
+  }
+}
+const bootstrapAdmin = USERS.find((user) => user.role === 'SUPER_ADMIN' || user.email.toLowerCase() === 'drisatech@gmail.com');
+if (bootstrapAdmin && (!bootstrapAdmin.passwordHash || !bootstrapAdmin.salt) && bootstrapAdminCreds) {
+  bootstrapAdmin.passwordHash = bootstrapAdminCreds.hash;
+  bootstrapAdmin.salt = bootstrapAdminCreds.salt;
+  bootstrapAdmin.updatedAt = new Date().toISOString();
+  authCredentialMigrationChanged = true;
+}
+if (authCredentialMigrationChanged) {
+  console.warn('[AUTH] Legacy/default credentials were disabled or replaced. Review account access and rotate bootstrap credentials.');
+  saveDatabaseToDisk(true);
+}
 
 // Data-Quality Alerts & Statistical Lead Queues
 let DATA_QUALITY_ALERTS: any[] = [];
@@ -1153,12 +1208,25 @@ app.get('/api/v1/health', (_req: Request, res: Response) => {
 
 // Kubernetes / Cloud Run Readiness Probe
 app.get('/api/v1/health/ready', (_req: Request, res: Response) => {
-  res.json({
-    status: 'READY',
+  let dataDirectoryWritable = false;
+  try { fs.accessSync(DATA_DIR, fs.constants.W_OK); dataDirectoryWritable = true; } catch { dataDirectoryWritable = false; }
+  // DATA_DIR alone is not proof of a persistent volume: the same path can exist on ephemeral storage.
+  const persistentVolumeConfigured = Boolean(process.env.RENDER_DISK_PATH) ||
+    (process.env.NERAMP_PERSISTENCE_MODE === 'persistent-disk' && process.env.DATA_DIR === '/var/data');
+  const persistenceConfigured = persistentVolumeConfigured && dataDirectoryWritable;
+  const ready = dataDirectoryWritable && (process.env.NERAMP_REQUIRE_DURABLE_STORAGE !== 'true' || persistenceConfigured);
+  res.status(ready ? 200 : 503).json({
+    status: ready ? 'READY' : 'NOT_READY',
     timestamp: new Date().toISOString(),
-    databaseConnected: true,
-    cacheAvailable: true,
-    activeBackgroundLocks: false,
+    storage: 'local-json-file-store',
+    dataDirectoryWritable,
+    persistentVolumeConfigured,
+    persistenceConfigured,
+    snapshotBackups: path.join(DATA_DIR, 'backups'),
+    warning: persistenceConfigured ? 'A persistent volume is configured; file-backed storage still requires an externally stored backup and a successful restore drill.' : 'Durable persistence is not confirmed. Local files may be lost across restarts or deployments.',
+    databaseConnected: false,
+    cacheAvailable: false,
+    activeBackgroundLocks: isLoopExtractionRunningNow,
   });
 });
 
@@ -1171,55 +1239,81 @@ app.get('/api/v1/health/live', (_req: Request, res: Response) => {
 });
 
 // Secure Evidence and Document Upload Handler (Integrated with Memory Store, Disk Cache, & Google Cloud Storage)
-app.post('/api/v1/evidence/upload', async (req: Request, res: Response) => {
-  const { filename, fileContentBase64, contentType } = req.body || {};
+app.post('/api/v1/evidence/upload', requireRoles(
+  ['REGISTERED_OBSERVER', 'STATE_COORDINATOR', 'LGA_COORDINATOR', 'MONITORING_COORDINATOR', 'SUPER_ADMIN', 'PROJECT_ADMIN'],
+  'evidence-upload',
+  12,
+  60 * 60 * 1000
+), async (req: Request, res: Response) => {
+  const { filename, fileContentBase64 } = req.body || {};
+  const user = res.locals.authUser as UserItem;
 
-  if (!filename || !fileContentBase64) {
+  if (typeof filename !== 'string' || !filename.trim() || typeof fileContentBase64 !== 'string' || !fileContentBase64.trim()) {
     res.status(400).json({ error: 'Filename and base64 file content are required' });
     return;
   }
 
-  const cleanName = path.basename(String(filename)).replace(/[^a-zA-Z0-9._-]/g, '_');
-  const ext = (path.extname(cleanName) || '.jpg').toLowerCase();
+  const cleanName = path.basename(filename).replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 160);
+  const cleanBase64 = fileContentBase64.replace(/^data:[^;]+;base64,/i, '').replace(/\s/g, '');
+  if (!cleanBase64 || !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(cleanBase64)) {
+    res.status(400).json({ error: 'File content must be valid base64 data.' });
+    return;
+  }
 
-  const cleanBase64 = String(fileContentBase64).replace(/^data:[^;]+;base64,/, '');
   const buffer = Buffer.from(cleanBase64, 'base64');
+  if (buffer.length === 0) {
+    res.status(400).json({ error: 'Uploaded file is empty.' });
+    return;
+  }
   if (buffer.length > 25 * 1024 * 1024) {
-    res.status(400).json({ error: 'File size exceeds 25MB maximum limit' });
+    res.status(413).json({ error: 'File size exceeds 25MB maximum limit' });
+    return;
+  }
+
+  // Detect supported file formats from bytes; never trust the caller-supplied MIME type.
+  let detectedMime: string | undefined;
+  let detectedExt: string | undefined;
+  if (buffer.length >= 8 && buffer.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) {
+    detectedMime = 'image/png'; detectedExt = '.png';
+  } else if (buffer.length >= 3 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) {
+    detectedMime = 'image/jpeg'; detectedExt = '.jpg';
+  } else if (buffer.subarray(0, 5).toString('ascii') === '%PDF-') {
+    detectedMime = 'application/pdf'; detectedExt = '.pdf';
+  }
+  if (!detectedMime || !detectedExt) {
+    res.status(415).json({ error: 'Unsupported evidence format. Upload a valid JPEG, PNG, or PDF file.' });
     return;
   }
 
   const sha256Hash = crypto.createHash('sha256').update(buffer).digest('hex');
   const randomSuffix = crypto.randomBytes(12).toString('hex');
   const timestamp = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14);
-  const storageKey = `evidence/${timestamp}_${randomSuffix}${ext}`;
-  const resolvedMime = contentType || (ext === '.pdf' ? 'application/pdf' : ext === '.png' ? 'image/png' : 'image/jpeg');
+  const storageKey = `evidence/${timestamp}_${randomSuffix}${detectedExt}`;
 
-  // 1. Store in memory map
   const item: StoredEvidenceItem = {
     storageKey,
-    filename: cleanName,
+    filename: path.basename(cleanName, path.extname(cleanName)) + detectedExt,
     fileHash: sha256Hash,
-    mimeType: resolvedMime,
+    mimeType: detectedMime,
     sizeBytes: buffer.length,
     buffer,
     uploadedAt: new Date().toISOString(),
+    uploadedByUserId: user.id,
   };
   EVIDENCE_FILES.set(storageKey, item);
 
-  // 2. Persist to disk in data/evidence
   try {
-    const evidenceDir = path.join(__dirname, 'data', 'evidence');
-    if (!fs.existsSync(evidenceDir)) fs.mkdirSync(evidenceDir, { recursive: true });
-    fs.writeFileSync(path.join(evidenceDir, `${timestamp}_${randomSuffix}${ext}`), buffer);
+    const evidenceDir = path.join(DATA_DIR, 'evidence');
+    if (!fs.existsSync(evidenceDir)) fs.mkdirSync(evidenceDir, { recursive: true, mode: 0o700 });
+    const evidencePath = path.join(evidenceDir, path.basename(storageKey));
+    fs.writeFileSync(evidencePath, buffer, { mode: 0o600, flag: 'wx' });
   } catch (err) {
     console.warn('Local evidence disk persistence notice:', err);
   }
 
-  // 3. Upload to Google Cloud Storage
   let gcsPublicUrl: string | undefined;
   try {
-    gcsPublicUrl = (await uploadToGcsBucket(storageKey, buffer, resolvedMime)) || undefined;
+    gcsPublicUrl = (await uploadToGcsBucket(storageKey, buffer, detectedMime)) || undefined;
     item.gcsPublicUrl = gcsPublicUrl;
   } catch (err) {
     console.warn('Evidence upload fallback to local verified hash:', err);
@@ -1227,75 +1321,72 @@ app.post('/api/v1/evidence/upload', async (req: Request, res: Response) => {
 
   const downloadUrl = `/api/v1/evidence/download/${storageKey}`;
   const viewUrl = `/api/v1/evidence/file/${storageKey}`;
-
   res.status(201).json({
-    message: 'File successfully uploaded, validated, and saved to storage.',
+    message: 'Evidence uploaded and stored. It remains private until attached to an approved public incident.',
     storageKey,
     fileHash: sha256Hash,
     sizeBytes: buffer.length,
-    contentType: resolvedMime,
+    contentType: detectedMime,
     gcsUri: `gs://${GCS_BUCKET_NAME}/${storageKey}`,
-    gcsPublicUrl: gcsPublicUrl || viewUrl,
+    gcsPublicUrl: gcsPublicUrl || undefined,
     viewUrl,
     downloadUrl,
-    verifiedAt: new Date().toISOString(),
+    uploadedAt: item.uploadedAt,
   });
 });
 
 // Serve / View Stored Evidence File
-app.get(['/api/v1/evidence/file/:storageKey(*)', '/api/v1/evidence/file'], (req: Request, res: Response) => {
+app.get(['/api/v1/evidence/file/:storageKey(*)', '/api/v1/evidence/file'], requireAdminAuth, (req: Request, res: Response) => {
+  const user = res.locals.authUser as UserItem | undefined;
   const rawKey = req.params.storageKey || (req.query.key as string) || '';
   const storageKey = rawKey.replace(/^\/+/, '');
-  
-  // Try memory map first
-  const item = EVIDENCE_FILES.get(storageKey) || EVIDENCE_FILES.get(`evidence/${storageKey}`) || Array.from(EVIDENCE_FILES.values()).find(e => e.filename === storageKey || e.fileHash === storageKey);
+  const item = EVIDENCE_FILES.get(storageKey) || EVIDENCE_FILES.get(`evidence/${storageKey}`);
   if (item) {
+    if (!canAccessEvidence(user, item)) {
+      res.status(403).json({ error: 'You do not have permission to access this evidence file.' });
+      return;
+    }
     res.setHeader('Content-Type', item.mimeType);
-    res.setHeader('Cache-Control', 'public, max-age=86400');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('Cache-Control', 'private, no-store');
     res.send(item.buffer);
     return;
   }
 
-  // Check disk
   const filename = path.basename(storageKey);
-  const localPath = path.join(__dirname, 'data', 'evidence', filename);
-  if (fs.existsSync(localPath)) {
+  const localPath = path.join(DATA_DIR, 'evidence', filename);
+  if (user && ['SUPER_ADMIN', 'PROJECT_ADMIN', 'MONITORING_COORDINATOR'].includes(user.role) && fs.existsSync(localPath)) {
     const buf = fs.readFileSync(localPath);
     const mime = filename.endsWith('.pdf') ? 'application/pdf' : filename.endsWith('.png') ? 'image/png' : 'image/jpeg';
     res.setHeader('Content-Type', mime);
-    res.setHeader('Cache-Control', 'public, max-age=86400');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('Cache-Control', 'private, no-store');
     res.send(buf);
     return;
   }
-
-  res.status(404).json({ error: `Evidence file not found: ${storageKey}` });
+  res.status(404).json({ error: 'Evidence file not found' });
 });
 
 // Download Stored Evidence File as Attachment
-app.get(['/api/v1/evidence/download/:storageKey(*)', '/api/v1/evidence/download'], (req: Request, res: Response) => {
+app.get(['/api/v1/evidence/download/:storageKey(*)', '/api/v1/evidence/download'], requireAdminAuth, (req: Request, res: Response) => {
+  const user = res.locals.authUser as UserItem | undefined;
   const rawKey = req.params.storageKey || (req.query.key as string) || '';
   const storageKey = rawKey.replace(/^\/+/, '');
-  
-  const item = EVIDENCE_FILES.get(storageKey) || EVIDENCE_FILES.get(`evidence/${storageKey}`) || Array.from(EVIDENCE_FILES.values()).find(e => e.filename === storageKey || e.fileHash === storageKey);
+  const item = EVIDENCE_FILES.get(storageKey) || EVIDENCE_FILES.get(`evidence/${storageKey}`);
   if (item) {
+    if (!canAccessEvidence(user, item)) {
+      res.status(403).json({ error: 'You do not have permission to download this evidence file.' });
+      return;
+    }
+    const safeName = path.basename(item.filename || 'evidence-file').replace(/["\\\\\r\n]/g, '_');
     res.setHeader('Content-Type', item.mimeType);
-    res.setHeader('Content-Disposition', `attachment; filename="${item.filename || 'evidence.jpg'}"`);
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('Content-Disposition', `attachment; filename="${safeName}"`);
+    res.setHeader('Cache-Control', 'private, no-store');
     res.send(item.buffer);
     return;
   }
-
-  const filename = path.basename(storageKey);
-  const localPath = path.join(__dirname, 'data', 'evidence', filename);
-  if (fs.existsSync(localPath)) {
-    const buf = fs.readFileSync(localPath);
-    const mime = filename.endsWith('.pdf') ? 'application/pdf' : filename.endsWith('.png') ? 'image/png' : 'image/jpeg';
-    res.setHeader('Content-Type', mime);
-    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-    res.send(buf);
-    return;
-  }
-
-  res.status(404).json({ error: `Evidence file for download not found: ${storageKey}` });
+  res.status(404).json({ error: 'Evidence file not found' });
 });
 
 // Elections
@@ -2088,6 +2179,9 @@ app.get('/api/v1/analytics/alerts', (req: Request, res: Response) => {
 });
 
 // Update Alert Workflow Status
+// Alert state changes are management operations; require a server-issued token.
+app.use('/api/v1/analytics/alerts', requireAdminAuth);
+
 app.patch('/api/v1/analytics/alerts/:alertId', (req: Request, res: Response) => {
   const { alertId } = req.params;
   const { status, assignedTo, reviewNotes, reviewerName = 'Monitoring Coordinator' } = req.body;
@@ -2317,6 +2411,9 @@ function parseNumericCell(val: any): number | null {
 }
 
 // Import Registered Voters & PVC Collection from Excel (.xlsx / .xls) or CSV
+// Importing registered-voter data is restricted to authenticated management users.
+app.use('/api/v1/geography/registered-voters/import', requireAdminAuth);
+
 app.post('/api/v1/geography/registered-voters/import', (req: Request, res: Response) => {
   try {
     const { fileBase64, fileName, records } = req.body;
@@ -2870,6 +2967,127 @@ app.get('/api/v1/elections/:electionId/published-incidents', (req: Request, res:
 // AUTHENTICATED & OBSERVER ENDPOINTS
 // ==========================================
 
+// Server-side bearer-token registry. Tokens expire after 8 hours; process restart invalidates them.
+const ACTIVE_AUTH_TOKENS = new Map<string, { userId: string; sessionId: string; expiresAt: number }>();
+const AUTH_TOKEN_TTL_MS = 8 * 60 * 60 * 1000;
+const hashAuthToken = (token: string) => crypto.createHash('sha256').update(token).digest('hex');
+function persistAuthTokens() {
+  atomicWriteFile(AUTH_TOKENS_FILE, JSON.stringify(Array.from(ACTIVE_AUTH_TOKENS.entries()), null, 2));
+}
+try {
+  if (fs.existsSync(AUTH_TOKENS_FILE)) {
+    const persistedTokens = JSON.parse(fs.readFileSync(AUTH_TOKENS_FILE, 'utf-8'));
+    if (Array.isArray(persistedTokens)) {
+      for (const entry of persistedTokens) {
+        if (!Array.isArray(entry) || entry.length !== 2) continue;
+        const [tokenHash, record] = entry;
+        if (typeof tokenHash !== 'string' || !/^[a-f0-9]{64}$/.test(tokenHash) ||
+            !record || typeof record.userId !== 'string' || typeof record.sessionId !== 'string' ||
+            !Number.isFinite(record.expiresAt) || record.expiresAt <= Date.now()) continue;
+        const session = USER_SESSIONS.find((item) => item.id === record.sessionId && item.status === 'ACTIVE');
+        const user = USERS.find((item) => item.id === record.userId && item.isActive && item.approvalStatus !== 'REJECTED' && item.approvalStatus !== 'PENDING_APPROVAL');
+        if (session && user) ACTIVE_AUTH_TOKENS.set(tokenHash, record);
+      }
+    }
+    persistAuthTokens();
+  }
+} catch (err: any) {
+  console.error('[AUTH] Could not load persisted session token hashes; sessions will require sign-in:', err.message);
+  ACTIVE_AUTH_TOKENS.clear();
+}
+
+function requireAdminAuth(req: Request, res: Response, next: () => void) {
+  const match = (req.headers.authorization || '').match(/^Bearer\s+(.+)$/i);
+  const token = match?.[1];
+  const tokenHash = token ? hashAuthToken(token) : undefined;
+  const tokenRecord = tokenHash ? ACTIVE_AUTH_TOKENS.get(tokenHash) : undefined;
+  if (!tokenRecord || tokenRecord.expiresAt <= Date.now()) {
+    if (tokenHash) { ACTIVE_AUTH_TOKENS.delete(tokenHash); persistAuthTokens(); }
+    res.status(401).json({ error: 'Authentication required. Sign in again with a valid management session.' });
+    return;
+  }
+  const user = USERS.find((candidate) => candidate.id === tokenRecord.userId);
+  const session = USER_SESSIONS.find((candidate) => candidate.id === tokenRecord.sessionId);
+  if (!user || !session || session.status !== 'ACTIVE' || !user.isActive ||
+      user.approvalStatus === 'PENDING_APPROVAL' || user.approvalStatus === 'REJECTED') {
+    ACTIVE_AUTH_TOKENS.delete(tokenHash!);
+    persistAuthTokens();
+    res.status(401).json({ error: 'Management account or session is no longer active.' });
+    return;
+  }
+  const pathname = new URL(req.originalUrl, 'http://localhost').pathname;
+  const isWrite = !['GET', 'HEAD', 'OPTIONS'].includes(req.method.toUpperCase());
+  const privilegedPath = /\/api\/v1\/admin\/(?:data\/(?:restore|purge-demo|backup)|users(?:\/|$)|config(?:\/|$)|operations(?:\/|$)|storage\/init-folders|observers\/[^/]+\/verify-credentials|incidents\/[^/]+\/publish)|\/api\/v1\/(?:ocr\/api-key|geography\/registered-voters\/import)/i.test(pathname);
+  if (privilegedPath && !['SUPER_ADMIN', 'PROJECT_ADMIN'].includes(user.role)) {
+    res.status(403).json({ error: 'This administrative operation requires SUPER_ADMIN or PROJECT_ADMIN privileges.' });
+    return;
+  }
+  const verificationWrite = /\/api\/v1\/(?:verification\/[^/]+\/(?:review|correct-transcription)|ocr\/(?:transcribe-sheet\/[^/]+|transcribe-batch|upload-and-transcribe|test-connection))/i.test(pathname);
+  if (isWrite && verificationWrite && !['SUPER_ADMIN', 'PROJECT_ADMIN', 'RESULT_VERIFIER'].includes(user.role)) {
+    res.status(403).json({ error: 'This verification or OCR operation requires a verifier or administrator role.' });
+    return;
+  }
+  const incidentPath = /\/api\/v1\/observer\/incidents\/[^/]+$/i.test(pathname);
+  if (incidentPath && req.method.toUpperCase() === 'DELETE' && !['SUPER_ADMIN', 'PROJECT_ADMIN'].includes(user.role)) {
+    res.status(403).json({ error: 'Deleting an incident requires SUPER_ADMIN or PROJECT_ADMIN privileges.' });
+    return;
+  }
+  if (incidentPath && req.method.toUpperCase() === 'PATCH' && !['SUPER_ADMIN', 'PROJECT_ADMIN', 'MONITORING_COORDINATOR'].includes(user.role)) {
+    res.status(403).json({ error: 'Updating an incident requires a monitoring coordinator or administrator role.' });
+    return;
+  }
+  session.lastActiveAt = new Date().toISOString();
+  res.locals.authUser = user;
+  res.locals.authSession = session;
+  next();
+}
+
+// In-process request throttling is a best-effort safeguard for the current single-instance demo.
+// It is not a distributed rate limiter and must not be treated as election-day scale protection.
+const REQUEST_WINDOW_LIMITS = new Map<string, { count: number; resetAt: number }>();
+function allowWindowRequest(req: Request, res: Response, bucket: string, maxRequests: number, windowMs: number): boolean {
+  const ip = req.ip || req.socket.remoteAddress || 'unknown';
+  const key = `${bucket}:${ip}`;
+  const now = Date.now();
+  let entry = REQUEST_WINDOW_LIMITS.get(key);
+  if (!entry || entry.resetAt <= now) {
+    entry = { count: 0, resetAt: now + windowMs };
+    REQUEST_WINDOW_LIMITS.set(key, entry);
+  }
+  if (entry.count >= maxRequests) {
+    res.setHeader('Retry-After', String(Math.max(1, Math.ceil((entry.resetAt - now) / 1000))));
+    res.status(429).json({ error: 'Too many requests. Please wait before trying again.' });
+    return false;
+  }
+  entry.count += 1;
+  if (REQUEST_WINDOW_LIMITS.size > 5000) {
+    for (const [storedKey, value] of REQUEST_WINDOW_LIMITS) {
+      if (value.resetAt <= now) REQUEST_WINDOW_LIMITS.delete(storedKey);
+    }
+  }
+  return true;
+}
+
+function requireRoles(allowedRoles: string[], bucket: string, maxRequests: number, windowMs: number) {
+  return (req: Request, res: Response, next: () => void) => {
+    requireAdminAuth(req, res, () => {
+      const user = res.locals.authUser as UserItem | undefined;
+      if (!user || !allowedRoles.includes(user.role)) {
+        res.status(403).json({ error: 'Your account role is not permitted to perform this operation.' });
+        return;
+      }
+      if (!allowWindowRequest(req, res, bucket, maxRequests, windowMs)) return;
+      next();
+    });
+  };
+}
+
+function canAccessEvidence(user: UserItem | undefined, item: StoredEvidenceItem): boolean {
+  if (!user) return false;
+  if (['SUPER_ADMIN', 'PROJECT_ADMIN', 'MONITORING_COORDINATOR'].includes(user.role)) return true;
+  return Boolean(item.uploadedByUserId && item.uploadedByUserId === user.id);
+}
+
 // Permanent Management Authentication with Password Verification & Brute-Force Rate Limiting
 app.post('/api/v1/auth/login', (req: Request, res: Response) => {
   const { email, password } = req.body;
@@ -2902,24 +3120,22 @@ app.post('/api/v1/auth/login', (req: Request, res: Response) => {
     return;
   }
 
-  // 3. Password Verification
-  if (user.passwordHash && user.salt) {
-    if (!password) {
-      res.status(400).json({ error: 'Management password is required.' });
-      return;
-    }
-    const isValid = verifyPassword(password, user.passwordHash, user.salt);
-    if (!isValid) {
-      recordAttempt(lockoutKey, false);
-      res.status(401).json({ error: 'Incorrect management password.' });
-      return;
-    }
-  } else if (password) {
-    // First time password setup on existing pre-configured account
-    const hashed = hashPassword(password);
-    user.passwordHash = hashed.hash;
-    user.salt = hashed.salt;
-    user.updatedAt = new Date().toISOString();
+  // 3. Password verification. Password setup must use an approved provisioning flow;
+  // login must never allow anyone who knows an email address to set its password.
+  if (!password) {
+    res.status(400).json({ error: 'Management password is required.' });
+    return;
+  }
+  if (!user.passwordHash || !user.salt) {
+    recordAttempt(lockoutKey, false);
+    res.status(403).json({ error: 'This account has no provisioned password. Contact an administrator to complete secure account setup.' });
+    return;
+  }
+  const isValid = verifyPassword(password, user.passwordHash, user.salt);
+  if (!isValid) {
+    recordAttempt(lockoutKey, false);
+    res.status(401).json({ error: 'Incorrect management password.' });
+    return;
   }
 
   // 4. Staff Authorization Check: Super Admin or Project Admin must approve new staff registrations
@@ -2973,7 +3189,9 @@ app.post('/api/v1/auth/login', (req: Request, res: Response) => {
   USER_SESSIONS.unshift(sessionRecord);
   if (USER_SESSIONS.length > 250) USER_SESSIONS.pop();
 
-  const token = 'jwt-sec2027-' + crypto.randomBytes(24).toString('hex');
+  const token = crypto.randomBytes(32).toString('hex');
+  ACTIVE_AUTH_TOKENS.set(hashAuthToken(token), { userId: user.id, sessionId, expiresAt: Date.now() + AUTH_TOKEN_TTL_MS });
+  persistAuthTokens();
 
   AUDIT_LOGS.unshift({
     id: 'audit-' + Date.now(),
@@ -3128,44 +3346,54 @@ app.get('/api/v1/auth/me', (req: Request, res: Response) => {
 });
 
 app.post('/api/v1/auth/logout', (req: Request, res: Response) => {
-  const { sessionId, userEmail } = req.body;
-  if (sessionId) {
-    const session = USER_SESSIONS.find((s) => s.id === sessionId);
-    if (session) {
-      session.logoutAt = new Date().toISOString();
-      session.status = 'LOGGED_OUT';
-      const loginTime = new Date(session.loginAt).getTime();
-      session.durationSeconds = Math.max(0, Math.round((Date.now() - loginTime) / 1000));
-    }
+  // Never trust session IDs or user identities supplied in the request body for logout.
+  const bearer = (req.headers.authorization || '').match(/^Bearer\s+(.+)$/i)?.[1];
+  if (!bearer) {
+    res.status(401).json({ error: 'A valid management bearer token is required to sign out.' });
+    return;
   }
-  if (userEmail) {
+  const tokenHash = hashAuthToken(bearer);
+  const tokenRecord = ACTIVE_AUTH_TOKENS.get(tokenHash);
+  if (!tokenRecord || tokenRecord.expiresAt <= Date.now()) {
+    ACTIVE_AUTH_TOKENS.delete(tokenHash);
+    persistAuthTokens();
+    res.status(401).json({ error: 'Management session is invalid or expired.' });
+    return;
+  }
+  const session = USER_SESSIONS.find((item) => item.id === tokenRecord.sessionId && item.userId === tokenRecord.userId);
+  const user = USERS.find((item) => item.id === tokenRecord.userId);
+  ACTIVE_AUTH_TOKENS.delete(tokenHash);
+  if (session) {
+    session.logoutAt = new Date().toISOString();
+    session.status = 'LOGGED_OUT';
+    const loginTime = new Date(session.loginAt).getTime();
+    session.durationSeconds = Math.max(0, Math.round((Date.now() - loginTime) / 1000));
+  }
+  if (user) {
     AUDIT_LOGS.unshift({
       id: 'audit-' + Date.now(),
       timestamp: new Date().toISOString(),
-      actor: userEmail,
+      actor: user.email,
+      actorName: user.fullName,
+      actorRole: user.role,
       action: 'USER_LOGOUT',
-      target: userEmail,
-      details: `Management user ${userEmail} signed out.`,
+      target: user.id,
+      details: `Management user ${user.fullName} (${user.email}) signed out.`,
     });
   }
+  persistAuthTokens();
   saveDatabaseToDisk(true);
   res.json({ message: 'Logged out successfully. Session closed.' });
 });
 
 // Super Admin Management Monitoring Logs: Who logged in, when, how long, and activities carried out
-app.get('/api/v1/admin/management-monitoring', (req: Request, res: Response) => {
-  const actorRole = (req.headers['x-actor-role'] as string) || '';
-  const actorEmail = (req.headers['x-actor-email'] as string) || '';
+// Protect every admin route, including the management-monitoring route defined before ingestion endpoints.
+app.use('/api/v1/admin', requireAdminAuth);
 
-  // Only SUPER_ADMIN has access
-  const isSuperAdmin =
-    actorRole === 'SUPER_ADMIN' ||
-    USERS.some(
-      (u) =>
-        (u.email.toLowerCase() === actorEmail.toLowerCase() ||
-          actorEmail.toLowerCase() === 'drisatech@gmail.com') &&
-        u.role === 'SUPER_ADMIN'
-    );
+app.get('/api/v1/admin/management-monitoring', (_req: Request, res: Response) => {
+  // Identity comes only from the server-validated bearer token, never from request headers.
+  const authenticatedUser = res.locals.authUser as UserItem | undefined;
+  const isSuperAdmin = authenticatedUser?.role === 'SUPER_ADMIN';
 
   if (!isSuperAdmin) {
     res.status(403).json({
@@ -3232,22 +3460,43 @@ app.get('/api/v1/admin/management-monitoring', (req: Request, res: Response) => 
 });
 
 // Observer Assignments
-app.get('/api/v1/observer/assignments', (_req: Request, res: Response) => {
-  res.json({ data: OBSERVER_ASSIGNMENTS, total: OBSERVER_ASSIGNMENTS.length });
+app.get('/api/v1/observer/assignments', requireRoles(
+  ['REGISTERED_OBSERVER', 'STATE_COORDINATOR', 'LGA_COORDINATOR', 'MONITORING_COORDINATOR', 'SUPER_ADMIN', 'PROJECT_ADMIN'],
+  'observer-read',
+  60,
+  60 * 1000
+), (req: Request, res: Response) => {
+  const user = res.locals.authUser as UserItem;
+  const assignments = ['SUPER_ADMIN', 'PROJECT_ADMIN', 'MONITORING_COORDINATOR', 'STATE_COORDINATOR', 'LGA_COORDINATOR'].includes(user.role)
+    ? OBSERVER_ASSIGNMENTS
+    : OBSERVER_ASSIGNMENTS.filter((a: any) => a.userId === user.id || a.observerBadge === user.badge);
+  res.json({ data: assignments, total: assignments.length });
 });
 
 // Observer Submissions
-app.get('/api/v1/observer/submissions', (_req: Request, res: Response) => {
-  res.json({
-    data: {
-      incidents: INCIDENTS,
-      assignedPus: POLLING_UNITS.slice(0, 25),
-    },
-  });
+app.get('/api/v1/observer/submissions', requireRoles(
+  ['REGISTERED_OBSERVER', 'STATE_COORDINATOR', 'LGA_COORDINATOR', 'MONITORING_COORDINATOR', 'SUPER_ADMIN', 'PROJECT_ADMIN'],
+  'observer-read',
+  60,
+  60 * 1000
+), (req: Request, res: Response) => {
+  const user = res.locals.authUser as UserItem;
+  const canReviewAll = ['SUPER_ADMIN', 'PROJECT_ADMIN', 'MONITORING_COORDINATOR', 'STATE_COORDINATOR', 'LGA_COORDINATOR'].includes(user.role);
+  const incidents = INCIDENTS.filter((incident) => incident.isPublished || canReviewAll || incident.observerBadge === (user.badge || user.id));
+  const assignedPus = user.assignedPus?.length
+    ? POLLING_UNITS.filter((pu) => user.assignedPus!.includes(pu.code) || user.assignedPus!.includes(pu.id))
+    : canReviewAll ? POLLING_UNITS.slice(0, 25) : [];
+  res.json({ data: { incidents, assignedPus } });
 });
 
-// Submit Incident
-app.post('/api/v1/observer/incidents', (req: Request, res: Response) => {
+// Submit Incident. Observer identity and publication state are controlled by the server.
+app.post('/api/v1/observer/incidents', requireRoles(
+  ['REGISTERED_OBSERVER', 'STATE_COORDINATOR', 'LGA_COORDINATOR', 'MONITORING_COORDINATOR', 'SUPER_ADMIN', 'PROJECT_ADMIN'],
+  'observer-incident-submit',
+  10,
+  60 * 60 * 1000
+), (req: Request, res: Response) => {
+  const user = res.locals.authUser as UserItem;
   const {
     electionId = 'elec-2026-gov-osun',
     category,
@@ -3259,135 +3508,122 @@ app.post('/api/v1/observer/incidents', (req: Request, res: Response) => {
     pollingUnitName,
     description,
     severity,
-    observerBadge,
-    evidenceCount,
     evidenceKey,
-    evidenceFilename,
-    evidenceHash,
-    evidenceUrl,
   } = req.body || {};
 
+  const allowedCategories = ['DELAYED_OPENING', 'BVAS_MALFUNCTION', 'RESULT_SHEET_UNAVAILABLE', 'BALLOT_DISRUPTION', 'SECURITY_INCIDENT', 'VOTER_INTIMIDATION'];
+  const allowedSeverities = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
+  if (typeof description !== 'string' || !description.trim() || description.trim().length > 5000) {
+    res.status(400).json({ error: 'A description between 1 and 5000 characters is required.' });
+    return;
+  }
+  if (category && !allowedCategories.includes(category)) {
+    res.status(400).json({ error: 'Invalid incident category.' });
+    return;
+  }
+  if (severity && !allowedSeverities.includes(severity)) {
+    res.status(400).json({ error: 'Invalid incident severity.' });
+    return;
+  }
+
   const resolvedSt = stateCode
-    ? STATES.find((s) => s.code === stateCode || s.name.toUpperCase() === String(stateName || '').toUpperCase())
-    : STATES.find((s) => s.name.toUpperCase() === String(stateName || 'Osun').toUpperCase());
-
+    ? STATES.find((st) => st.code === stateCode || st.name.toUpperCase() === String(stateName || '').toUpperCase())
+    : STATES.find((st) => st.name.toUpperCase() === String(stateName || 'Osun').toUpperCase());
   const resolvedLga = lgaCode
-    ? LGAS.find((l) => l.code === lgaCode)
-    : LGAS.find((l) => l.name.toUpperCase() === String(lgaName || '').toUpperCase());
+    ? LGAS.find((lga) => lga.code === lgaCode && (!resolvedSt || lga.stateCode === resolvedSt.code))
+    : LGAS.find((lga) => lga.name.toUpperCase() === String(lgaName || '').toUpperCase() && (!resolvedSt || lga.stateCode === resolvedSt.code));
 
-  const cleanEvidenceKey = evidenceKey ? String(evidenceKey).replace(/^\/+/, '') : undefined;
-  const resolvedEvidenceUrl = cleanEvidenceKey
-    ? (evidenceUrl && evidenceUrl.startsWith('http') ? evidenceUrl : `/api/v1/evidence/file/${cleanEvidenceKey}`)
-    : evidenceUrl;
+  const cleanEvidenceKey = typeof evidenceKey === 'string' ? evidenceKey.replace(/^\/+/, '') : undefined;
+  const evidence = cleanEvidenceKey ? EVIDENCE_FILES.get(cleanEvidenceKey) : undefined;
+  if (cleanEvidenceKey && (!evidence || evidence.uploadedByUserId !== user.id)) {
+    res.status(400).json({ error: 'Attached evidence must be uploaded by your authenticated account first.' });
+    return;
+  }
 
+  const badge = user.badge || user.id;
   const newIncident: IncidentReport = {
-    id: 'inc-' + String(INCIDENTS.length + 1).padStart(3, '0') + '-' + Date.now().toString().slice(-4),
-    electionId: electionId || 'elec-2026-gov-osun',
+    id: 'inc-' + crypto.randomBytes(8).toString('hex'),
+    electionId: typeof electionId === 'string' && electionId.length <= 120 ? electionId : 'elec-2026-gov-osun',
     category: category || 'BVAS_MALFUNCTION',
-    stateCode: resolvedSt?.code || stateCode || 'OSUN',
-    stateName: stateName || resolvedSt?.name || 'Osun',
-    lgaCode: resolvedLga?.code || lgaCode || '',
-    lgaName: lgaName || resolvedLga?.name || 'Osogbo',
-    pollingUnitCode: pollingUnitCode || '',
-    pollingUnitName: pollingUnitName || '',
+    stateCode: resolvedSt?.code || '',
+    stateName: resolvedSt?.name || '',
+    lgaCode: resolvedLga?.code || '',
+    lgaName: resolvedLga?.name || '',
+    pollingUnitCode: typeof pollingUnitCode === 'string' ? pollingUnitCode.slice(0, 80) : '',
+    pollingUnitName: typeof pollingUnitName === 'string' ? pollingUnitName.slice(0, 200) : '',
     reportedAt: new Date().toISOString(),
-    description: description || 'Observer field report submitted.',
-    status: 'VERIFIED',
+    description: description.trim(),
+    status: 'SUBMITTED',
     severity: severity || 'MEDIUM',
-    isPublished: true,
-    evidenceCount: evidenceCount !== undefined ? Number(evidenceCount) : cleanEvidenceKey ? 1 : 0,
-    evidenceKey: cleanEvidenceKey,
-    evidenceFilename: evidenceFilename || (cleanEvidenceKey ? path.basename(cleanEvidenceKey) : undefined),
-    evidenceHash,
-    evidenceUrl: resolvedEvidenceUrl,
-    observerBadge: observerBadge || 'OBS-NG-2026-8841',
+    isPublished: false,
+    evidenceCount: evidence ? 1 : 0,
+    evidenceKey: evidence?.storageKey,
+    evidenceFilename: evidence?.filename,
+    evidenceHash: evidence?.fileHash,
+    evidenceUrl: evidence ? undefined : undefined,
+    evidenceSizeBytes: evidence?.sizeBytes,
+    evidenceMimeType: evidence?.mimeType,
+    observerBadge: badge,
   };
 
   INCIDENTS.unshift(newIncident);
-
   AUDIT_LOGS.unshift({
     id: 'audit-' + Date.now(),
     timestamp: new Date().toISOString(),
-    actor: `observer:${newIncident.observerBadge}`,
+    actor: user.email,
     action: 'SUBMIT_INCIDENT_REPORT',
     target: newIncident.id,
-    details: `Incident reported: ${newIncident.category} at ${newIncident.stateName} / ${newIncident.lgaName} (${newIncident.pollingUnitCode || 'LGA Level'}). Evidence files: ${newIncident.evidenceCount}.`,
+    details: `Incident submitted for review: ${newIncident.category} at ${newIncident.stateName || 'Unknown state'} / ${newIncident.lgaName || 'Unknown LGA'}.`,
   });
 
-  res.status(201).json({
-    data: newIncident,
-    message: 'Incident report and attached evidence submitted and published.',
-  });
+  res.status(201).json({ data: newIncident, message: 'Incident report submitted for review. It is not publicly visible until approved.' });
 });
 
-// Get Single Full Incident Report by ID
-app.get('/api/v1/observer/incidents/:id', (req: Request, res: Response) => {
-  const { id } = req.params;
-  const incident = INCIDENTS.find((i) => i.id === id);
-  if (!incident) {
-    res.status(404).json({ error: `Incident report '${id}' not found` });
+// Single incident: unpublished reports are visible only to their reporter and authorized reviewers.
+app.get('/api/v1/observer/incidents/:id', requireRoles(
+  ['REGISTERED_OBSERVER', 'STATE_COORDINATOR', 'LGA_COORDINATOR', 'MONITORING_COORDINATOR', 'SUPER_ADMIN', 'PROJECT_ADMIN'],
+  'observer-read',
+  60,
+  60 * 1000
+), (req: Request, res: Response) => {
+  const user = res.locals.authUser as UserItem;
+  const incident = INCIDENTS.find((item) => item.id === req.params.id);
+  const canReviewAll = ['SUPER_ADMIN', 'PROJECT_ADMIN', 'MONITORING_COORDINATOR', 'STATE_COORDINATOR', 'LGA_COORDINATOR'].includes(user.role);
+  if (!incident || (!incident.isPublished && !canReviewAll && incident.observerBadge !== (user.badge || user.id))) {
+    res.status(404).json({ error: 'Incident report not found' });
     return;
   }
   res.json({ data: incident });
 });
 
-// Stream or Download Attached Evidence File for an Incident Report
+// Evidence for an incident is public only after that incident is approved for publication.
 app.get('/api/v1/observer/incidents/:id/evidence', (req: Request, res: Response) => {
   const { id } = req.params;
+  const incident = INCIDENTS.find((item) => item.id === id);
+  if (!incident || !incident.isPublished || incident.status !== 'APPROVED_FOR_PUBLICATION') {
+    res.status(404).json({ error: 'No public evidence is available for this incident' });
+    return;
+  }
   const download = req.query.download === 'true' || req.query.download === '1';
-  const incident = INCIDENTS.find((i) => i.id === id);
-  if (!incident) {
-    res.status(404).json({ error: `Incident report '${id}' not found` });
-    return;
-  }
-
   const storageKey = incident.evidenceKey ? incident.evidenceKey.replace(/^\/+/, '') : '';
-  const item = storageKey
-    ? (EVIDENCE_FILES.get(storageKey) ||
-       EVIDENCE_FILES.get(`evidence/${storageKey}`) ||
-       Array.from(EVIDENCE_FILES.values()).find((e) => e.filename === storageKey || e.fileHash === incident.evidenceHash))
-    : null;
-
-  if (item) {
-    res.setHeader('Content-Type', item.mimeType);
-    if (download) {
-      res.setHeader('Content-Disposition', `attachment; filename="${item.filename || incident.evidenceFilename || 'evidence.jpg'}"`);
-    } else {
-      res.setHeader('Content-Disposition', `inline; filename="${item.filename || incident.evidenceFilename || 'evidence.jpg'}"`);
-    }
-    res.setHeader('Cache-Control', 'public, max-age=86400');
-    res.send(item.buffer);
+  const item = storageKey ? EVIDENCE_FILES.get(storageKey) : null;
+  if (!item) {
+    res.status(404).json({ error: 'No attached evidence file found for this incident' });
     return;
   }
-
-  if (storageKey) {
-    const filename = path.basename(storageKey);
-    const localPath = path.join(__dirname, 'data', 'evidence', filename);
-    if (fs.existsSync(localPath)) {
-      const buf = fs.readFileSync(localPath);
-      const mime = filename.endsWith('.pdf') ? 'application/pdf' : filename.endsWith('.png') ? 'image/png' : 'image/jpeg';
-      res.setHeader('Content-Type', mime);
-      if (download) {
-        res.setHeader('Content-Disposition', `attachment; filename="${incident.evidenceFilename || filename}"`);
-      } else {
-        res.setHeader('Content-Disposition', `inline; filename="${incident.evidenceFilename || filename}"`);
-      }
-      res.send(buf);
-      return;
-    }
+  res.setHeader('Content-Type', item.mimeType);
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Cache-Control', 'public, max-age=300');
+  if (download) {
+    const safeName = path.basename(item.filename || 'evidence-file').replace(/["\\\\\r\n]/g, '_');
+    res.setHeader('Content-Disposition', `attachment; filename="${safeName}"`);
+  } else {
+    res.setHeader('Content-Disposition', 'inline');
   }
-
-  // If incident has an external URL, redirect or proxy
-  if (incident.evidenceUrl && incident.evidenceUrl.startsWith('http')) {
-    res.redirect(incident.evidenceUrl);
-    return;
-  }
-
-  res.status(404).json({ error: 'No attached evidence file found for this incident' });
+  res.send(item.buffer);
 });
 
-// Reopen / Edit Incident Report (Allows Field Observers and Management to rectify errors)
-app.patch('/api/v1/observer/incidents/:id', (req: Request, res: Response) => {
+app.patch('/api/v1/observer/incidents/:id', requireAdminAuth, (req: Request, res: Response) => {
   const { id } = req.params;
   const incident = INCIDENTS.find((i) => i.id === id);
   if (!incident) {
@@ -3457,7 +3693,7 @@ app.patch('/api/v1/observer/incidents/:id', (req: Request, res: Response) => {
 });
 
 // Delete Incident Report
-app.delete('/api/v1/observer/incidents/:id', (req: Request, res: Response) => {
+app.delete('/api/v1/observer/incidents/:id', requireAdminAuth, (req: Request, res: Response) => {
   const { id } = req.params;
   const idx = INCIDENTS.findIndex((i) => i.id === id);
   if (idx === -1) {
@@ -3484,6 +3720,9 @@ app.delete('/api/v1/observer/incidents/:id', (req: Request, res: Response) => {
 });
 
 // Verification Workspace: Review & Correct Transcription
+// Result review and transcription correction require an authenticated management session.
+app.use('/api/v1/verification', requireAdminAuth);
+
 app.post('/api/v1/verification/:resultSheetId/review', (req: Request, res: Response) => {
   const { resultSheetId } = req.params;
   const { decision, notes, verifierName } = req.body;
@@ -3666,6 +3905,8 @@ app.get('/api/v1/verification/:resultSheetId/history', (req: Request, res: Respo
 // ADMINISTRATIVE & INGESTION STATUS
 // ==========================================
 
+// All /api/v1/admin endpoints require a server-issued management token.
+
 let schedulerConfig = {
   enabled: true,
   intervalMinutes: 5,
@@ -3698,39 +3939,32 @@ app.get('/api/v1/admin/ingestion/status', (_req: Request, res: Response) => {
 });
 
 // Source Connection Health Check
-app.post('/api/v1/admin/ingestion/test-connection', (req: Request, res: Response) => {
-  const { adapter = 'InecApprovedSourceAdapter' } = req.body;
+app.post('/api/v1/admin/ingestion/test-connection', async (req: Request, res: Response) => {
+  const { adapter = 'InecApprovedSourceAdapter' } = req.body || {};
   const isOfficial = adapter === 'InecApprovedSourceAdapter';
-
-  const healthCheckResult = {
-    adapter,
-    isOfficial,
-    status: 'CONNECTED',
-    portalUrl: 'https://inecelectionresults.ng',
-    targetElection: 'Governorship election - 2026-08-15 - OSUN',
-    latencyMs: Math.floor(Math.random() * 45) + 35,
-    rateLimitQuota: '60 req/min (0 used in current window)',
-    authMode: process.env.INEC_API_KEY ? 'BEARER_TOKEN' : 'SYNTHETIC_SCHEMA_EVALUATION',
-    credentialsConfigured: Boolean(process.env.INEC_API_KEY),
-    timestamp: new Date().toISOString(),
-    message: process.env.INEC_API_KEY
-      ? 'Live production connection authenticated with INEC IReV results portal.'
-      : 'Source connection validated with official INEC documented schema and synthetic test adapter.',
-  };
-
-  AUDIT_LOGS.unshift({
-    id: 'audit-' + Date.now(),
-    timestamp: new Date().toISOString(),
-    actor: 'admin:connection_checker',
-    action: 'TEST_SOURCE_CONNECTION',
-    target: adapter,
-    details: `Health check executed for ${adapter}. Status: ${healthCheckResult.status}. Latency: ${healthCheckResult.latencyMs}ms.`,
-  });
-
-  res.json({
-    data: healthCheckResult,
-    message: 'Data source connection health verified.',
-  });
+  const portalUrl = 'https://inecelectionresults.ng/elections/types';
+  const startedAt = Date.now();
+  let healthCheckResult: Record<string, any>;
+  if (!isOfficial) {
+    healthCheckResult = { adapter, isOfficial: false, status: 'SIMULATED', simulated: true, latencyMs: null, portalUrl: null, timestamp: new Date().toISOString(), message: 'No live connection was attempted for this adapter. This result is explicitly simulated.' };
+  } else {
+    try {
+      const response = await new Promise<{ statusCode: number }>((resolve, reject) => {
+        const request = https.get(portalUrl, { timeout: 10000, headers: { 'User-Agent': 'NERAMP-source-health-check/1.0', Accept: 'text/html,application/xhtml+xml' } }, (response) => {
+          const result = { statusCode: response.statusCode || 0 }; response.resume(); resolve(result);
+        });
+        request.on('timeout', () => { request.destroy(); reject(new Error('Request timed out after 10 seconds')); });
+        request.on('error', reject);
+      });
+      const reachable = response.statusCode >= 200 && response.statusCode < 400;
+      healthCheckResult = { adapter, isOfficial: true, status: reachable ? 'PORTAL_REACHABLE_API_UNVERIFIED' : 'PORTAL_HTTP_ERROR', simulated: false, httpStatus: response.statusCode, latencyMs: Date.now() - startedAt, portalUrl, credentialsConfigured: Boolean(process.env.INEC_API_KEY), authMode: 'NOT_TESTED', timestamp: new Date().toISOString(), message: reachable ? 'The official portal responded to HTTP. This does not verify an API endpoint, credentials, result-sheet retrieval, or data integrity.' : `The official portal returned HTTP ${response.statusCode}. Live ingestion must not be considered healthy.` };
+    } catch (error: any) {
+      healthCheckResult = { adapter, isOfficial: true, status: 'UNREACHABLE', simulated: false, latencyMs: Date.now() - startedAt, portalUrl, credentialsConfigured: Boolean(process.env.INEC_API_KEY), authMode: 'NOT_TESTED', timestamp: new Date().toISOString(), error: error?.message || 'Unknown connection error', message: 'The official portal could not be reached. No live connection has been verified.' };
+    }
+  }
+  AUDIT_LOGS.unshift({ id: 'audit-' + Date.now(), timestamp: new Date().toISOString(), actor: (req.headers['x-actor-email'] as string) || 'admin:connection_checker', action: 'TEST_SOURCE_CONNECTION', target: adapter, details: `Connection check for ${adapter}. Status: ${healthCheckResult.status}. Simulated: ${Boolean(healthCheckResult.simulated)}.` });
+  saveDatabaseToDisk(true);
+  res.status(healthCheckResult.status === 'UNREACHABLE' || healthCheckResult.status === 'PORTAL_HTTP_ERROR' ? 502 : 200).json({ data: healthCheckResult, message: healthCheckResult.message });
 });
 
 // Configurable Scheduled Ingestion Service Endpoints
@@ -4974,10 +5208,27 @@ function applyOcrExtractionToSheetAndPu(
       ? `Overvoting Alert: Total Valid Votes (${validVotes}) exceeds Accredited Voters (${accreditedVoters}).`
       : `Arithmetic Variance: Sum of party votes (${sumOfPartyVotes}) differs from Total Valid Votes (${validVotes}) by ${difference}.`,
   };
-  sheet.verifiedBy = arithmeticPassed ? officerName : 'Pending Human Review';
-  sheet.verifiedAt = new Date().toISOString();
-  sheet.verifierNotes = `Transcribed from official Form EC8A (${extracted.serialNumber ? 'S/N ' + extracted.serialNumber : sheet.id}). Presiding Officer: ${extracted.presidingOfficerName || 'Recorded'}.`;
-  sheet.requiresHumanReview = !arithmeticPassed || confidencePct < 85;
+  // OCR and arithmetic checks are preliminary machine processing, not human verification.
+  sheet.verifiedBy = undefined;
+  sheet.verifiedAt = undefined;
+  sheet.provenance = {
+    ...(sheet.provenance || {
+      recordOrigin: 'UNKNOWN',
+      sourceDocumentUrl: sheet.sourceUrl,
+      retrievedAt: sheet.retrievalTimestamp,
+      documentSha256: sheet.fileHash,
+      verificationStatus: 'PENDING',
+    }),
+    processingStage: 'OCR_EXTRACTION',
+    verificationStatus: 'PENDING',
+  };
+  sheet.verifierNotes = `Preliminary OCR extraction from result-sheet image (${extracted.serialNumber ? 'S/N ' + extracted.serialNumber : sheet.id}). Arithmetic passed: ${arithmeticPassed}. Human verification is still required.`;
+  sheet.requiresHumanReview = true;
+  sheet.reviewReasons = [
+    'OCR output is preliminary and requires human comparison with the source document.',
+    ...(!arithmeticPassed ? [`Arithmetic check failed with difference ${difference}.`] : []),
+    ...(confidencePct < 85 ? [`OCR confidence ${confidencePct}% is below the review threshold.`] : []),
+  ];
 
   if (pu) {
     if (votersOnRegister > 0) pu.registeredVoters = votersOnRegister;
@@ -5207,7 +5458,11 @@ async function fetchInecLiveElectionResults(electionIdKey: string, maxWards: num
   const targetStateCode = isEkiti ? 'EKITI' : 'OSUN';
   const targetElectionId = isEkiti ? 'elec-2026-gov-ekiti' : 'elec-2026-gov-osun';
   const targetTitle = isEkiti ? 'Ekiti State' : 'Osun State';
-  const base = 'https://dolphin-app-sleqh.ondigitalocean.app/api/v1';
+  const configuredBase = process.env.INEC_RESULTS_API_BASE_URL?.trim();
+  if (!configuredBase) {
+    throw new Error('INEC_RESULTS_API_BASE_URL is not configured. Live retrieval is disabled until the source endpoint and access method are verified.');
+  }
+  const base = configuredBase.replace(/\/$/, '');
 
   const lgaRes = await httpsGetJson(`${base}/elections/${targetInecId}/lga`, 12000);
   const lgaData = lgaRes?.data || [];
@@ -5361,6 +5616,15 @@ async function fetchInecLiveElectionResults(electionIdKey: string, maxWards: num
                 retrievalTimestamp: new Date().toISOString(),
                 ocrConfidence: 0,
                 sourceStatus: 'ORIGINAL',
+                provenance: {
+                  recordOrigin: 'UNKNOWN',
+                  processingStage: 'SOURCE_DOCUMENT',
+                  sourcePortalUrl: 'https://inecelectionresults.ng/elections/types',
+                  sourceDocumentUrl: docUrl,
+                  retrievedAt: new Date().toISOString(),
+                  documentSha256: shaHash || undefined,
+                  verificationStatus: 'PENDING',
+                },
                 version: 1,
                 transcription: {
                   validVotes: 0,
@@ -5381,9 +5645,7 @@ async function fetchInecLiveElectionResults(electionIdKey: string, maxWards: num
                   formula: 'Awaiting AI OCR extraction',
                   details: 'Form EC8A scan retrieved live from INEC Results Portal (IReV).',
                 },
-                verifiedBy: 'Pending AI OCR Transcription',
-                verifiedAt: new Date().toISOString(),
-                verifierNotes: `Official Form EC8A document from INEC IReV: ${docUrl}`,
+                verifierNotes: `Source document retrieved through the configured endpoint; source ownership and authenticity remain unverified: ${docUrl}`,
                 versionHistory: [
                   {
                     versionNumber: 1,
@@ -5671,6 +5933,9 @@ app.get('/api/v1/ocr/quota-status', (_req: Request, res: Response) => {
 });
 
 // Update AI OCR Provider, Selected Model, or Custom API Key
+// OCR configuration, transcription, and uploads are restricted to authenticated management users.
+app.use('/api/v1/ocr', requireAdminAuth);
+
 app.post('/api/v1/ocr/api-key', (req: Request, res: Response) => {
   const { provider, apiKey, model } = req.body || {};
 
@@ -6098,6 +6363,14 @@ app.post('/api/v1/ocr/upload-and-transcribe', async (req: Request, res: Response
       retrievalTimestamp: new Date().toISOString(),
       ocrConfidence: 98.0,
       sourceStatus: 'ORIGINAL',
+      provenance: {
+        recordOrigin: 'MANUAL_IMPORT',
+        processingStage: 'OCR_EXTRACTION',
+        sourceDocumentUrl: gcsUploadedUrl || undefined,
+        retrievedAt: new Date().toISOString(),
+        documentSha256: shaHash,
+        verificationStatus: 'PENDING',
+      },
       version: 1,
       transcription: { validVotes: 0, rejectedVotes: 0, totalVotesCast: 0, partyVotes: {} },
       ocrExtraction: { validVotes: 0, rejectedVotes: 0, totalVotesCast: 0, partyVotes: {}, rawText: '' },
@@ -6131,75 +6404,47 @@ app.post('/api/v1/ocr/upload-and-transcribe', async (req: Request, res: Response
 
 // Trigger Ingestion Run (Manual Ingestion Command for Authorized Administrators)
 app.post('/api/v1/admin/ingestion/run', async (req: Request, res: Response) => {
-  const { adapter = 'InecApprovedSourceAdapter', electionId = 'elec-2026-gov-osun', maxWards = 20 } = req.body;
-
-  const isLiveElection =
-    electionId === 'elec-2026-gov-osun' ||
-    electionId === 'elec-2026-gov-ekiti' ||
-    adapter === 'InecApprovedSourceAdapter';
-
+  const { adapter = 'InecApprovedSourceAdapter', electionId = 'elec-2026-gov-osun', maxWards = 20 } = req.body || {};
+  const startedAt = new Date().toISOString();
   let liveResult: any = null;
-  if (isLiveElection) {
+  let failureReason: string | undefined;
+  const isSimulation = adapter === 'DevelopmentFixtureAdapter';
+  if (adapter === 'InecApprovedSourceAdapter') {
     try {
-      console.log(`[INGESTION] Commencing live retrieval from official INEC Results Portal for ${electionId}...`);
+      console.log(`[INGESTION] Attempting configured source retrieval for ${electionId}...`);
       liveResult = await fetchInecLiveElectionResults(electionId, Number(maxWards) || 20);
-      console.log(`[INGESTION] Live retrieval completed: ${liveResult.totalPusProcessed} PUs, ${liveResult.photosCount} photos.`);
+      console.log(`[INGESTION] Retrieval returned ${liveResult.totalPusProcessed} polling units.`);
     } catch (err: any) {
-      console.error('[INGESTION] Live INEC ingestion error, fallback to baseline:', err.message);
+      failureReason = err?.message || 'Unknown retrieval error';
+      console.error('[INGESTION] Source retrieval failed; no demo fallback will be reported as live data:', failureReason);
     }
+  } else if (!isSimulation) {
+    failureReason = `Unsupported ingestion adapter: ${adapter}`;
   }
-
-  const processedCount = liveResult ? liveResult.totalPusProcessed : (POLLING_UNITS.filter((p) => p.electionId === electionId).length || 0);
-  const photosCount = liveResult ? liveResult.photosCount : processedCount;
+  const processedCount = liveResult ? Number(liveResult.totalPusProcessed) || 0 : 0;
   const skippedDuplicates = liveResult?.skippedDuplicatesCount || 0;
   const revisedCount = liveResult?.revisedCount || 0;
   const newPusCount = liveResult?.newPusCount || 0;
-
+  const outcome = isSimulation ? 'SIMULATED' : failureReason ? 'FAILED' : processedCount > 0 ? 'SUCCESS' : 'SUCCESS_NO_RECORDS';
+  const finishedAt = new Date().toISOString();
   const newJob = {
-    id: 'job-' + (INGESTION_JOBS.length + 1001),
-    adapter,
-    electionId,
-    status: 'COMPLETED',
-    startedAt: new Date().toISOString(),
-    finishedAt: new Date().toISOString(),
-    recordsRetrieved: processedCount,
-    recordsProcessed: newPusCount + revisedCount,
-    recordsRejected: 0,
-    recordsSkippedDuplicate: skippedDuplicates,
-    recordsRevised: revisedCount,
-    discrepanciesDetected: 0,
-    sourceAttribution: liveResult
-      ? liveResult.sourceNote
-      : `Official INEC Results Portal (IReV) - ${electionId}`,
+    id: 'job-' + (INGESTION_JOBS.length + 1001), adapter, electionId, status: outcome, outcome,
+    simulated: isSimulation, sourceKind: isSimulation ? 'DEMONSTRATION' : 'CONFIGURED_SOURCE_UNVERIFIED', startedAt, finishedAt,
+    recordsRetrieved: processedCount, recordsProcessed: newPusCount + revisedCount, recordsRejected: 0,
+    recordsSkippedDuplicate: skippedDuplicates, recordsRevised: revisedCount, discrepanciesDetected: 0,
+    error: failureReason,
+    sourceAttribution: liveResult?.sourceNote || (isSimulation ? 'DEMONSTRATION FIXTURES — NOT OFFICIAL RESULTS' : 'Configured results endpoint; provenance must be checked per document.'),
   };
-
   INGESTION_JOBS.unshift(newJob);
-  schedulerConfig.lastRunAt = newJob.finishedAt;
+  schedulerConfig.lastRunAt = finishedAt;
   schedulerConfig.nextRunAt = new Date(Date.now() + schedulerConfig.intervalMinutes * 60 * 1000).toISOString();
-
-  AUDIT_LOGS.unshift({
-    id: 'audit-' + Date.now(),
-    timestamp: new Date().toISOString(),
-    actor: (req.headers['x-actor-email'] as string) || 'admin:manual_trigger',
-    action: 'TRIGGER_INGESTION_JOB',
-    target: newJob.id,
-    details: liveResult
-      ? `Manual batch ingestion executed for ${electionId}. ${newPusCount} new Polling Units uploaded, ${skippedDuplicates} duplicate records skipped, ${revisedCount} altered results updated with version history.`
-      : `Manual ingestion executed via ${adapter} for ${electionId}.`,
-  });
-
+  AUDIT_LOGS.unshift({ id: 'audit-' + Date.now(), timestamp: finishedAt, actor: (req.headers['x-actor-email'] as string) || 'admin:manual_trigger', action: 'TRIGGER_INGESTION_JOB', target: newJob.id, details: `Ingestion outcome=${outcome}; adapter=${adapter}; election=${electionId}; retrieved=${processedCount}; error=${failureReason || 'none'}.` });
   saveDatabaseToDisk(true);
-
-  res.json({
-    message: `Ingestion completed: ${newPusCount} newly uploaded, ${skippedDuplicates} duplicates skipped, ${revisedCount} revised version(s).`,
-    data: newJob,
-    stats: {
-      newPusCount,
-      skippedDuplicates,
-      revisedCount,
-      totalPusProcessed: processedCount,
-    },
-  });
+  if (outcome === 'FAILED') {
+    res.status(502).json({ message: 'Ingestion failed. No live data was reported as successfully retrieved.', data: newJob });
+    return;
+  }
+  res.json({ message: isSimulation ? 'Simulation mode selected; this endpoint did not retrieve or ingest any records. No records are official.' : `Retrieval outcome: ${outcome}.`, data: newJob, stats: { newPusCount, skippedDuplicates, revisedCount, totalPusProcessed: processedCount } });
 });
 
 // Purge Demo Fixtures and Reset Entire App to Zero

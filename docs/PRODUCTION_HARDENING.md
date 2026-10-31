@@ -1,0 +1,103 @@
+# Production Hardening — Implementation Status
+
+## Canonical backend decision
+
+**Node.js/Express (server.ts) is the canonical API for the current Render deployment.** The frontend uses relative /api/v1 paths and render.yaml starts npm start, which runs the Express server. The FastAPI/PostgreSQL/PostGIS implementation under backend/ is a reference/development implementation and is not connected to the current Render frontend path. It must not be treated as a second production source of truth.
+
+This is a deployment decision based on the checked-in configuration, not a claim that the Node service is production-ready. A future move to FastAPI should be a deliberate migration with contract tests, data migration, and a single cutover—not a parallel write path.
+
+## Implemented in this branch
+
+- Source connection checks perform an HTTP request to the INEC reference portal. The result differentiates a reachable web page from a verified API. Credentials and actual document retrieval are explicitly reported as untested.
+- The Node live-ingestion endpoint no longer falls back to existing polling-unit data and reports that fallback as a successful live retrieval.
+- Ingestion jobs distinguish SUCCESS, SUCCESS_NO_RECORDS, SIMULATED, and FAILED. A failed live attempt returns HTTP 502 and preserves the error in the job/audit record.
+- The previously hard-coded third-party source API URL is now configured through INEC_RESULTS_API_BASE_URL. If it is missing, live ingestion fails closed.
+- Result sheets support explicit provenance fields for origin, processing stage, source/document URLs, retrieval time, SHA-256, and verification status. Newly ingested external documents are marked UNKNOWN origin and PENDING verification until provenance is actually established. Manually uploaded sheets are marked MANUAL_IMPORT.
+- The Node readiness endpoint reports file-backed storage and whether the data directory is writable. It no longer claims that a database or cache is connected.
+- The FastAPI adapter now makes a real HTTP probe in live mode or reports SIMULATED; its scheduler records fixture runs as simulations and includes provenance metadata.
+- The README and architecture overview now distinguish the current deployment from the intended target architecture.
+
+## Required environment configuration
+
+Set `NERAMP_BOOTSTRAP_ADMIN_PASSWORD` in the deployment secret store to a unique password of at least 16 characters before enabling management access. Never use the former shared default password `Admin@Neramp2026!`. The application now disables that legacy password in persisted accounts; the migration replaces it with the configured bootstrap secret for the Super Admin only, or clears it when no valid secret is configured. Other seeded management accounts no longer share a default password and must be securely provisioned by an administrator.
+
+
+Set INEC_RESULTS_API_BASE_URL in the deployment environment **only after confirming that the endpoint is permitted, technically accessible, and returns the expected documented contract**. The application currently does not establish that the endpoint is an official INEC API merely because the official portal is used as a reference. The source connection check probes https://inecelectionresults.ng/elections/types; it does not validate the configured results API.
+
+Do not set DATA_SOURCE_MODE=OFFICIAL_SOURCE or publish data as official solely because an ingestion job ran. Each result sheet needs source-document provenance and verification.
+
+## Outcome definitions
+
+- SUCCESS: a configured live retrieval returned one or more records. This is not the same as verified election results.
+- SUCCESS_NO_RECORDS: the request completed but returned no records.
+- SIMULATED: the Node endpoint records that simulation mode was selected; it does not perform live retrieval and reports zero retrieved records. The FastAPI fixture adapter can return demo records. Neither is official results.
+- FAILED: the live request or ingestion operation failed; no fallback data is represented as live.
+- PARTIAL_SUCCESS and VALIDATION_REJECTED are reserved for future batch-level reporting when the ingestion contract exposes per-record failures and validation counts. The current Node source function does not yet expose sufficient per-record failure metrics to implement those statuses accurately.
+
+## Persistence and recovery
+
+The Node JSON store now uses same-directory temporary files plus atomic rename for each JSON write, with file and best-effort directory fsync. This reduces the risk of truncated JSON after interrupted writes; it does not provide database transactions or multi-instance concurrency safety.
+
+- Recovery snapshots are kept only in `DATA_DIR`; the application no longer writes snapshots containing election records into `public/` or the source-tree `data/` directory.
+- Snapshot payloads exclude management account records. Up to five timestamped prior snapshots are rotated under `DATA_DIR/backups/` with restrictive file permissions.
+- Evidence uploads use `DATA_DIR/evidence`, not a code-directory path.
+- Management session tokens are stored as SHA-256 hashes in `neramp_auth_tokens.json`, never as raw bearer tokens. Valid, unexpired sessions can survive process restarts when the configured data directory is truly persistent. Expired, revoked, or inactive-account sessions are discarded.
+- The checked-in Render Free blueprint sets `NERAMP_REQUIRE_DURABLE_STORAGE=false` so the demo can remain available without a paid disk. Readiness must explicitly warn that durability is unconfirmed. Render Free local files are ephemeral; this service must not be the sole store for authoritative election records. Do not provision a paid disk without reviewing the cost first.
+- Local snapshot rotation is not an off-site backup. Before production use, export encrypted backups to a separate access-controlled storage account and perform a documented restore drill.
+
+The current Node service still stores operational state in JSON files and does not use the PostgreSQL models in backend/. Atomic writes and local snapshot rotation reduce partial-write risk but do not protect against loss of an ephemeral free instance. The free Render blueprint deliberately keeps readiness non-blocking while reporting that durable persistence is unconfirmed. For reliable recovery without upgrading Render, export encrypted backups to a separate storage provider or trusted local system and test restoration. This external backup process is not automated by the current app.
+
+Before production use:
+1. While on Render Free, keep a separate encrypted backup outside the Render instance; later, consider a persistent disk or managed database/object storage after reviewing costs.
+2. Keep election records, user accounts, sessions, result-sheet versions, incident evidence, and audit logs in durable stores.
+3. Create encrypted, access-controlled backups and perform a restore drill.
+4. Do not store incident evidence solely under a path derived from __dirname; route it through the configured persistent/object store.
+5. Test restart, redeploy, partial-write recovery, and backup restoration.
+
+## Security and scale — remaining release blockers
+
+This branch is not a production security certification. Administrative routes and the evidence/observer submission paths now require server-issued bearer tokens and role checks. Evidence uploads are limited to JPEG, PNG, and PDF by file signature, capped at 25 MB, and throttled per IP in the single process. Unpublished incident reports remain private and start in SUBMITTED state; the server controls observer attribution and publication state. Evidence is publicly served only for an incident explicitly marked both published and APPROVED_FOR_PUBLICATION. In-process throttling is not distributed protection, and the frontend/API contract must be tested against the deployed staging build before release.
+
+Additional release blockers:
+- [x] Centralize server-issued bearer-token authentication for the /api/v1/admin route group, alert mutations, registered-voter imports, result verification, and OCR management/transcription endpoints. Caller-supplied x-actor-role and x-actor-email headers no longer authenticate admin requests.
+- [x] Apply role gates to sensitive admin operations (restore/purge, user management, configuration, operations, OCR API-key changes, and registered-voter imports); restrict verification/OCR writes to verifiers or administrators.
+- [x] Prevent passwordless login and prevent the login endpoint from setting a missing account password based only on knowledge of the account email.
+- [x] Remove the shared default password from seeded management accounts, disable it for persisted accounts, and support a unique deployment secret via NERAMP_BOOTSTRAP_ADMIN_PASSWORD.
+- [x] Add negative API integration tests for missing tokens, forged identity headers, invalid tokens, passwordless login, limited-role access, and logout token revocation. Run with npm run test:security against a dedicated test deployment; set NERAMP_TEST_BASE_URL, and optional test-account variables documented in the test file.
+- [ ] Run the negative tests against a dedicated staging instance and add role-by-role positive/negative coverage for every administrative route before merge.
+- Validate file content by magic bytes as well as extension/MIME; enforce strict request and decoded-upload size limits. Review the global JSON body limit.
+- Keep provider keys and storage credentials server-side; rotate any credentials that may have been committed or exposed.
+- Add durable audit logging and ensure restore/import operations are authorized and logged before and after mutation.
+- Add request timeouts, bounded retries with backoff, per-source rate limits, idempotency keys, queue persistence, and dead-letter/retry handling.
+- Add concurrency/load tests, database/object-storage capacity tests, dependency/security scans, and backup/restore drills.
+
+
+### Authentication implementation notes
+
+The current Node API issues random opaque bearer tokens stored in a process-local registry, with an eight-hour expiry. Restarting the Node process invalidates these tokens. This is a containment improvement over trusting caller-supplied headers, not a durable session architecture. Before production, move sessions to a shared durable store, add CSRF/origin protections if cookie auth is introduced, enforce secure transport, and audit every endpoint's role policy. Administrative endpoints should not be publicly exposed until staging authorization tests pass.
+
+The integration tests intentionally skip when NERAMP_TEST_BASE_URL is not configured. They were added to the repository but have not been executed from this environment. Use dedicated test accounts only; never put production credentials in test configuration.
+
+## Verification status
+
+The repository changes were made through GitHub on a separate branch. No production endpoint was called from this change process, no INEC API credentials were available for verification, and no build, lint, unit, integration, security, or load tests were run in this environment. Review the diff and run the checks before merging.
+
+
+## Latest endpoint hardening
+
+- Evidence uploads and observer incident submissions now require authenticated, authorized accounts.
+- File content is validated as JPEG/PNG/PDF from magic bytes, not the caller-supplied MIME type; uploads are capped at 25 MB and limited per IP in-process.
+- New incident reports are private and submitted for review; the client cannot choose the observer identity or mark the report verified/published.
+- Generic evidence file endpoints require authentication and restrict access to the uploader or privileged reviewers. Public incident evidence is available only after explicit publication approval.
+- CI can run against staging using repository Actions secrets: `NERAMP_TEST_BASE_URL`, `NERAMP_TEST_ADMIN_EMAIL`, `NERAMP_TEST_ADMIN_PASSWORD`, and optional limited-role test account secrets. Use dedicated test accounts only; do not configure production administrator credentials.
+
+## External backup and disaster recovery — design baseline
+
+- [x] Document the active Node.js production data inventory, local upload/evidence paths, GCS object coverage, backup exclusions, encrypted archive/manifest contract, B2 security model, restore preflight, atomic replacement/rollback requirements, and acceptance tests in [BACKUP_RECOVERY_ARCHITECTURE.md](./BACKUP_RECOVERY_ARCHITECTURE.md).
+- [ ] Implement the server-side Backblaze B2 client and fail-closed configuration.
+- [ ] Implement encrypted, consistent full backups including all required JSON records and local/GCS binary assets.
+- [ ] Implement backup catalog, scheduling, remote verification and safe retention.
+- [ ] Replace partial merge restore with staged full restore, validation, rollback and token invalidation.
+- [ ] Execute and document an end-to-end restore drill from a real B2 backup in an isolated staging environment.
+
+The architecture document is a design baseline only. No B2 credentials, bucket, encryption key, automated backup job, or production restore behavior is configured by this documentation change. Keep automated backups disabled until the storage foundation and key-custody procedure are configured and tested.

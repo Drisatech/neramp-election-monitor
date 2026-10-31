@@ -177,12 +177,9 @@ export const IncidentsPage: React.FC = () => {
         filename: file.name,
         gcsPublicUrl: uploadRes.gcsPublicUrl,
       });
-    } catch {
-      setUploadedEvidence({
-        storageKey: `evidence/${Date.now()}_${file.name}`,
-        fileHash: 'verified-attachment',
-        filename: file.name,
-      });
+    } catch (err: any) {
+      setUploadedEvidence(null);
+      setFormNotice({ type: 'error', text: err.message || 'Evidence upload failed. Please retry or remove the attachment.' });
     } finally {
       setIsUploadingFile(false);
     }
@@ -197,6 +194,9 @@ export const IncidentsPage: React.FC = () => {
     try {
       setIsSubmitting(true);
       setFormNotice(null);
+      if (selectedFile && !uploadedEvidence) {
+        throw new Error('Evidence upload failed. Please retry the upload or remove the attachment before submitting.');
+      }
 
       const stateObj = states.find((s) => s.code === selectedStateCode);
       const lgaObj = lgaOptions.find((l) => l.code === selectedLgaCode);
@@ -227,7 +227,7 @@ export const IncidentsPage: React.FC = () => {
       setShowReportModal(false);
       setFormNotice({
         type: 'success',
-        text: 'Incident report and attached evidence submitted and published to the monitoring feed.',
+        text: 'Incident report submitted for review. It will appear publicly only after approval.',
       });
     } catch (err: any) {
       setFormNotice({ type: 'error', text: err.message || 'Failed to submit incident report.' });

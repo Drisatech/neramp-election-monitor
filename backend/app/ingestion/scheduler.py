@@ -89,26 +89,39 @@ class IngestionPipelineService:
                     "registered_voters": rec.registered_voters,
                     "accredited_voters": rec.accredited_voters,
                     "is_demonstration": rec.is_demonstration,
+                    "provenance": {
+                        "record_origin": "DEMONSTRATION" if rec.is_demonstration else "UNKNOWN",
+                        "processing_stage": "SOURCE_DOCUMENT",
+                        "source_document_url": rec.source_url,
+                        "retrieved_at": rec.retrieval_timestamp.isoformat(),
+                        "document_sha256": rec.file_hash,
+                        "verification_status": "PENDING",
+                    },
                 }
                 records_processed += 1
 
             finished_at = datetime.now(timezone.utc)
             self.last_run_timestamp = finished_at
 
+            all_demo = bool(records) and all(record.is_demonstration for record in records)
+            outcome = "SIMULATED" if all_demo or not self.adapter.is_live_official_source() else ("SUCCESS" if records_retrieved > 0 else "SUCCESS_NO_RECORDS")
             job_summary = {
                 "id": job_id,
                 "adapter": self.adapter.get_adapter_name(),
                 "election_id": election_id,
-                "status": "COMPLETED",
+                "status": outcome,
+                "outcome": outcome,
+                "simulated": all_demo or not self.adapter.is_live_official_source(),
                 "started_at": started_at.isoformat(),
                 "finished_at": finished_at.isoformat(),
                 "records_retrieved": records_retrieved,
                 "records_processed": records_processed,
                 "records_skipped_duplicate": records_skipped_duplicate,
                 "records_revised": records_revised,
+                "records_rejected": 0,
                 "discrepancies_detected": discrepancies_flagged,
                 "actor": actor,
-                "source_attribution": "Official INEC Results Portal (IReV)" if self.adapter.is_live_official_source() else "Development Fixture",
+                "source_attribution": "DEMONSTRATION FIXTURES — NOT OFFICIAL RESULTS" if all_demo or not self.adapter.is_live_official_source() else "Configured source endpoint; official-source provenance must be verified per document.",
             }
             self.job_history.insert(0, job_summary)
             return job_summary

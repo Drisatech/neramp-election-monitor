@@ -27,7 +27,7 @@ import {
   uploadEvidenceFile,
   fetchLgas,
   fetchPollingUnits,
-  fetchPublishedIncidents,
+  fetchObserverSubmissions,
 } from '../services/api';
 import { LGA, PollingUnit, IncidentReport } from '../types';
 import { DisclaimerBanner } from '../components/DisclaimerBanner';
@@ -141,10 +141,10 @@ export const ObserverPortalPage: React.FC = () => {
   // Load existing incidents for this election
   const loadSubmittedIncidents = async () => {
     try {
-      const res = await fetchPublishedIncidents(selectedElectionId);
-      setSubmittedIncidents(res.data || []);
+      const res = await fetchObserverSubmissions();
+      setSubmittedIncidents(res.data?.incidents || []);
     } catch (err) {
-      console.error('Failed to load observer incidents:', err);
+      console.error('Failed to load observer submissions:', err);
     }
   };
 
@@ -187,7 +187,8 @@ export const ObserverPortalPage: React.FC = () => {
         gcsPublicUrl: uploadRes.gcsPublicUrl,
       });
     } catch (err: any) {
-      setFileError(err.message || 'Evidence upload notice: file will be attached locally with report.');
+      setUploadedEvidence(null);
+      setFileError(err.message || 'Evidence upload failed. Please retry or remove the attachment.');
     } finally {
       setIsUploadingFile(false);
     }
@@ -207,22 +208,14 @@ export const ObserverPortalPage: React.FC = () => {
 
       let evidenceMeta = uploadedEvidence;
       if (selectedFile && !evidenceMeta) {
-        try {
-          const base64Data = await readFileAsBase64(selectedFile);
-          const uploadRes = await uploadEvidenceFile(selectedFile.name, base64Data, selectedFile.type);
-          evidenceMeta = {
-            storageKey: uploadRes.storageKey,
-            fileHash: uploadRes.fileHash,
-            filename: selectedFile.name,
-            gcsPublicUrl: uploadRes.gcsPublicUrl,
-          };
-        } catch {
-          evidenceMeta = {
-            storageKey: `evidence/${Date.now()}_${selectedFile.name}`,
-            fileHash: 'verified-attachment',
-            filename: selectedFile.name,
-          };
-        }
+        const base64Data = await readFileAsBase64(selectedFile);
+        const uploadRes = await uploadEvidenceFile(selectedFile.name, base64Data, selectedFile.type);
+        evidenceMeta = {
+          storageKey: uploadRes.storageKey,
+          fileHash: uploadRes.fileHash,
+          filename: selectedFile.name,
+          gcsPublicUrl: uploadRes.gcsPublicUrl,
+        };
       }
 
       const stateObj = states.find((s) => s.code === selectedStateCode);
@@ -242,6 +235,7 @@ export const ObserverPortalPage: React.FC = () => {
         description: fullDescription,
         severity,
         evidenceCount: selectedFile || evidenceMeta ? 1 : 0,
+        evidenceKey: evidenceMeta?.storageKey,
         evidenceFilename: evidenceMeta?.filename,
         evidenceHash: evidenceMeta?.fileHash,
         evidenceUrl: evidenceMeta?.gcsPublicUrl,
@@ -254,7 +248,7 @@ export const ObserverPortalPage: React.FC = () => {
       }
 
       setStatusMessage(
-        'Incident report and supporting evidence submitted successfully! It is now live in the Field Submissions & Incidents Feed.'
+        'Incident report submitted for review. It will appear publicly only after approval.'
       );
       setDescription('');
       setSelectedFile(null);
