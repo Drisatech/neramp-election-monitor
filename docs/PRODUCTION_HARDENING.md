@@ -90,3 +90,14 @@ The repository changes were made through GitHub on a separate branch. No product
 - New incident reports are private and submitted for review; the client cannot choose the observer identity or mark the report verified/published.
 - Generic evidence file endpoints require authentication and restrict access to the uploader or privileged reviewers. Public incident evidence is available only after explicit publication approval.
 - CI can run against staging using repository Actions secrets: `NERAMP_TEST_BASE_URL`, `NERAMP_TEST_ADMIN_EMAIL`, `NERAMP_TEST_ADMIN_PASSWORD`, and optional limited-role test account secrets. Use dedicated test accounts only; do not configure production administrator credentials.
+
+## External backup and disaster recovery — design baseline
+
+- [x] Document the active Node.js production data inventory, local upload/evidence paths, GCS object coverage, backup exclusions, encrypted archive/manifest contract, B2 security model, restore preflight, atomic replacement/rollback requirements, and acceptance tests in [BACKUP_RECOVERY_ARCHITECTURE.md](./BACKUP_RECOVERY_ARCHITECTURE.md).
+- [ ] Implement the server-side Backblaze B2 client and fail-closed configuration.
+- [ ] Implement encrypted, consistent full backups including all required JSON records and local/GCS binary assets.
+- [ ] Implement backup catalog, scheduling, remote verification and safe retention.
+- [ ] Replace partial merge restore with staged full restore, validation, rollback and token invalidation.
+- [ ] Execute and document an end-to-end restore drill from a real B2 backup in an isolated staging environment.
+
+The architecture document is a design baseline only. No B2 credentials, bucket, encryption key, automated backup job, or production restore behavior is configured by this documentation change. Keep automated backups disabled until the storage foundation and key-custody procedure are configured and tested.
