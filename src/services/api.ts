@@ -256,7 +256,7 @@ export async function fetchVerificationHistory(resultSheetId: string) {
 }
 
 export async function fetchIngestionStatus() {
-  const res = await fetch(`${API_BASE}/admin/ingestion/status`);
+  const res = await adminFetch(`${API_BASE}/admin/ingestion/status`);
   if (!res.ok) throw new Error('Failed to fetch ingestion status');
   return res.json();
 }
@@ -266,7 +266,7 @@ export async function triggerIngestionRun(
   electionId = 'elec-2026-gov-osun',
   maxWards = 20
 ) {
-  const res = await fetch(`${API_BASE}/admin/ingestion/run`, {
+  const res = await adminFetch(`${API_BASE}/admin/ingestion/run`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ adapter, electionId, maxWards }),
@@ -276,7 +276,7 @@ export async function triggerIngestionRun(
 }
 
 export async function testSourceConnection(adapter = 'InecApprovedSourceAdapter') {
-  const res = await fetch(`${API_BASE}/admin/ingestion/test-connection`, {
+  const res = await adminFetch(`${API_BASE}/admin/ingestion/test-connection`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ adapter }),
@@ -286,7 +286,7 @@ export async function testSourceConnection(adapter = 'InecApprovedSourceAdapter'
 }
 
 export async function fetchSchedulerConfig() {
-  const res = await fetch(`${API_BASE}/admin/ingestion/scheduler`);
+  const res = await adminFetch(`${API_BASE}/admin/ingestion/scheduler`);
   if (!res.ok) throw new Error('Failed to fetch scheduler configuration');
   return res.json();
 }
@@ -297,7 +297,7 @@ export async function updateSchedulerConfig(data: {
   adapter?: string;
   targetElectionId?: string;
 }) {
-  const res = await fetch(`${API_BASE}/admin/ingestion/scheduler`, {
+  const res = await adminFetch(`${API_BASE}/admin/ingestion/scheduler`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
@@ -307,19 +307,19 @@ export async function updateSchedulerConfig(data: {
 }
 
 export async function fetchIngestionJobs() {
-  const res = await fetch(`${API_BASE}/admin/ingestion/jobs`);
+  const res = await adminFetch(`${API_BASE}/admin/ingestion/jobs`);
   if (!res.ok) throw new Error('Failed to fetch ingestion jobs');
   return res.json();
 }
 
 export async function fetchAuditLogs() {
-  const res = await fetch(`${API_BASE}/admin/audit-logs`);
+  const res = await adminFetch(`${API_BASE}/admin/audit-logs`);
   if (!res.ok) throw new Error('Failed to fetch audit logs');
   return res.json();
 }
 
 export async function setDataSourceMode(mode: string) {
-  const res = await fetch(`${API_BASE}/admin/set-data-source`, {
+  const res = await adminFetch(`${API_BASE}/admin/set-data-source`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ mode }),
@@ -442,7 +442,7 @@ export function getAnalyticsCsvExportUrl(electionId: string, state?: string) {
 // ==========================================
 
 export async function fetchCommandCenterMetrics() {
-  const res = await fetch(`${API_BASE}/admin/command-center/metrics`);
+  const res = await adminFetch(`${API_BASE}/admin/command-center/metrics`);
   if (!res.ok) throw new Error('Failed to fetch command center metrics');
   return res.json();
 }
@@ -453,13 +453,13 @@ export async function fetchAdminUsers(params?: { role?: string; isActive?: boole
   if (params?.isActive !== undefined) q.set('isActive', String(params.isActive));
   if (params?.search) q.set('search', params.search);
 
-  const res = await fetch(`${API_BASE}/admin/users?${q.toString()}`);
+  const res = await adminFetch(`${API_BASE}/admin/users?${q.toString()}`);
   if (!res.ok) throw new Error('Failed to fetch admin users');
   return res.json();
 }
 
 export async function createAdminUser(data: any) {
-  const res = await fetch(`${API_BASE}/admin/users`, {
+  const res = await adminFetch(`${API_BASE}/admin/users`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
@@ -472,7 +472,7 @@ export async function createAdminUser(data: any) {
 }
 
 export async function updateAdminUser(id: string, data: any) {
-  const res = await fetch(`${API_BASE}/admin/users/${id}`, {
+  const res = await adminFetch(`${API_BASE}/admin/users/${id}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
@@ -485,7 +485,7 @@ export async function updateAdminUser(id: string, data: any) {
 }
 
 export async function toggleUserStatus(id: string) {
-  const res = await fetch(`${API_BASE}/admin/users/${id}/toggle-status`, {
+  const res = await adminFetch(`${API_BASE}/admin/users/${id}/toggle-status`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -497,7 +497,7 @@ export async function toggleUserStatus(id: string) {
 }
 
 export async function approveStaffUser(id: string) {
-  const res = await fetch(`${API_BASE}/admin/users/${id}/approve`, {
+  const res = await adminFetch(`${API_BASE}/admin/users/${id}/approve`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -512,7 +512,7 @@ export async function approveStaffUser(id: string) {
 }
 
 export async function rejectStaffUser(id: string) {
-  const res = await fetch(`${API_BASE}/admin/users/${id}/reject`, {
+  const res = await adminFetch(`${API_BASE}/admin/users/${id}/reject`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -527,7 +527,7 @@ export async function rejectStaffUser(id: string) {
 }
 
 export async function resetUserAccess(id: string) {
-  const res = await fetch(`${API_BASE}/admin/users/${id}/reset-access`, {
+  const res = await adminFetch(`${API_BASE}/admin/users/${id}/reset-access`, {
     method: 'POST',
   });
   if (!res.ok) throw new Error('Failed to reset user access');
@@ -535,7 +535,7 @@ export async function resetUserAccess(id: string) {
 }
 
 export async function deleteAdminUser(id: string) {
-  const res = await fetch(`${API_BASE}/admin/users/${id}`, {
+  const res = await adminFetch(`${API_BASE}/admin/users/${id}`, {
     method: 'DELETE',
   });
   if (!res.ok) throw new Error('Failed to delete user');
@@ -543,19 +543,19 @@ export async function deleteAdminUser(id: string) {
 }
 
 export async function fetchAuditLogsExport() {
-  const res = await fetch(`${API_BASE}/admin/audit-logs/export`);
+  const res = await adminFetch(`${API_BASE}/admin/audit-logs/export`);
   if (!res.ok) throw new Error('Failed to export audit logs');
   return res.json();
 }
 
 export async function fetchVerifierSupervision() {
-  const res = await fetch(`${API_BASE}/admin/supervision/verifiers`);
+  const res = await adminFetch(`${API_BASE}/admin/supervision/verifiers`);
   if (!res.ok) throw new Error('Failed to fetch verifier supervision data');
   return res.json();
 }
 
 export async function reassignDisputedResult(resultSheetId: string, secondaryVerifierName: string, reason: string) {
-  const res = await fetch(`${API_BASE}/admin/supervision/reassign-disputed`, {
+  const res = await adminFetch(`${API_BASE}/admin/supervision/reassign-disputed`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ resultSheetId, secondaryVerifierName, reason }),
@@ -565,7 +565,7 @@ export async function reassignDisputedResult(resultSheetId: string, secondaryVer
 }
 
 export async function verifyObserverCredentials(observerId: string, badge: string) {
-  const res = await fetch(`${API_BASE}/admin/observers/${observerId}/verify-credentials`, {
+  const res = await adminFetch(`${API_BASE}/admin/observers/${observerId}/verify-credentials`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ badge }),
@@ -575,7 +575,7 @@ export async function verifyObserverCredentials(observerId: string, badge: strin
 }
 
 export async function publishProtectedIncident(incidentId: string, publishNotes?: string) {
-  const res = await fetch(`${API_BASE}/admin/incidents/${incidentId}/publish`, {
+  const res = await adminFetch(`${API_BASE}/admin/incidents/${incidentId}/publish`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ publishNotes }),
@@ -585,7 +585,7 @@ export async function publishProtectedIncident(incidentId: string, publishNotes?
 }
 
 export async function pauseIngestionScheduler(paused: boolean) {
-  const res = await fetch(`${API_BASE}/admin/operations/pause-scheduler`, {
+  const res = await adminFetch(`${API_BASE}/admin/operations/pause-scheduler`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ paused }),
@@ -595,7 +595,7 @@ export async function pauseIngestionScheduler(paused: boolean) {
 }
 
 export async function clearVolatileCache() {
-  const res = await fetch(`${API_BASE}/admin/operations/clear-cache`, {
+  const res = await adminFetch(`${API_BASE}/admin/operations/clear-cache`, {
     method: 'POST',
   });
   if (!res.ok) throw new Error('Failed to clear volatile cache');
@@ -603,13 +603,13 @@ export async function clearVolatileCache() {
 }
 
 export async function triggerSystemDiagnostics() {
-  const res = await fetch(`${API_BASE}/admin/operations/diagnostics`);
+  const res = await adminFetch(`${API_BASE}/admin/operations/diagnostics`);
   if (!res.ok) throw new Error('Failed to run system diagnostics');
   return res.json();
 }
 
 export async function retryFailedJob(jobId: string) {
-  const res = await fetch(`${API_BASE}/admin/operations/retry-job/${jobId}`, {
+  const res = await adminFetch(`${API_BASE}/admin/operations/retry-job/${jobId}`, {
     method: 'POST',
   });
   if (!res.ok) throw new Error('Failed to retry job');
@@ -617,13 +617,13 @@ export async function retryFailedJob(jobId: string) {
 }
 
 export async function fetchConfigElections() {
-  const res = await fetch(`${API_BASE}/admin/config/elections`);
+  const res = await adminFetch(`${API_BASE}/admin/config/elections`);
   if (!res.ok) throw new Error('Failed to fetch elections configuration');
   return res.json();
 }
 
 export async function createConfigElection(data: any) {
-  const res = await fetch(`${API_BASE}/admin/config/elections`, {
+  const res = await adminFetch(`${API_BASE}/admin/config/elections`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
@@ -636,7 +636,7 @@ export async function createConfigElection(data: any) {
 }
 
 export async function updateConfigElection(id: string, data: any) {
-  const res = await fetch(`${API_BASE}/admin/config/elections/${encodeURIComponent(id)}`, {
+  const res = await adminFetch(`${API_BASE}/admin/config/elections/${encodeURIComponent(id)}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
@@ -649,7 +649,7 @@ export async function updateConfigElection(id: string, data: any) {
 }
 
 export async function deleteConfigElection(id: string) {
-  const res = await fetch(`${API_BASE}/admin/config/elections/${encodeURIComponent(id)}`, {
+  const res = await adminFetch(`${API_BASE}/admin/config/elections/${encodeURIComponent(id)}`, {
     method: 'DELETE',
   });
   if (!res.ok) {
@@ -660,13 +660,13 @@ export async function deleteConfigElection(id: string) {
 }
 
 export async function fetchConfigCandidates() {
-  const res = await fetch(`${API_BASE}/admin/config/candidates`);
+  const res = await adminFetch(`${API_BASE}/admin/config/candidates`);
   if (!res.ok) throw new Error('Failed to fetch candidates configuration');
   return res.json();
 }
 
 export async function createConfigCandidate(data: any) {
-  const res = await fetch(`${API_BASE}/admin/config/candidates`, {
+  const res = await adminFetch(`${API_BASE}/admin/config/candidates`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
@@ -676,7 +676,7 @@ export async function createConfigCandidate(data: any) {
 }
 
 export async function fetchConfigParties() {
-  const res = await fetch(`${API_BASE}/admin/config/parties`);
+  const res = await adminFetch(`${API_BASE}/admin/config/parties`);
   if (!res.ok) throw new Error('Failed to fetch parties');
   return res.json();
 }
@@ -707,13 +707,13 @@ export async function fetchReadinessProbe() {
 }
 
 export async function fetchReadinessStatus() {
-  const res = await fetch(`${API_BASE}/admin/readiness/status`);
+  const res = await adminFetch(`${API_BASE}/admin/readiness/status`);
   if (!res.ok) throw new Error('Failed to fetch readiness status');
   return res.json();
 }
 
 export async function runReadinessDrill(drillType: string) {
-  const res = await fetch(`${API_BASE}/admin/readiness/run-drill`, {
+  const res = await adminFetch(`${API_BASE}/admin/readiness/run-drill`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ drillType }),
@@ -726,7 +726,7 @@ export async function runReadinessDrill(drillType: string) {
 }
 
 export async function toggleReadinessChecklist(checklist: string, taskId: string) {
-  const res = await fetch(`${API_BASE}/admin/readiness/toggle-checklist`, {
+  const res = await adminFetch(`${API_BASE}/admin/readiness/toggle-checklist`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ checklist, taskId }),
@@ -736,7 +736,7 @@ export async function toggleReadinessChecklist(checklist: string, taskId: string
 }
 
 export async function purgeDemonstrationData() {
-  const res = await fetch(`${API_BASE}/admin/data/purge-demo`, {
+  const res = await adminFetch(`${API_BASE}/admin/data/purge-demo`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
   });
@@ -817,7 +817,7 @@ export async function uploadAndTranscribeFormEc8a(payload: {
 }
 
 export async function fetchStorageSummary() {
-  const res = await fetch(`${API_BASE}/admin/storage/summary`);
+  const res = await adminFetch(`${API_BASE}/admin/storage/summary`);
   if (!res.ok) throw new Error('Failed to fetch storage summary');
   return res.json();
 }
@@ -836,13 +836,13 @@ export async function fetchStorageFiles(params?: {
   if (params?.limit) q.set('limit', String(params.limit));
   if (params?.offset) q.set('offset', String(params.offset));
 
-  const res = await fetch(`${API_BASE}/admin/storage/files?${q.toString()}`);
+  const res = await adminFetch(`${API_BASE}/admin/storage/files?${q.toString()}`);
   if (!res.ok) throw new Error('Failed to fetch storage files');
   return res.json();
 }
 
 export async function deleteStorageFile(id: string) {
-  const res = await fetch(`${API_BASE}/admin/storage/files/${encodeURIComponent(id)}`, {
+  const res = await adminFetch(`${API_BASE}/admin/storage/files/${encodeURIComponent(id)}`, {
     method: 'DELETE',
   });
   if (!res.ok) {
@@ -853,7 +853,7 @@ export async function deleteStorageFile(id: string) {
 }
 
 export async function editStorageFile(id: string, updates: any) {
-  const res = await fetch(`${API_BASE}/admin/storage/files/${encodeURIComponent(id)}`, {
+  const res = await adminFetch(`${API_BASE}/admin/storage/files/${encodeURIComponent(id)}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(updates),
@@ -866,7 +866,7 @@ export async function editStorageFile(id: string, updates: any) {
 }
 
 export async function initGcsFolders() {
-  const res = await fetch(`${API_BASE}/admin/storage/init-folders`, {
+  const res = await adminFetch(`${API_BASE}/admin/storage/init-folders`, {
     method: 'POST',
   });
   if (!res.ok) {
@@ -934,6 +934,15 @@ export function getAuthHeaders(): Record<string, string> {
   return headers;
 }
 
+// Attach the server-issued management token to every administrative API request.
+// Admin routes are protected centrally by requireAdminAuth on the Express server.
+export function adminFetch(input: RequestInfo | URL, init: RequestInit = {}): Promise<Response> {
+  const headers = new Headers(init.headers);
+  Object.entries(getAuthHeaders()).forEach(([key, value]) => headers.set(key, value));
+  return fetch(input, { ...init, headers });
+}
+
+
 // Permanent Management Authentication
 export async function loginManagement(email: string, password?: string) {
   const res = await fetch(`${API_BASE}/auth/login`, {
@@ -994,7 +1003,7 @@ export async function logoutManagement(sessionId?: string, userEmail?: string) {
 
 // Super Admin Management Monitoring Logs
 export async function fetchManagementMonitoring() {
-  const res = await fetch(`${API_BASE}/admin/management-monitoring`, {
+  const res = await adminFetch(`${API_BASE}/admin/management-monitoring`, {
     headers: getAuthHeaders(),
   });
   if (!res.ok) {
@@ -1006,13 +1015,13 @@ export async function fetchManagementMonitoring() {
 
 // Live Collation Loop Extraction APIs
 export async function fetchLoopExtractionStatus() {
-  const res = await fetch(`${API_BASE}/admin/ingestion/loop/status`);
+  const res = await adminFetch(`${API_BASE}/admin/ingestion/loop/status`);
   if (!res.ok) throw new Error('Failed to fetch loop status');
   return res.json();
 }
 
 export async function startLiveLoopExtraction(intervalMinutes: number, electionId?: string, maxWards?: number) {
-  const res = await fetch(`${API_BASE}/admin/ingestion/loop/start`, {
+  const res = await adminFetch(`${API_BASE}/admin/ingestion/loop/start`, {
     method: 'POST',
     headers: getAuthHeaders(),
     body: JSON.stringify({ intervalMinutes, electionId, maxWards }),
@@ -1025,7 +1034,7 @@ export async function startLiveLoopExtraction(intervalMinutes: number, electionI
 }
 
 export async function pauseLiveLoopExtraction() {
-  const res = await fetch(`${API_BASE}/admin/ingestion/loop/pause`, {
+  const res = await adminFetch(`${API_BASE}/admin/ingestion/loop/pause`, {
     method: 'POST',
     headers: getAuthHeaders(),
     body: JSON.stringify({}),
@@ -1035,7 +1044,7 @@ export async function pauseLiveLoopExtraction() {
 }
 
 export async function stopLiveLoopExtraction() {
-  const res = await fetch(`${API_BASE}/admin/ingestion/loop/stop`, {
+  const res = await adminFetch(`${API_BASE}/admin/ingestion/loop/stop`, {
     method: 'POST',
     headers: getAuthHeaders(),
     body: JSON.stringify({}),
@@ -1045,7 +1054,7 @@ export async function stopLiveLoopExtraction() {
 }
 
 export async function triggerLoopExtractionNow() {
-  const res = await fetch(`${API_BASE}/admin/ingestion/loop/trigger-now`, {
+  const res = await adminFetch(`${API_BASE}/admin/ingestion/loop/trigger-now`, {
     method: 'POST',
     headers: getAuthHeaders(),
     body: JSON.stringify({}),
@@ -1063,7 +1072,7 @@ export function getDatabaseBackupUrl() {
 }
 
 export async function fetchStorageStatus() {
-  const res = await fetch(`${API_BASE}/admin/data/storage-status`, {
+  const res = await adminFetch(`${API_BASE}/admin/data/storage-status`, {
     headers: getAuthHeaders(),
   });
   if (!res.ok) throw new Error('Failed to fetch storage status');
@@ -1071,7 +1080,7 @@ export async function fetchStorageStatus() {
 }
 
 export async function restoreDatabaseSnapshot(snapshotPayload: any) {
-  const res = await fetch(`${API_BASE}/admin/data/restore`, {
+  const res = await adminFetch(`${API_BASE}/admin/data/restore`, {
     method: 'POST',
     headers: getAuthHeaders(),
     body: JSON.stringify({ snapshot: snapshotPayload }),
